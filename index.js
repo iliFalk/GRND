@@ -1,7 +1,7 @@
 const { Telegraf } = require("telegraf");
 const express = require("express");
 
-const bot = new Telegraf(process.env.REDACTED-BOT-TOKEN);
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
 bot.start((ctx) => {
   ctx.reply("Welcome! Tap the button below to open the mini app.", {

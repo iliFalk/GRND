@@ -26,4 +26,4 @@ app.use(bot.webhookCallback("/secret-path"));
 app.get("/", (req, res) => res.send("Bot is running"));
 app.listen(3000, () => console.log("Server running"));
 
-bot.telegram.setWebhook("https://booksplayer.onrender.com");
+bot.telegram.setWebhook("https://booksplayer.onrender.com/secret-path");

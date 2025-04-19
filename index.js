@@ -11,7 +11,7 @@ bot.start((ctx) => {
           {
             text: "Open Mini App",
             web_app: {
-              url: https://ilifalk.github.io/BooksPlayer/
+              url: "https://ilifalk.github.io/BooksPlayer/"
             }
           }
         ]

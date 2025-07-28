@@ -3,7 +3,7 @@ Following Project Requirements Document (PRD) is the official blueprint. It deta
 
 ---
 
-## **Project Requirements Document (PRD) - V1.4**
+## **Project Requirements Document (PRD)**
 
 ### 1. Description of the Problem and Overall Purpose
 Users need a simple yet powerful tool to create, manage, and track their workout routines within the convenience of Telegram. This Mini App provides a highly customizable workout planner and an interactive timer, with a specific focus on tracking performance volume for both weighted and bodyweight exercises. The goal is a seamless, visually appealing experience, from planning a routine to executing a workout with a real-time, user-controlled timer.

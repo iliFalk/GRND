@@ -1,0 +1,71 @@
+{
+  "name": "Test Training Plan",
+  "description": "A test plan for API testing",
+  "durationWeeks": 4,
+  "difficulty": "intermediate",
+  "goal": "Build strength and endurance",
+  "weeks": [
+    {
+      "weekNumber": 1,
+      "name": "Week 1",
+      "days": [
+        {
+          "dayNumber": 1,
+          "name": "Monday",
+          "exercises": [
+            {
+              "name": "Push-ups",
+              "sets": 3,
+              "reps": 10
+            },
+            {
+              "name": "Squats",
+              "sets": 3,
+              "reps": 12
+            }
+          ]
+        },
+        {
+          "dayNumber": 2,
+          "name": "Tuesday",
+          "exercises": [
+            {
+              "name": "Pull-ups",
+              "sets": 3,
+              "reps": 8
+            },
+            {
+              "name": "Lunges",
+              "sets": 3,
+              "reps": 10
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "weekNumber": 2,
+      "name": "Week 2",
+      "days": [
+        {
+          "dayNumber": 1,
+          "name": "Monday",
+          "exercises": [
+            {
+              "name": "Bench Press",
+              "sets": 4,
+              "reps": 8
+            },
+            {
+              "name": "Deadlift",
+              "sets": 4,
+              "reps": 6
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "userId": "test-user",
+  "lastUpdated": "2025-07-29T13:37:15.552Z"
+}

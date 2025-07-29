@@ -45,6 +45,11 @@ export class Exercise {
 
     get totalVolume() {
         if (this.type === 'strength') {
+            // If bodyweight exercise, use 1 as weight
+            if (this.name.toLowerCase().includes('bodyweight') ||
+                this.name.toLowerCase().includes('bw')) {
+                return this.sets * this.reps * 1;
+            }
             return this.sets * this.reps * this.weight;
         }
         return 0;

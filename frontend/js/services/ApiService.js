@@ -167,4 +167,29 @@ export class ApiService {
             return false;
         }
     }
+    
+    // Dashboard specific methods
+    async getTodaysWorkout() {
+        // This would be implemented to get today's specific workout
+        // For now, we'll return a mock implementation
+        return {
+            id: 'day-1',
+            name: 'Upper Body Strength',
+            description: 'Focus on chest, back, and shoulders',
+            lastPerformance: [
+                { exercise: 'Bench Press', result: '80kg x 5 reps' },
+                { exercise: 'Rows', result: '70kg x 8 reps' }
+            ]
+        };
+    }
+    
+    async getQuickStats() {
+        // This would fetch quick stats for the dashboard
+        // For now, we'll return a mock implementation
+        return {
+            weeklyVolume: 1200,
+            lastWorkout: 'Upper Body Strength',
+            streak: 7
+        };
+    }
 }

@@ -121,6 +121,18 @@ export class NavigationService {
                     exerciseEditor.setExercise(params.exercise, params.day, params.week, params.plan);
                 }
             }
+        } else if (viewName === 'workout-history') {
+            // Initialize WorkoutHistory component
+            const historyContainer = document.getElementById('workout-history-view');
+            if (historyContainer) {
+                const workoutHistory = new window.WorkoutHistory(
+                    historyContainer,
+                    window.grndApp.api,
+                    window.grndApp.storage,
+                    this
+                );
+                workoutHistory.init();
+            }
         }
     }
 

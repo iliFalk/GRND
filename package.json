@@ -1,0 +1,28 @@
+{
+  "name": "grnd",
+  "version": "1.0.0",
+  "description": "Following Project Requirements Document (PRD) is the official blueprint. It details the project's purpose, features, data structures, user flows, and visual style. It answers what to build and why.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iliFalk/GRND.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iliFalk/GRND/issues"
+  },
+  "homepage": "https://github.com/iliFalk/GRND#readme",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  }
+}

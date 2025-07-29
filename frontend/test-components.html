@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRND Plan Builder - Component Test</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .test-header h3 {
+            margin: 0;
+        }
+        .test-header button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-header button:hover {
+            background-color: #0056b3;
+        }
+        .test-content {
+            display: none;
+            padding:  15px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>GRND Plan Builder - Component Test</h1>
+
+        <div class="test-section">
+            <div class="test-header">
+                <h3>Plan List Component</h3>
+                <button id="toggle-plan-list">Show</button>
+            </div>
+            <div class="test-content" id="plan-list-test">
+                <div id="plan-list-container"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">
+                <h3>Plan Editor Component</h3>
+                <button id="toggle-plan-editor">Show</button>
+            </div>
+            <div class="test-content" id="plan-editor-test">
+                <div id="plan-editor-container"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">
+                <h3>Day Editor Component</h3>
+                <button id="toggle-day-editor">Show</button>
+            </div>
+            <div class="test-content" id="day-editor-test">
+                <div id="day-editor-container"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">
+                <h3>Exercise Editor Component</h3>
+                <button id="toggle-exercise-editor">Show</button>
+            </div>
+            <div class="test-content" id="exercise-editor-test">
+                <div id="exercise-editor-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock ApiService
+        const ApiService = {
+            getTrainingPlans: async () => {
+                return [
+                    { id: 1, name: 'Test Plan 1', description: 'A test plan', durationWeeks: 4, difficulty: 'beginner', goal: 'Strength' },
+                    { id: 2, name: 'Test Plan 2', description: 'Another test plan', durationWeeks: 8, difficulty: 'intermediate', goal: 'Muscle Gain' }
+                ];
+            },
+            createTrainingPlan: async (plan) => {
+                console.log('Plan created:', plan);
+                alert('Plan created successfully!');
+                return { id: Date.now(), ...plan };
+            },
+            updateTrainingPlan: async (id, plan) => {
+                console.log('Plan updated:', id, plan);
+                alert('Plan updated successfully!');
+                return { id, ...plan };
+            },
+            deleteTrainingPlan: async (id) => {
+                console.log('Plan deleted:', id);
+                alert('Plan deleted successfully!');
+                return true;
+            },
+            uploadImage: async (file) => {
+                console.log('Image uploaded:', file);
+                alert('Image uploaded successfully!');
+                return { url: 'https://example.com/uploaded-image.jpg' };
+            }
+        };
+
+        // Mock NavigationService
+        const NavigationService = {
+            navigateTo: (view, params) => {
+                console.log(`Navigating to ${view} with params:`, params);
+                alert(`Navigating to ${view} with params: ${JSON.stringify(params)}`);
+            }
+        };
+
+        // TrainingPlan model
+        class TrainingPlan {
+            constructor(plan) {
+                this.id = plan.id || null;
+                this.name = plan.name || '';
+                this.description = plan.description || '';
+                this.durationWeeks = plan.durationWeeks || 0;
+                this.difficulty = plan.difficulty || 'beginner';
+                this.goal = plan.goal || 'Strength';
+                this.weeks = plan.weeks || [];
+            }
+
+            addWeek(week) {
+                this.weeks.push(week);
+            }
+
+            removeWeek(weekId) {
+                this.weeks = this.weeks.filter(week => week.id !== weekId);
+            }
+        }
+
+        // Week model
+        class Week {
+            constructor(week) {
+                this.id = week.id || null;
+                this.name = week.name || '';
+                this.days = week.days || [];
+            }
+
+            addDay(day) {
+                this.days.push(day);
+            }
+
+            removeDay(dayId) {
+                this.days = this.days.filter(day => day.id !== dayId);
+            }
+        }
+
+        // Day model
+        class Day {
+            constructor(day) {
+                this.id = day.id || null;
+                this.dayNumber = day.dayNumber || 1;
+                this.name = day.name || '';
+                this.type = day.type || 'Standard';
+                this.description = day.description || '';
+                this.exercises = day.exercises || [];
+            }
+
+            addExercise(exercise) {
+                this.exercises.push(exercise);
+            }
+
+            removeExercise(exerciseId) {
+                this.exercises = this.exercises.filter(exercise => exercise.id !== exerciseId);
+            }
+        }
+
+        // Exercise model
+        class Exercise {
+            constructor(exercise) {
+                this.id = exercise.id || null;
+                this.name = exercise.name || '';
+                this.type = exercise.type || 'strength';
+                this.muscleGroups = exercise.muscleGroups || [];
+                this.equipment = exercise.equipment || '';
+                this.instructions = exercise.instructions || '';
+                this.sets = exercise.sets || 3;
+                this.reps = exercise.reps || 10;
+                this.weight = exercise.weight || 0;
+            }
+
+            update(exercise) {
+                Object.assign(this, exercise);
+            }
+        }
+
+        // PlanList component
+        class PlanList {
+            constructor(container, apiService, navigationService) {
+                this.container = container;
+                this.apiService = apiService;
+                this.navigationService = navigationService;
+                this.plans = [];
+                this.init();
+            }
+
+            init() {
+                this.render();
+                this.loadPlans();
+            }
+
+            async loadPlans() {
+                try {
+                    this.container.innerHTML = '<div class="loading">Loading plans...</div>';
+                    this.plans = await this.apiService.getTrainingPlans();
+                    this.renderPlans();
+                } catch (error) {
+                    this.container.innerHTML = '<div class="error">Error loading plans. Please try again.</div>';
+                    console.error('Error loading plans:', error);
+                }
+            }
+
+            render() {
+                this.container.innerHTML = `
+                    <div class="plan-list-container">
+                        <h2>Training Plans</h2>
+                        <button class="btn btn-primary" id="create-plan-btn">Create New Plan</button>
+                        <div class="plan-list" id="plan-list"></div>
+                    </div>
+                `;
+                this.addEventListeners();
+            }
+
+            renderPlans() {
+                const planList = document.getElementById('plan-list');
+                planList.innerHTML = '';
+                
+                if (this.plans.length === 0) {
+                    planList.innerHTML = '<div class="no-plans">No plans found. Create a new plan to get started.</div>';
+                    return;
+                }
+
+                this.plans.forEach(plan => {
+                    const planCard = document.createElement('div');
+                    planCard.className = 'plan-card';
+                    planCard.innerHTML = `
+                        <h3>${plan.name}</h3>
+                        <p>${plan.description}</p>
+                        <div class="plan-details">
+                            <span class="badge">${plan.difficulty}</span>
+                            <span class="badge">${plan.goal}</span>
+                            <span class="badge">${plan.durationWeeks} weeks</span>
+                        </div>
+                        <div class="plan-actions">
+                            <button class="btn btn-secondary edit-plan" data-id="${plan.id}">Edit</button>
+                            <button class="btn btn-danger delete-plan" data-id="${plan.id}">Delete</button>
+                        </div>
+                    `;
+                    planList.appendChild(planCard);
+                });
+            }
+
+            addEventListeners() {
+                document.getElementById('create-plan-btn').addEventListener('click', () => {
+                    this.navigationService.navigateTo('plan-editor', { plan: null });
+                });
+
+                document.querySelectorAll('.edit-plan').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const planId = e.target.dataset.id;
+                        const plan = this.plans.find(p => p.id == planId);
+                        this.navigationService.navigateTo('plan-editor', { plan });
+                    });
+                });
+
+                document.querySelectorAll('.delete-plan').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const planId = e.target.dataset.id;
+                        if (confirm('Are you sure you want to delete this plan?')) {
+                            this.deletePlan(planId);
+                        }
+                    });
+                });
+            }
+
+            async deletePlan(planId) {
+                try {
+                    await this.apiService.deleteTrainingPlan(planId);
+                    this.plans = this.plans.filter(plan => plan.id != planId);
+                    this.renderPlans();
+                } catch (error) {
+                    console.error('Error deleting plan:', error);
+                    alert('Error deleting plan. Please try again.');
+                }
+            }
+        }
+
+        // PlanEditor component
+        class PlanEditor {
+            constructor(container, apiService, navigationService) {
+                this.container = container;
+                this.apiService = apiService;
+                this.navigationService = navigationService;
+                this.plan = null;
+                this.init();
+            }
+
+            init() {
+                this.render();
+                this.addEventListeners();
+            }
+
+            render() {
+                this.container.innerHTML = `
+                    <div class="plan-editor-container">
+                        <div class="plan-editor-header">
+                            <h2>${this.plan ? 'Edit Plan' : 'Create Plan'}</h2>
+                            <button class="btn btn-secondary" id="back-btn">Back to Plans</button>
+                        </div>
+                        <div class="plan-editor-form">
+                            <div class="form-group">
+                                <label for="plan-name">Plan Name</label>
+                                <input type="text" id="plan-name" class="form-control" value="${this.plan ? this.plan.name : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-description">Description</label>
+                                <textarea id="plan-description" class="form-control">${this.plan ? this.plan.description : ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-duration">Duration (weeks)</label>
+                                <input type="number" id="plan-duration" class="form-control" value="${this.plan ? this.plan.durationWeeks : 4}">
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-difficulty">Difficulty</label>
+                                <select id="plan-difficulty" class="form-control">
+                                    <option value="beginner" ${this.plan && this.plan.difficulty === 'beginner' ? 'selected' : ''}>Beginner</option>
+                                    <option value="intermediate" ${this.plan && this.plan.difficulty === 'intermediate' ? 'selected' : ''}>Intermediate</option>
+                                    <option value="advanced" ${this.plan && this.plan.difficulty === 'advanced' ? 'selected' : ''}>Advanced</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-goal">Goal</label>
+                                <select id="plan-goal" class="form-control">
+                                    <option value="Strength" ${this.plan && this.plan.goal === 'Strength' ? 'selected' : ''}>Strength</option>
+                                    <option value="Muscle Gain" ${this.plan && this.plan.goal === 'Muscle Gain' ? 'selected' : ''}>Muscle Gain</option>
+                                    <option value="Fat Loss" ${this.plan && this.plan.goal === 'Fat Loss' ? 'selected' : ''}>Fat Loss</option>
+                                    <option value="Endurance" ${this.plan && this.plan.goal === 'Endurance' ? 'selected' : ''}>Endurance</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Weeks</label>
+                                <div id="weeks-container" class="weeks-list">
+                                    ${this.plan ? this.renderWeeks() : ''}
+                                </div>
+                                <button class="btn btn-secondary" id="add-week-btn">Add Week</button>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="save-plan-btn">Save Plan</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderWeeks() {
+                if (!this.plan || this.plan.weeks.length === 0) {
+                    return '<div class="no-weeks">No weeks added yet. Add a week to get started.</div>';
+                }
+
+                return this.plan.weeks.map(week => `
+                    <div class="week-card">
+                        <div class="week-header">
+                            <h4>Week ${week.name}</h4>
+                            <button class="btn btn-danger delete-week" data-id="${week.id}">Delete</button>
+                        </div>
+                        <div class="week-details">
+                            <div class="form-group">
+                                <label for="week-name-${week.id}">Week Name</label>
+                                <input type="text" id="week-name-${week.id}" class="form-control" value="${week.name}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Days</label>
+                            <div id="days-container-${week.id}" class="days-list">
+                                ${this.renderDays(week)}
+                            </div>
+                            <button class="btn btn-secondary" id="add-day-btn-${week.id}">Add Day</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderDays(week) {
+                if (!week || week.days.length === 0) {
+                    return '<div class="no-days">No days added yet. Add a day to get started.</div>';
+                }
+
+                return week.days.map(day => `
+                    <div class="day-card">
+                        <div class="day-header">
+                            <h5>Day ${day.dayNumber}</h5>
+                            <button class="btn btn-danger delete-day" data-id="${day.id}">Delete</button>
+                        </div>
+                        <div class="day-details">
+                            <div class="form-group">
+                                <label for="day-name-${day.id}">Day Name</label>
+                                <input type="text" id="day-name-${day.id}" class="form-control" value="${day.name}">
+                            </div>
+                            <div class="form-group">
+                                <label for="day-type-${day.id}">Day Type</label>
+                                <select id="day-type-${day.id}" class="form-control">
+                                    <option value="Standard" ${day.type === 'Standard' ? 'selected' : ''}>Standard</option>
+                                    <option value="Rest" ${day.type === 'Rest' ? 'selected' : ''}>Rest</option>
+                                    <option value="Active Rest" ${day.type === 'Active Rest' ? 'selected' : ''}>Active Rest</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="day-description-${day.id}">Description</label>
+                                <textarea id="day-description-${day.id}" class="form-control">${day.description}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Exercises</label>
+                                <div id="exercises-container-${day.id}" class="exercises-list">
+                                    ${this.renderExercises(day)}
+                                </div>
+                                <button class="btn btn-secondary" id="add-exercise-btn-${day.id}">Add Exercise</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderExercises(day) {
+                if (!day || day.exercises.length === 0) {
+                    return '<div class="no-exercises">No exercises added yet. Add an exercise to get started.</div>';
+                }
+
+                return day.exercises.map(exercise => `
+                    <div class="exercise-card">
+                        <div class="exercise-header">
+                            <h6>${exercise.name}</h6>
+                            <button class="btn btn-danger delete-exercise" data-id="${exercise.id}">Delete</button>
+                        </div>
+                        <div class="exercise-details">
+                            <div class="form-group">
+                                <label for="exercise-name-${exercise.id}">Exercise Name</label>
+                                <input type="text" id="exercise-name-${exercise.id}" class="form-control" value="${exercise.name}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-type-${exercise.id}">Exercise Type</label>
+                                <select id="exercise-type-${exercise.id}" class="form-control">
+                                    <option value="strength" ${exercise.type === 'strength' ? 'selected' : ''}>Strength</option>
+                                    <option value="cardio" ${exercise.type === 'cardio' ? 'selected' : ''}>Cardio</option>
+                                    <item value="flexibility" ${exercise.type === 'flexibility' ? 'selected' : ''}>Flexibility</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-muscle-groups-${exercise.id}">Muscle Groups</label>
+                                <input type="text" id="exercise-muscle-groups-${exercise.id}" class="form-control" value="${exercise.muscleGroups.join(', ')}">
+                            </div>
+                            <div class="form-group">
+                                <label for="-equipment-${exercise.id}">Equipment</label>
+                                <input type="text" id="exercise-equipment-${exercise.id}" class="form-control" value="${exercise.equipment}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-instructions-${exercise.id}">Instructions</label>
+                                <textarea id="exercise-instructions-${exercise.id}" class="form-control">${exercise.instructions}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-sets-${exercise.id}">Sets</label>
+                                <input type="number" id="exercise-sets-${exercise.id}" class="form-control" value="${exercise.sets}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-reps-${exercise.id}">Reps</label>
+                                <input type="number" id="exercise-reps-${exercise.id}" class="form-control" value="${exercise.reps}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-weight-${exercise.id}">Weight (lbs)</label>
+                                <input type="number" id="exercise-weight-${exercise.id}" class="form-control" value="${exercise.weight}">
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            addEventListeners() {
+                document.getElementById('back-btn').addEventListener('click', () => {
+                    this.navigationService.navigateTo('plan-list');
+                });
+
+                document.getElementById('add-week-btn').addEventListener('click', () => {
+                    this.addWeek();
+                });
+
+                document.getElementById('save-plan-btn').addEventListener('click', () => {
+                    this.savePlan();
+                });
+
+                // Add event listeners for dynamically created elements
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-week')) {
+                        const weekId = e.target.dataset.id;
+                        this.deleteWeek(weekId);
+                    } else if (e.target.classList.contains('add-day-btn')) {
+                        const weekId = e.target.dataset.id;
+                        this.addDay(weekId);
+                    } else if (e.target.classList.contains('delete-day')) {
+                        const dayId = e.target.dataset.id;
+                        this.deleteDay(dayId);
+                    } else if (e.target.classList.contains('add-exercise-btn')) {
+                        const dayId = e.target.dataset.id;
+                        this.addExercise(dayId);
+                    } else if (e.target.classList.contains('delete-exercise')) {
+                        const exerciseId = e.target.dataset.id;
+                        this.deleteExercise(exerciseId);
+                    }
+                });
+            }
+
+            addWeek() {
+                const weekId = Date.now();
+                const week = new Week({ id: weekId, name: `Week ${this.plan.weeks.length + 1}` });
+                this.plan.addWeek(week);
+                this.render();
+            }
+
+            deleteWeek(weekId) {
+                this.plan.removeWeek(weekId);
+                this.render();
+            }
+
+            addDay(weekId) {
+                const dayId = Date.now();
+                const day = new Day({ id: dayId, dayNumber: this.plan.weeks.find(w => w.id == weekId).days.length + 1 });
+                const week = this.plan.weeks.find(w => w.id == weekId);
+                week.addDay(day);
+                this.render();
+            }
+
+            deleteDay(dayId) {
+                const weekId = this.findWeekIdForDay(dayId);
+                const week = this.plan.weeks.find(w => w.id == weekId);
+                week.removeDay(dayId);
+                this.render();
+            }
+
+            addExercise(dayId) {
+                const exerciseId = Date.now();
+                const exercise = new Exercise({
+                    id: exerciseId,
+                    name: 'New Exercise',
+                    type: 'strength',
+                    muscleGroups: ['Chest'],
+                    equipment: 'Dumbbell',
+                    instructions: 'Perform the exercise as described',
+                    sets: 3,
+                    reps: 10,
+                    weight: 0
+                });
+                const day = this.findDay(this.plan, dayId);
+                day.addExercise(exercise);
+                this.render();
+            }
+
+            deleteExercise(exerciseId) {
+                const dayId = this.findDayIdForExercise(exerciseId);
+                const day = this.findDay(this.plan, dayId);
+                day.removeExercise(exerciseId);
+                this.render();
+            }
+
+            findWeekIdForDay(dayId) {
+                for (const week of this.plan.weeks) {
+                    if (week.days.some(day => day.id == dayId)) {
+                        return week.id;
+                    }
+                }
+                return null;
+            }
+
+            findDayIdForExercise(exerciseId) {
+                for (const week of this.plan.weeks) {
+                    for (const day of week.days) {
+                        if (day.exercises.some(exercise => exercise.id == exerciseId)) {
+                            return day.id;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            findDay(plan, dayId) {
+                for (const week of plan.weeks) {
+                    for (const day of week.days) {
+                        if (day.id == dayId) {
+                            return day;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            savePlan() {
+                const planData = {
+                    id: this.plan.id,
+                    name: document.getElementById('plan-name').value,
+                    description: document.getElementById('plan-description').value,
+                    durationWeeks: parseInt(document.getElementById('plan-duration').value),
+                    difficulty: document.getElementById('plan-difficulty').value,
+                    goal: document.getElementById('plan-goal').value,
+                    weeks: this.collectWeeksData()
+                };
+
+                if (this.plan.id) {
+                    // Update existing plan
+                    this.apiService.updateTrainingPlan(this.plan.id, planData)
+                        .then(updatedPlan => {
+                            this.plan = new TrainingPlan(updatedPlan);
+                            alert('Plan updated successfully!');
+                            this.navigationService.navigateTo('plan-list');
+                        })
+                        .catch(error => {
+                            console.error('Error updating plan:', error);
+                            alert('Error updating plan. Please try again.');
+                        });
+                } else {
+                    // Create new plan
+                    this.apiService.createTrainingPlan(planData)
+                        .then(newPlan => {
+                            this.plan = new TrainingPlan(newPlan);
+                            alert('Plan created successfully!');
+                            this.navigationService.navigateTo('plan-list');
+                        })
+                        .catch(error => {
+                            console.error('Error creating plan:', error);
+                            alert('Error creating plan. Please try again.');
+                        });
+                }
+            }
+
+            collectWeeksData() {
+                const weeks = [];
+                for (const week of this.plan.weeks) {
+                    const weekData = {
+                        id: week.id,
+                        name: document.getElementById(`week-name-${week.id}`).value,
+                        days: this.collectDaysData(week)
+                    };
+                    weeks.push(weekData);
+                }
+                return weeks;
+            }
+
+            collectDaysData(week) {
+                const days = [];
+                for (const day of week.days) {
+                    const dayData = {
+                        id: day.id,
+                        dayNumber: parseInt(document.getElementById(`day-number-${day.id}`).value),
+                        name: document.getElementById(`day-name-${day.id}`).value,
+                        type: document.getElementById(`day-type-${day.id}`).value,
+                        description: document.getElementById('day-description-${day.id}').value,
+                        exercises: this.collectExercisesData(day)
+                    };
+                    days.push(dayData);
+                }
+                return days;
+            }
+
+            collectExercisesData(day) {
+                const exercises = [];
+                for (const exercise of day.exercises) {
+                    const exerciseData = {
+                        id: exercise.id,
+                        name: document.getElementById(`exercise-name-${exercise.id}`).value,
+                        type: document.getElementById(`exercise-type-${exercise.id}`).value,
+                        muscleGroups: document.getElementById(`exercise-muscle-groups-${exercise.id}`).value.split(',').map(g => g.trim()),
+                        equipment: document.getElementById(`exercise-equipment-${exercise.id}`).value,
+                        instructions: document.getElementById(`exercise-instructions-${exercise.id}`).value,
+                        sets: parseInt(document.getElementById(`exercise-sets-${exercise.id}`).value),
+                        reps: parseInt(document.getElementById(`exercise-reps-${exercise.id}`).value),
+                        weight: parseFloat(document.getElementById(`exercise-weight-${exercise.id}`).value)
+                    };
+                    exercises.push(exerciseData);
+                }
+                return exercises;
+            }
+
+            setPlan(plan) {
+                this.plan = plan ? new TrainingPlan(plan) : null;
+                this.render();
+            }
+        }
+
+        // DayEditor component
+        class DayEditor {
+            constructor(container, apiService, navigationService) {
+                this.container = container;
+                this.apiService = apiService;
+                this.navigationService = navigationService;
+                this.day = null;
+                this.init();
+            }
+
+            init() {
+                this.render();
+                this.addEventListeners();
+            }
+
+            render() {
+                this.container.innerHTML = `
+                    <div class="day-editor-container">
+                        <div class="day-editor-header">
+                            <h2>${this.day ? 'Edit Day' : 'Create Day'}</h2>
+                            <button class="btn btn-secondary" id="back-btn">Back to Plan</button>
+                        </div>
+                        <div class="day-editor-form">
+                            <div class="form-group">
+                                <label for="day-name">Day Name</label>
+                                <input type="text" id="day-name" class="form-control" value="${this.day ? this.day.name : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="day-number">Day Number</label>
+                                <input type="number" id="day-number" class="form-control" value="${this.day ? this.day.dayNumber : 1}">
+                            </div>
+                            <div class="form-group">
+                                <label for="day-type">Day Type</label>
+                                <select id="day-type" class="form-control">
+                                    <option value="Standard" ${this.day && this.day.type === 'Standard' ? 'selected' : ''}>Standard</option>
+                                    <option value="Rest" ${this.day && this.day.type === 'Rest' ? 'selected' : ''}>Rest</option>
+                                    <option value="Active Rest" ${this.day && this.day.type === 'Active Rest' ? 'selected' : ''}>Active Rest</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="day-description">Description</label>
+                                <textarea id="day-description" class="form-control">${this.day ? this.day.description : ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Exercises</label>
+                                <div id="exercises-container" class="exercises-list">
+                                    ${this.renderExercises()}
+                                </div>
+                                <button class="btn btn-secondary" id="add-exercise-btn">Add Exercise</button>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="save-day-btn">Save Day</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderExercises() {
+                if (!this.day || this.day.exercises.length === 0) {
+                    return '<div class="no-exercises">No exercises added yet. Add an exercise to get started.</div>';
+                }
+
+                return this.day.exercises.map(exercise => `
+                    <div class="exercise-card">
+                        <div class="exercise-header">
+                            <h6>${exercise.name}</h6>
+                            <button class="btn btn-danger delete-exercise" data-id="${exercise.id}">Delete</button>
+                        </div>
+                        <div class="exercise-details">
+                            <div class="form-group">
+                                <label for="exercise-name-${exercise.id}">Exercise Name</label>
+                                <input type="text" id="exercise-name-${exercise.id}" class="form-control" value="${exercise.name}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-type-${exercise.id}">Exercise Type</label>
+                                <select id="exercise-type-${exercise.id}" class="form-control">
+                                    <option value="strength" ${exercise.type === 'strength' ? 'selected' : ''}>Strength</option>
+                                    <option value="cardio" ${exercise.type === 'cardio' ? 'selected' : ''}>Cardio</option>
+                                    <option value="flexibility" ${exercise.type === 'flexibility' ? 'selected' : ''}>Flexibility</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-muscle-groups-${exercise.id}">Muscle Groups</label>
+                                <input type="text" id="exercise-muscle-groups-${exercise.id}" class="form-control" value="${exercise.muscleGroups.join(', ')}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-equipment-${exercise.id}">Equipment</label>
+                                <input type="text" id="exercise-equipment-${exercise.id}" class="form-control" value="${exercise.equipment}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-instructions-${exercise.id}">Instructions</label>
+                                <textarea id="exercise-instructions-${exercise.id}" class="form-control">${exercise.instructions}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-sets-${exercise.id}">Sets</label>
+                                <input type="number" id="exercise-sets-${exercise.id}" class="form-control" value="${exercise.sets}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-reps-${exercise.id}">Reps</label>
+                                <input type="number" id="exercise-reps-${exercise.id}" class="form-control" value="${exercise.reps}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-weight-${exercise.id}">Weight (lbs)</label>
+                                <input type="number" id="exercise-weight-${exercise.id}" class="form-control" value="${exercise.weight}">
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            addEventListeners() {
+                document.getElementById('back-btn').addEventListener('click', () => {
+                    this.navigationService.navigateTo('plan-editor', { plan: this.day ? this.day.plan : null });
+                });
+
+                document.getElementById('add-exercise-btn').addEventListener('click', () => {
+                    this.addExercise();
+                });
+
+                document.getElementById('save-day-btn').addEventListener('click', () => {
+                    this.saveDay();
+                });
+
+                // Add event listeners for dynamically created elements
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('delete-exercise')) {
+                        const exerciseId = e.target.dataset.id;
+                        this.deleteExercise(exerciseId);
+                    }
+                });
+            }
+
+            addExercise() {
+                const exerciseId = Date.now();
+                const exercise = new Exercise({
+                    id: exerciseId,
+                    name: 'New Exercise',
+                    type: 'strength',
+                    muscleGroups: ['Chest'],
+                    equipment: 'Dumbbell',
+                    instructions: 'Perform the exercise as described',
+                    sets: 3,
+                    reps: 10,
+                    weight: 0
+                });
+                this.day.addExercise(exercise);
+                this.render();
+            }
+
+            deleteExercise(exerciseId) {
+                this.day.exercises = this.day.exercises.filter(exercise => exercise.id != exerciseId);
+                this.render();
+            }
+
+            saveDay() {
+                const dayData = {
+                    id: this.day.id,
+                    dayNumber: parseInt(document.getElementById('day-number').value),
+                    name: document.getElementById('day-name').value,
+                    type: document.getElementById('day-type').value,
+                    description: document.getElementById('day-description').value,
+                    exercises: this.collectExercisesData()
+                };
+
+                if (this.day.plan) {
+                    // Update existing day
+                    const updatedPlan = new TrainingPlan({
+                        ...this.day.plan,
+                        weeks: this.day.plan.weeks.map(week => {
+                            if (week.id === this.day.week.id) {
+                                return new Week({
+                                    ...week,
+                                    days: week.days.map(day => day.id === this.day.id ? new Day(dayData) : day)
+                                });
+                            }
+                            return week;
+                        })
+                    });
+                    this.day = new Day(dayData);
+                    this.day.plan = updatedPlan;
+                    this.navigationService.navigateTo('plan-editor', { plan: updatedPlan });
+                } else {
+                    // Create new day
+                    this.day = new Day(dayData);
+                    this.navigationService.navigateTo('plan-editor', { plan: this.day });
+                }
+            }
+
+            collectExercisesData() {
+                const exercises = [];
+                for (const exercise of this.day.exercises) {
+                    const exerciseData = {
+                        id: exercise.id,
+                        name: document.getElementById('exercise-name-${exercise.id}').value,
+                        type: document.getElementById('exercise-type-${exercise.id}').value,
+                        muscleGroups: document.getElementById('exercise-muscle-groups-${exercise.id}').value.split(',').map(g => g.trim()),
+                        equipment: document.getElementById('exercise-equipment-${exercise.id}').value,
+                        instructions: document.getElementById('exercise-instructions-${exercise.id}').value,
+                        sets: parseInt(document.getElementById('exercise-sets-${exercise.id}').value),
+                        reps: parseInt(document.getElementById('exercise-reps-${exercise.id}').value),
+                        weight: parseFloat(document.getElementById('exercise-weight-${exercise.id}').value)
+                    };
+                    exercises.push(exerciseData);
+                }
+                return exercises;
+            }
+
+            setDay(day) {
+                this.day = day;
+                this.render();
+            }
+        }
+
+        // ExerciseEditor component
+        class ExerciseEditor {
+            constructor(container, apiService, navigationService) {
+                this.container = container;
+                this.apiService = apiService;
+                this.navigationService = navigationService;
+                this.exercise = null;
+                this.init();
+            }
+
+            init() {
+                this.render();
+                this.addEventListeners();
+            }
+
+            render() {
+                this.container.innerHTML = `
+                    <div class="exercise-editor-container">
+                        <div class="exercise-editor-header">
+                            <h2>${this.exercise ? 'Edit Exercise' : 'Create Exercise'}</h2>
+                            <button class="btn btn-secondary" id="back-btn">Back to Day</button>
+                        </div>
+                        <div class="exercise-editor-form">
+                            <div class="form-group">
+                                <label for="exercise-name">Exercise Name</label>
+                                <input type="text" id="exercise-name" class="form-control" value="${this.exercise ? this.exercise.name : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-type">Exercise Type</label>
+                                <select id="exercise-type" class="form-control">
+                                    <option value="strength" ${this.exercise && this.exercise.type === 'strength' ? 'selected' : ''}>Strength</option>
+                                    <option value="cardio" ${this.exercise && this.exercise.type === 'cardio' ? 'selected' : ''}>Cardio</option>
+                                    <option value="flexibility" ${this.exercise && this.exercise.type === 'flexibility' ? 'selected' : ''}>Flexibility</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-muscle-groups">Muscle Groups</label>
+                                <input type="text" id="exercise-muscle-groups" class="form-control" value="${this.exercise ? this.exercise.muscleGroups.join(', ') : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-equipment">Equipment</label>
+                                <input type="text" id="exercise-equipment" class="form-control" value="${this.exercise ? this.exercise.equipment : ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-instructions">Instructions</label>
+                                <textarea id="exercise-instructions" class="form-control">${this.exercise ? this.exercise.instructions : ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-sets">Sets</label>
+                                <input type="number" id="exercise-sets" class="form-control" value="${this.exercise ? this.exercise.sets : 3}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-reps">Reps</label>
+                                <input type="number" id="exercise-reps" class="form-control" value="${this.exercise ? this.exercise.reps : 10}">
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise-weight">Weight (lbs)</label>
+                                <input type="number" id="exercise-weight" class="form-control" value="${this.exercise ? this.exercise.weight : 0}">
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary" id="save-exercise-btn">Save Exercise</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            addEventListeners() {
+                document.getElementById('back-btn').addEventListener('click', () => {
+                    this.navigationService.navigateTo('day-editor', { day: this.exercise.day });
+                });
+
+                document.getElementById('save-exercise-btn').addEventListener('click', () => {
+                    this.saveExercise();
+                });
+            }
+
+            saveExercise() {
+                const exerciseData = {
+                    id: this.exercise.id,
+                    name: document.getElementById('exercise-name').value,
+                    type: document.getElementById('exercise-type').value,
+                    muscleGroups: document.getElementById('exercise-muscle-groups').value.split(',').map(g => g.trim()),
+                    equipment: document.getElementById('exercise-equipment').value,
+                    instructions: document.getElementById('exercise-instructions').value,
+                    sets: parseInt(document.getElementById('exercise-sets').value),
+                    reps: parseInt(document.getElementById('exercise-reps').value),
+                    weight: parseFloat(document.getElementById('exercise-weight').value)
+                };
+
+                this.exercise = new Exercise(exerciseData);
+                this.navigationService.navigateTo('day-editor', { day: this.exercise.day });
+            }
+
+            setExercise(exercise) {
+                this.exercise = exercise;
+                this.render();
+            }
+        }
+
+        // Test the components
+        document.getElementById('toggle-plan-list').addEventListener('click', () => {
+            const content = document.getElementById('plan-list-test');
+            content.classList.toggle('active');
+            if (content.classList.contains('active')) {
+                const container = document.getElementById('plan-list-container');
+                new PlanList(container, ApiService, NavigationService);
+            }
+        });
+
+        document.getElementById('toggle-plan-editor').addEventListener('click', () => {
+            const content = document.getElementById('plan-editor-test');
+            content.classList.toggle('active');
+            if (content.classList.contains('active')) {
+                const container = document.getElementById('plan-editor-container');
+                const planEditor = new PlanEditor(container, ApiService, NavigationService);
+                // Test with a sample plan
+                planEditor.setPlan({
+                    id: 1,
+                    name: 'Sample Plan',
+                    description: 'This is a sample plan for testing',
+                    durationWeeks: 4,
+                    difficulty: 'beginner',
+                    goal: 'Strength',
+                    weeks: []
+                });
+            }
+        });
+
+        document.getElementById('toggle-day-editor').addEventListener('click', () => {
+            const content = document.getElementById('day-editor-test');
+            content.classList.toggle('active');
+            if (content.classList.contains('active')) {
+                const container = document.getElementById('day-editor-container');
+                const dayEditor = new DayEditor(container, ApiService, NavigationService);
+                // Test with a sample day
+                dayEditor.setDay({
+                    id: 1,
+                    dayNumber: 1,
+                    name: 'Chest & Triceps',
+                    type: 'Standard',
+                    description: 'Chest and triceps workout',
+                    exercises: []
+                });
+            }
+        });
+
+        document.getElementById('toggle-exercise-editor').addEventListener('click', () => {
+            const content = document.getElementById('exercise-editor-test');
+            content.classList.toggle('active');
+            if (content.classList.contains('active')) {
+                const container = document.getElementById('exercise-editor-container');
+                const exerciseEditor = new ExerciseEditor(container, ApiService, NavigationService);
+                // Test with a sample exercise
+                exerciseEditor.setExercise({
+                    id: 1,
+                    name: 'Bench Press',
+                    type: 'strength',
+                    muscleGroups: ['Chest', 'Triceps'],
+                    equipment: 'Barbell',
+                    instructions: 'Lie on bench, lower bar to chest, press up',
+                    sets: 4,
+                    reps: 8,
+                    weight: 135
+                });
+            }
+        });
+    </script>
+</body>
+</html>

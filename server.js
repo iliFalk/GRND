@@ -49,68 +49,195 @@ function getUserDataPath(userId) {
   return path.join(__dirname, 'data', `${userId}.json`);
 }
 
+// Validation functions for hierarchical data
+function validateTrainingPlan(plan) {
+  if (!plan || typeof plan !== 'object') {
+    throw new Error('Training plan is required and must be an object');
+  }
+
+  // Validate required fields at each level
+  const requiredPlanFields = ['name', 'weeks'];
+  for (const field of requiredPlanFields) {
+    if (!plan.hasOwnProperty(field)) {
+      throw new Error(`Missing required field in training plan: ${field}`);
+    }
+  }
+
+  if (typeof plan.name !== 'string' || plan.name.trim() === '') {
+    throw new Error('Training plan name must be a non-empty string');
+  }
+
+  if (!Array.isArray(plan.weeks) || plan.weeks.length === 0) {
+    throw new Error('Training plan must have at least one week');
+  }
+
+  // Validate each week
+  for (const week of plan.weeks) {
+    validateWeek(week, plan.weeks.indexOf(week) + 1);
+  }
+
+  return true;
+}
+
+function validateWeek(week, weekNumber) {
+  if (!week || typeof week !== 'object') {
+    throw new Error(`Week ${weekNumber} is required and must be an object`);
+  }
+
+  const requiredWeekFields = ['weekNumber', 'days'];
+  for (const field of requiredWeekFields) {
+    if (!week.hasOwnProperty(field)) {
+      throw new Error(`Missing required field in week ${weekNumber}: ${field}`);
+    }
+  }
+
+  if (typeof week.weekNumber !== 'number' || week.weekNumber <= 0) {
+    throw new Error(`Week ${weekNumber} must have a valid week number`);
+  }
+
+  if (!Array.isArray(week.days) || week.days.length === 0) {
+    throw new Error(`Week ${weekNumber} must have at least one day`);
+  }
+
+  // Validate each day
+  for (const day of week.days) {
+    validateDay(day, weekNumber, week.days.indexOf(day) + 1);
+  }
+
+  return true;
+}
+
+function validateDay(day, weekNumber, dayNumber) {
+  if (!day || typeof day !== 'object') {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} is required and must be an object`);
+  }
+
+  const requiredDayFields = ['dayNumber', 'exercises'];
+  for (const field of requiredDayFields) {
+    if (!day.hasOwnProperty(field)) {
+      throw new Error(`Missing required field in day ${dayNumber} of week ${weekNumber}: ${field}`);
+    }
+  }
+
+  if (typeof day.dayNumber !== 'number' || day.dayNumber <= 0 || day.dayNumber > 7) {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a valid day number (1-7)`);
+  }
+
+  if (!Array.isArray(day.exercises)) {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have exercises array`);
+  }
+
+  // Validate each exercise
+  for (const exercise of day.exercises) {
+    validateExercise(exercise, weekNumber, dayNumber, day.exercises.indexOf(exercise) + 1);
+  }
+
+  return true;
+}
+
+function validateExercise(exercise, weekNumber, dayNumber, exerciseNumber) {
+  if (!exercise || typeof exercise !== 'object') {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} is required and must be an object`);
+  }
+
+  const requiredExerciseFields = ['name'];
+  for (const field of requiredExerciseFields) {
+    if (!exercise.hasOwnProperty(field)) {
+      throw new Error(`Missing required field in exercise ${exerciseNumber} of day ${dayNumber} in week ${weekNumber}: ${field}`);
+    }
+  }
+
+  if (typeof exercise.name !== 'string' || exercise.name.trim() === '') {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a non-empty name`);
+  }
+
+  return true;
+}
+
 // API Endpoints
 
-// GET /api/workout-data/:userId - retrieve user's workout data
+// GET /api/workout-data/:userId - retrieve user's training plan data
 app.get('/api/workout-data/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const filePath = getUserDataPath(userId);
-    
+
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      const workoutData = JSON.parse(data);
-      res.json(workoutData);
+      const trainingPlan = JSON.parse(data);
+
+      // Validate the data structure
+      try {
+        validateTrainingPlan(trainingPlan);
+        res.json(trainingPlan);
+      } catch (validationError) {
+        console.error('Validation error in stored data:', validationError);
+        res.status(400).json({ error: 'Invalid training plan data structure', details: validationError.message });
+      }
     } catch (error) {
       if (error.code === 'ENOENT') {
-        // File doesn't exist, return empty workout data
+        // File doesn't exist, return empty training plan structure
         res.json({
           userId,
-          workouts: [],
-          lastUpdated: new Date().toISOString()
+          name: 'New Training Plan',
+          description: '',
+          durationWeeks: 0,
+          difficulty: 'beginner',
+          goal: '',
+          weeks: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         });
       } else {
         throw error;
       }
     }
   } catch (error) {
-    console.error('Error reading workout data:', error);
-    res.status(500).json({ error: 'Failed to retrieve workout data' });
+    console.error('Error reading training plan data:', error);
+    res.status(500).json({ error: 'Failed to retrieve training plan data' });
   }
 });
 
-// POST /api/workout-data/:userId - save user's workout data
+// POST /api/workout-data/:userId - save user's training plan data
 app.post('/api/workout-data/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const workoutData = req.body;
-    
-    if (!workoutData || typeof workoutData !== 'object') {
-      return res.status(400).json({ error: 'Invalid workout data format' });
+    const trainingPlan = req.body;
+
+    if (!trainingPlan || typeof trainingPlan !== 'object') {
+      return res.status(400).json({ error: 'Invalid training plan format' });
     }
-    
+
+    // Validate the training plan structure
+    try {
+      validateTrainingPlan(trainingPlan);
+    } catch (validationError) {
+      return res.status(400).json({ error: 'Invalid training plan structure', details: validationError.message });
+    }
+
     const filePath = getUserDataPath(userId);
-    
+
     // Ensure the data directory exists
     await fs.mkdir(path.dirname(filePath), { recursive: true });
-    
+
     // Add metadata
     const dataToSave = {
-      ...workoutData,
+      ...trainingPlan,
       userId,
-      lastUpdated: new Date().toISOString()
+      createdAt: trainingPlan.createdAt ? trainingPlan.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
-    
+
     await fs.writeFile(filePath, JSON.stringify(dataToSave, null, 2));
-    
-    res.json({ 
-      success: true, 
-      message: 'Workout data saved successfully',
-      lastUpdated: dataToSave.lastUpdated 
+
+    res.json({
+      success: true,
+      message: 'Training plan saved successfully',
+      lastUpdated: dataToSave.updatedAt
     });
   } catch (error) {
-    console.error('Error saving workout data:', error);
-    res.status(500).json({ error: 'Failed to save workout data' });
+    console.error('Error saving training plan data:', error);
+    res.status(500).json({ error: 'Failed to save training plan data' });
   }
 });
 
@@ -134,20 +261,164 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
     res.status(500).json({ error: 'Failed to upload image' });
   }
 });
+// Validation functions for user profiles
+function validateUserProfile(profile) {
+  if (!profile || typeof profile !== 'object') {
+    throw new Error('User profile is required and must be an object');
+  }
+
+  if (!profile.userId || typeof profile.userId !== 'string' || profile.userId.trim() === '') {
+    throw new Error('userId is required and must be a non-empty string');
+  }
+
+  if (typeof profile.bodyweight !== 'number' || isNaN(profile.bodyweight) ||
+      profile.bodyweight < 30 || profile.bodyweight > 300) {
+    throw new Error('bodyweight is required and must be a number between 30 and 300');
+  }
+
+  return true;
+}
+
+// Middleware to validate userId matches route parameter
+function validateUserId(req, res, next) {
+  const { userId: routeUserId } = req.params;
+  const { userId: bodyUserId } = req.body;
+
+  if (!bodyUserId || bodyUserId !== routeUserId) {
+    return res.status(400).json({
+      error: 'Invalid userId',
+      message: 'userId in request body must match route parameter'
+    });
+  }
+
+  next();
+}
+
+// API Endpoints for User Profile Management
+
+// GET /api/user-profile/:userId - retrieve user profile
+app.get('/api/user-profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      const profiles = JSON.parse(data);
+
+      if (!profiles[userId]) {
+        return res.status(404).json({ error: 'User profile not found' });
+      }
+
+      res.json(profiles[userId]);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return res.status(404).json({ error: 'User profiles data not found' });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error retrieving user profile:', error);
+    res.status(500).json({ error: 'Failed to retrieve user profile' });
+  }
+});
+
+// POST /api/user-profile/:userId - create/update profile
+app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const profile = req.body;
+
+    // Validate the profile structure
+    try {
+      validateUserProfile(profile);
+    } catch (validationError) {
+      return res.status(400).json({ error: 'Invalid user profile structure', details: validationError.message });
+    }
+
+    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+
+    // Read existing profiles
+    let profiles = {};
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      profiles = JSON.parse(data);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      // File doesn't exist, start with empty object
+    }
+
+    // Update or create profile
+    profiles[userId] = {
+      ...profile,
+      createdAt: profiles[userId] ? profiles[userId].createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Write back to file
+    await fs.writeFile(filePath, JSON.stringify(profiles, null, 2));
+
+    res.json({
+      success: true,
+      message: 'User profile saved successfully',
+      lastUpdated: profiles[userId].updatedAt
+    });
+  } catch (error) {
+    console.error('Error saving user profile:', error);
+    res.status(500).json({ error: 'Failed to save user profile' });
+  }
+});
+
+// DELETE /api/user-profile/:userId - delete profile
+app.delete('/api/user-profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      let profiles = JSON.parse(data);
+
+      if (!profiles[userId]) {
+        return res.status(404).json({ error: 'User profile not found' });
+      }
+
+      // Delete the profile
+      delete profiles[userId];
+
+      // Write back to file
+      await fs.writeFile(filePath, JSON.stringify(profiles, null, 2));
+
+      res.json({
+        success: true,
+        message: 'User profile deleted successfully'
+      });
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return res.status(404).json({ error: 'User profiles data not found' });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error deleting user profile:', error);
+    res.status(500).json({ error: 'Failed to delete user profile' });
+  }
+});
 
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Error:', error);
-  
+
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File too large' });
     }
     return res.status(400).json({ error: error.message });
   }
-  
+
   res.status(500).json({ error: 'Internal server error' });
 });
+
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));

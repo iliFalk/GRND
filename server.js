@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
+const VolumeCalculator = require('./utils/volumeCalculator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -432,4 +433,237 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`GRND Telegram Mini App backend server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+});
+
+// Helper function to get workout sessions file path
+function getWorkoutSessionsPath() {
+  return path.join(__dirname, 'data', 'workout-sessions.json');
+}
+
+// Validation function for workout sessions
+function validateWorkoutSession(session) {
+  if (!session || typeof session !== 'object') {
+    throw new Error('Workout session is required and must be an object');
+  }
+
+  if (!session.userId || typeof session.userId !== 'string' || session.userId.trim() === '') {
+    throw new Error('userId is required and must be a non-empty string');
+  }
+
+  if (!session.date || !(session.date instanceof Date) || isNaN(session.date.getTime())) {
+    throw new Error('date is required and must be a valid Date');
+  }
+
+  if (!Array.isArray(session.completedExercises)) {
+    throw new Error('completedExercises is required and must be an array');
+  }
+
+  for (const exercise of session.completedExercises) {
+    if (!exercise || typeof exercise !== 'object') {
+      throw new Error('Each exercise in completedExercises must be an object');
+    }
+
+    if (!exercise.exerciseId || typeof exercise.exerciseId !== 'string' || exercise.exerciseId.trim() === '') {
+      throw new Error('Each exercise must have a non-empty exerciseId string');
+    }
+
+    if (!Array.isArray(exercise.sets)) {
+      throw new Error('Each exercise must have a sets array');
+    }
+
+    for (const set of exercise.sets) {
+      if (!set || typeof set !== 'object') {
+        throw new Error('Each set must be an object');
+      }
+
+      if (typeof set.reps !== 'number' || set.reps <= 0) {
+        throw new Error('Each set must have a positive reps number');
+      }
+
+      if (set.weight !== undefined && (typeof set.weight !== 'number' || set.weight <= 0)) {
+        throw new Error('If provided, weight must be a positive number');
+      }
+    }
+  }
+
+  if (session.notes !== undefined && typeof session.notes !== 'string') {
+    throw new Error('notes must be a string if provided');
+  }
+
+  return true;
+}
+
+// API Endpoints for Workout Session Management
+
+// POST /api/workout-session - create a new workout session
+app.post('/api/workout-session', async (req, res) => {
+  try {
+    const sessionData = req.body;
+
+    // Validate the session data
+    try {
+      validateWorkoutSession(sessionData);
+    } catch (validationError) {
+      return res.status(400).json({ error: 'Invalid workout session structure', details: validationError.message });
+    }
+
+    // Create a new session with default values
+    const newSession = {
+      ...sessionData,
+      id: Date.now().toString(),
+      date: sessionData.date ? new Date(sessionData.date) : new Date(),
+      status: 'completed', // Default to completed for new sessions
+      totalVolume: 0
+    };
+
+    // Calculate volume for each exercise using the utility
+    newSession.completedExercises = newSession.completedExercises.map(exercise => {
+      // Determine if this is a bodyweight exercise
+      const isBodyweight = !exercise.sets.some(set => set.weight !== undefined && set.weight !== null);
+
+      // Get default bodyweight load percentage for this exercise
+      const bodyweightLoadPercentages = VolumeCalculator.getDefaultBodyweightLoadPercentages();
+      const loadPercentage = bodyweightLoadPercentages[exercise.name] || 1;
+
+      // Calculate volume using the utility
+      const volume = VolumeCalculator.calculateExerciseVolume({
+        sets: exercise.sets.length,
+        reps: exercise.sets.reduce((sum, set) => sum + set.reps, 0) / exercise.sets.length,
+        weight: exercise.sets.reduce((sum, set) => sum + (set.weight || 0), 0) / exercise.sets.length,
+        isBodyweight: isBodyweight
+      }, 0, loadPercentage); // Assuming no user bodyweight available in backend
+
+      exercise.volume = volume;
+      newSession.totalVolume += volume;
+      return exercise;
+    });
+
+    const filePath = getWorkoutSessionsPath();
+
+    // Read existing sessions
+    let sessionsData = { sessions: [] };
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      sessionsData = JSON.parse(data);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      // File doesn't exist, start with empty array
+    }
+
+    // Add the new session
+    sessionsData.sessions.push(newSession);
+
+    // Write back to file
+    await fs.writeFile(filePath, JSON.stringify(sessionsData, null, 2));
+
+    res.json({
+      success: true,
+      message: 'Workout session created successfully',
+      session: newSession
+    });
+  } catch (error) {
+    console.error('Error creating workout session:', error);
+    res.status(500).json({ error: 'Failed to create workout session' });
+  }
+});
+
+// GET /api/workout-sessions/:userId - get all sessions for a user
+app.get('/api/workout-sessions/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const filePath = getWorkoutSessionsPath();
+
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      const sessionsData = JSON.parse(data);
+
+      // Filter sessions for the specific user
+      const userSessions = sessionsData.sessions.filter(session => session.userId === userId);
+
+      res.json(userSessions);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        // File doesn't exist, return empty array
+        res.json([]);
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error retrieving workout sessions:', error);
+    res.status(500).json({ error: 'Failed to retrieve workout sessions' });
+  }
+});
+
+// GET /api/workout-session/:sessionId - get a specific session
+app.get('/api/workout-session/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const filePath = getWorkoutSessionsPath();
+
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      const sessionsData = JSON.parse(data);
+
+      // Find the specific session
+      const session = sessionsData.sessions.find(session => session.id === sessionId);
+
+      if (!session) {
+        return res.status(404).json({ error: 'Workout session not found' });
+      }
+
+      res.json(session);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        // File doesn't exist, return 404
+        return res.status(404).json({ error: 'Workout session not found' });
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error retrieving workout session:', error);
+    res.status(500).json({ error: 'Failed to retrieve workout session' });
+  }
+});
+
+// DELETE /api/workout-session/:sessionId - delete a session
+app.delete('/api/workout-session/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const filePath = getWorkoutSessionsPath();
+
+    try {
+      const data = await fs.readFile(filePath, 'utf8');
+      let sessionsData = JSON.parse(data);
+
+      // Find the session index
+      const sessionIndex = sessionsData.sessions.findIndex(session => session.id === sessionId);
+
+      if (sessionIndex === -1) {
+        return res.status(404).json({ error: 'Workout session not found' });
+      }
+
+      // Remove the session
+      sessionsData.sessions.splice(sessionIndex, 1);
+
+      // Write back to file
+      await fs.writeFile(filePath, JSON.stringify(sessionsData, null, 2));
+
+      res.json({
+        success: true,
+        message: 'Workout session deleted successfully'
+      });
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        // File doesn't exist, return 404
+        return res.status(404).json({ error: 'Workout session not found' });
+      } else {
+        throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting workout session:', error);
+    res.status(500).json({ error: 'Failed to delete workout session' });
+  }
 });

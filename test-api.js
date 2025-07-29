@@ -251,4 +251,191 @@ if (require.main === module) {
   runTests();
 }
 
-module.exports = { testHealth, testTrainingPlanEndpoints, runTests };
+module.exports = { testHealth, testTrainingPlanEndpoints, testWorkoutSessionEndpoints, runTests };
+
+// Test workout session endpoints
+function testWorkoutSessionEndpoints() {
+  return new Promise((resolve, reject) => {
+    const testUserId = 'test-session-user';
+    const testSession = {
+      userId: testUserId,
+      date: new Date().toISOString(),
+      completedExercises: [
+        {
+          exerciseId: 'push-ups-123',
+          sets: [
+            { reps: 10, weight: 0 }, // bodyweight
+            { reps: 8, weight: 0 }
+          ]
+        },
+        {
+          exerciseId: 'bench-press-456',
+          sets: [
+            { reps: 8, weight: 60 }, // weighted
+            { reps: 6, weight: 60 }
+          ]
+        }
+      ],
+      notes: 'Good session, felt strong'
+    };
+
+    const postData = JSON.stringify(testSession);
+
+    // Test POST (create session)
+    const postOptions = {
+      hostname: 'localhost',
+      port: 3000,
+      path: '/api/workout-session',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+
+    const postReq = http.request(postOptions, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data);
+          console.log('✅ POST workout session:', result);
+
+          // Verify the session was created with correct volume
+          const createdSession = result.session;
+          if (createdSession.completedExercises.length !== testSession.completedExercises.length) {
+            reject(new Error('Exercise count mismatch'));
+            return;
+          }
+
+          // Calculate expected volume
+          let expectedVolume = 0;
+          testSession.completedExercises.forEach((exercise, index) => {
+            exercise.sets.forEach(set => {
+              if (set.weight !== undefined && set.weight !== null) {
+                expectedVolume += set.reps * set.weight;
+              } else {
+                expectedVolume += set.reps;
+              }
+            });
+          });
+
+          if (createdSession.totalVolume !== expectedVolume) {
+            reject(new Error(`Volume calculation incorrect: expected ${expectedVolume}, got ${createdSession.totalVolume}`));
+            return;
+          }
+
+          // Test GET all sessions for user
+          const getAllReq = http.get(`http://localhost:3000/api/workout-sessions/${testUserId}`, (getAllRes) => {
+            let getAllData = '';
+            getAllRes.on('data', chunk => getAllData += chunk);
+            getAllRes.on('end', () => {
+              try {
+                const sessions = JSON.parse(getAllData);
+                console.log('✅ GET all workout sessions:', sessions);
+
+                if (sessions.length === 0) {
+                  reject(new Error('No sessions returned for user'));
+                  return;
+                }
+
+                const session = sessions[0];
+                if (session.userId !== testUserId) {
+                  reject(new Error('Session userId mismatch'));
+                  return;
+                }
+
+                // Test GET specific session
+                const getSpecificReq = http.get(`http://localhost:3000/api/workout-session/${session.id}`, (getSpecificRes) => {
+                  let getSpecificData = '';
+                  getSpecificRes.on('data', chunk => getSpecificData += chunk);
+                  getSpecificRes.on('end', () => {
+                    try {
+                      const specificSession = JSON.parse(getSpecificData);
+                      console.log('✅ GET specific workout session:', specificSession);
+
+                      if (specificSession.id !== session.id) {
+                        reject(new Error('Session ID mismatch'));
+                        return;
+                      }
+
+                      // Test DELETE session
+                      const deleteReq = http.request({
+                        hostname: 'localhost',
+                        port: 3000,
+                        path: `/api/workout-session/${session.id}`,
+                        method: 'DELETE'
+                      }, (deleteRes) => {
+                        let deleteData = '';
+                        deleteRes.on('data', chunk => deleteData += chunk);
+                        deleteRes.on('end', () => {
+                          try {
+                            const deleteResult = JSON.parse(deleteData);
+                            console.log('✅ DELETE workout session:', deleteResult);
+
+                            // Verify deletion by trying to GET again
+                            const verifyDeleteReq = http.get(`http://localhost:3000/api/workout-session/${session.id}`, (verifyDeleteRes) => {
+                              let verifyDeleteData = '';
+                              verifyDeleteRes.on('data', chunk => verifyDeleteData += chunk);
+                              verifyDeleteRes.on('end', () => {
+                                try {
+                                  const verifyDeleteResult = JSON.parse(verifyDeleteData);
+                                  reject(new Error('Session should have been deleted but was found'));
+                                } catch (e) {
+                                  if (e.message.includes('ENOENT') || verifyDeleteRes.statusCode === 404) {
+                                    console.log('✅ Session deletion verified');
+                                    resolve({ post: result, getAll: sessions, getSpecific: specificSession, delete: deleteResult });
+                                  } else {
+                                    reject(e);
+                                  }
+                                }
+                              });
+                            });
+                            verifyDeleteReq.on('error', reject);
+                          } catch (e) {
+                            reject(e);
+                          }
+                        });
+                      });
+                      deleteReq.on('error', reject);
+                      deleteReq.end();
+                    } catch (e) {
+                      reject(e);
+                    }
+                  });
+                });
+                getSpecificReq.on('error', reject);
+              } catch (e) {
+                reject(e);
+              }
+            });
+          });
+          getAllReq.on('error', reject);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+
+    postReq.on('error', reject);
+    postReq.write(postData);
+    postReq.end();
+  });
+}
+
+// Update the runTests function to include the new test
+function runTests() {
+  console.log('🧪 Testing GRND Backend API...');
+  return new Promise(async (resolve, reject) => {
+    try {
+      await testHealth();
+      await testTrainingPlanEndpoints();
+      await testWorkoutSessionEndpoints();
+      console.log('✅ All tests passed!');
+      resolve();
+    } catch (error) {
+      console.error('❌ Test failed:', error.message);
+      reject(error);
+    }
+  });
+}

@@ -55,6 +55,24 @@ export class Exercise {
         return 0;
     }
 
+    /**
+     * Calculate volume using the VolumeCalculator utility
+     * @param {number} [userBodyweight=0] - User's bodyweight in kg
+     * @param {number} [bodyweightLoadPercentage=1] - Percentage of bodyweight used
+     * @returns {number} - Calculated volume
+     */
+    calculateVolume(userBodyweight = 0, bodyweightLoadPercentage = 1) {
+        const { VolumeCalculator } = require('../utils/VolumeCalculator');
+
+        return VolumeCalculator.calculateExerciseVolume({
+            sets: this.sets,
+            reps: this.reps,
+            weight: this.weight,
+            isBodyweight: this.name.toLowerCase().includes('bodyweight') ||
+                         this.name.toLowerCase().includes('bw'),
+        }, userBodyweight, bodyweightLoadPercentage);
+    }
+
     get displayName() {
         return this.name;
     }

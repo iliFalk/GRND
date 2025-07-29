@@ -6,6 +6,8 @@
 import { NavigationService } from '../services/NavigationService.js';
 import { ApiService } from '../services/ApiService.js';
 import { ImageService } from '../services/ImageService.js';
+import { Dashboard } from './Dashboard.js';
+import { WorkoutHistory } from './WorkoutHistory.js';
 
 export class GRNDApp {
     constructor(telegram, storageService) {
@@ -110,6 +112,9 @@ export class GRNDApp {
         // Initialize settings view
         this.initializeSettingsView();
 
+        // Initialize workout history view
+        this.initializeWorkoutHistoryView();
+
         // Initialize Plan Builder views
         this.initializePlanBuilderViews();
     }
@@ -118,55 +123,13 @@ export class GRNDApp {
         const dashboardView = document.getElementById('dashboard-view');
         if (!dashboardView) return;
 
-        // Update welcome message
-        const welcomeText = dashboardView.querySelector('.welcome-section h2');
-        if (welcomeText && this.currentUser) {
-            welcomeText.textContent = `Welcome back, ${this.currentUser.firstName}!`;
-        }
-
-        // Load dashboard data
-        this.loadDashboardData();
+        // Initialize Dashboard component
+        this.dashboard = new Dashboard(dashboardView, this.api, this.navigation);
+        this.dashboard.init();
     }
 
-    async loadDashboardData() {
-        try {
-            // Load user's current plan
-            const currentPlan = await this.storage.getItem('currentPlan');
-            if (currentPlan) {
-                this.updateTodayWorkout(currentPlan);
-            }
-
-            // Load stats
-            const stats = await this.storage.getItem('stats') || {
-                streak: 7,
-                weeklyProgress: '4/5'
-            };
-
-            this.updateStats(stats);
-
-        } catch (error) {
-            console.error('Failed to load dashboard data:', error);
-        }
-    }
-
-    updateTodayWorkout(plan) {
-        const todayWorkout = document.querySelector('.today-workout .workout-card');
-        if (todayWorkout) {
-            const h4 = todayWorkout.querySelector('h4');
-            const p = todayWorkout.querySelector('p');
-
-            if (h4) h4.textContent = plan.todayWorkout?.name || 'Rest Day';
-            if (p) p.textContent = plan.todayWorkout?.duration || 'Take a break';
-        }
-    }
-
-    updateStats(stats) {
-        const streakValue = document.querySelector('.stat-card .stat-value');
-        const weeklyValue = document.querySelectorAll('.stat-card .stat-value')[1];
-
-        if (streakValue) streakValue.textContent = `${stats.streak} days`;
-        if (weeklyValue) weeklyValue.textContent = stats.weeklyProgress;
-    }
+    // Removed loadDashboardData, updateTodayWorkout, and updateStats methods
+    // These are now handled by the Dashboard component
 
     initializePlansView() {
         // Load available plans
@@ -234,6 +197,10 @@ export class GRNDApp {
 
     initializePlanBuilderViews() {
         // Plan Builder views are now initialized by NavigationService
+    }
+
+    initializeWorkoutHistoryView() {
+        // Workout History view is initialized by NavigationService
     }
 
     showError(message) {

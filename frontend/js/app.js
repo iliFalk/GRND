@@ -9,12 +9,14 @@ import { PlanList } from './components/PlanList.js';
 import { PlanEditor } from './components/PlanEditor.js';
 import { DayEditor } from './components/DayEditor.js';
 import { ExerciseEditor } from './components/ExerciseEditor.js';
+import { WorkoutHistory } from './components/WorkoutHistory.js';
 
 // Make components globally available
 window.PlanList = PlanList;
 window.PlanEditor = PlanEditor;
 window.DayEditor = DayEditor;
 window.ExerciseEditor = ExerciseEditor;
+window.WorkoutHistory = WorkoutHistory;
 
 // Initialize Telegram Web App
 let tg = null;

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRND Settings Test</title>
+    <link rel="stylesheet" href="frontend/css/style.css">
+    <style>
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { background-color: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .info { background-color: #d1ecf1; color: #0c5460; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .settings-view {
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>GRND Settings & User Profile Test</h1>
+        
+        <div class="test-section">
+            <h2>1. Storage Service Test</h2>
+            <button onclick="testStorageService()">Test Storage Service</button>
+            <div id="storage-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. User Profile API Test</h2>
+            <button onclick="testUserProfileAPI()">Test User Profile API</button>
+            <div id="profile-api-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Settings View Simulation</h2>
+            <button onclick="testSettingsView()">Test Settings View</button>
+            <div id="settings-results"></div>
+            <div id="settings-view-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Bodyweight Integration Test</h2>
+            <button onclick="testBodyweightIntegration()">Test Bodyweight Integration</button>
+            <div id="bodyweight-results"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { StorageService } from './frontend/js/services/StorageService.js';
+        import { ApiService } from './frontend/js/services/ApiService.js';
+        import { NavigationService } from './frontend/js/services/NavigationService.js';
+        import { UserProfile } from './frontend/js/models/UserProfile.js';
+        import { VolumeCalculator } from './frontend/js/utils/VolumeCalculator.js';
+
+        // Initialize services
+        window.storageService = new StorageService();
+        window.apiService = new ApiService();
+        window.navigationService = new NavigationService();
+        window.UserProfile = UserProfile;
+        window.VolumeCalculator = VolumeCalculator;
+
+        window.testStorageService = async function() {
+            const resultsDiv = document.getElementById('storage-results');
+            resultsDiv.innerHTML = '<div class="info">Testing Storage Service...</div>';
+            
+            try {
+                // Test basic storage
+                await window.storageService.setItem('test-key', 'test-value');
+                const value = await window.storageService.getItem('test-key');
+                resultsDiv.innerHTML += `<div class="success">✅ Basic storage: ${value}</div>`;
+                
+                // Test bodyweight storage
+                await window.storageService.setUserBodyweight(75);
+                const bodyweight = await window.storageService.getUserBodyweight();
+                resultsDiv.innerHTML += `<div class="success">✅ Bodyweight storage: ${bodyweight}kg</div>`;
+                
+                // Test user profile storage
+                const profile = { userId: 'test-user', bodyweight: 80 };
+                await window.storageService.setUserProfile(profile);
+                const storedProfile = await window.storageService.getUserProfile();
+                resultsDiv.innerHTML += `<div class="success">✅ Profile storage: ${JSON.stringify(storedProfile)}</div>`;
+                
+                // Test cache functionality
+                await window.storageService.setCache('test-cache', 'cached-value', 1000);
+                const cachedValue = await window.storageService.getCache('test-cache');
+                resultsDiv.innerHTML += `<div class="success">✅ Cache functionality: ${cachedValue}</div>`;
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Storage Service Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testUserProfileAPI = async function() {
+            const resultsDiv = document.getElementById('profile-api-results');
+            resultsDiv.innerHTML = '<div class="info">Testing User Profile API...</div>';
+            
+            try {
+                // Test creating/updating user profile
+                const profileData = {
+                    userId: 'test-user-2',
+                    bodyweight: 75
+                };
+                
+                const saveResult = await window.apiService.saveUserProfile('test-user-2', profileData);
+                resultsDiv.innerHTML += `<div class="success">✅ Save profile: ${saveResult.message}</div>`;
+                
+                // Test retrieving user profile
+                const retrievedProfile = await window.apiService.getUserProfile('test-user-2');
+                resultsDiv.innerHTML += `<div class="success">✅ Retrieved profile: ${retrievedProfile.bodyweight}kg</div>`;
+                
+                // Test profile validation
+                const profile = new UserProfile(retrievedProfile);
+                profile.validate();
+                resultsDiv.innerHTML += `<div class="success">✅ Profile validation passed</div>`;
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ User Profile API Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testSettingsView = function() {
+            const resultsDiv = document.getElementById('settings-results');
+            const containerDiv = document.getElementById('settings-view-container');
+            resultsDiv.innerHTML = '<div class="info">Testing Settings View...</div>';
+            
+            try {
+                // Simulate the settings view HTML structure
+                containerDiv.innerHTML = `
+                    <div class="settings-view">
+                        <h2>Settings</h2>
+                        <div class="settings-list">
+                            <div class="setting-item bodyweight-section">
+                                <label for="bodyweight-input">Bodyweight (kg):</label>
+                                <input type="number" id="bodyweight-input" min="30" max="300" step="0.1" 
+                                       placeholder="Enter your bodyweight" value="70">
+                                <button id="save-bodyweight-btn" class="btn-primary">Save</button>
+                            </div>
+                            <div class="setting-item">
+                                <span>Notifications</span>
+                                <label class="toggle">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <span>Dark Mode</span>
+                                <label class="toggle">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listener for saving bodyweight
+                const saveBtn = document.getElementById('save-bodyweight-btn');
+                const bodyweightInput = document.getElementById('bodyweight-input');
+                
+                if (saveBtn && bodyweightInput) {
+                    saveBtn.addEventListener('click', async () => {
+                        const bodyweight = parseFloat(bodyweightInput.value);
+                        if (bodyweight && bodyweight > 0) {
+                            try {
+                                // Save bodyweight to storage
+                                await window.storageService.setUserBodyweight(bodyweight);
+                                
+                                // Also save to API
+                                const profileData = {
+                                    userId: 'test-user',
+                                    bodyweight: bodyweight
+                                };
+                                await window.apiService.saveUserProfile('test-user', profileData);
+                                
+                                // Show success feedback
+                                saveBtn.textContent = 'Saved!';
+                                saveBtn.style.backgroundColor = '#28a745';
+                                setTimeout(() => {
+                                    saveBtn.textContent = 'Save';
+                                    saveBtn.style.backgroundColor = '#007bff';
+                                }, 2000);
+                                
+                                resultsDiv.innerHTML += `<div class="success">✅ Bodyweight saved: ${bodyweight}kg</div>`;
+                            } catch (error) {
+                                resultsDiv.innerHTML += `<div class="error">❌ Save error: ${error.message}</div>`;
+                            }
+                        }
+                    });
+                }
+
+                resultsDiv.innerHTML += `<div class="success">✅ Settings view rendered with bodyweight input</div>`;
+                resultsDiv.innerHTML += `<div class="success">✅ Event listeners attached</div>`;
+
+                // Test loading existing bodyweight
+                window.storageService.getUserBodyweight().then(bodyweight => {
+                    if (bodyweight && bodyweightInput) {
+                        bodyweightInput.value = bodyweight;
+                        resultsDiv.innerHTML += `<div class="success">✅ Loaded existing bodyweight: ${bodyweight}kg</div>`;
+                    }
+                });
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Settings View Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testBodyweightIntegration = async function() {
+            const resultsDiv = document.getElementById('bodyweight-results');
+            resultsDiv.innerHTML = '<div class="info">Testing Bodyweight Integration...</div>';
+            
+            try {
+                // Test bodyweight in volume calculation
+                const userBodyweight = 75;
+                
+                // Save bodyweight to storage
+                await window.storageService.setUserBodyweight(userBodyweight);
+                resultsDiv.innerHTML += `<div class="success">✅ Bodyweight saved to storage: ${userBodyweight}kg</div>`;
+                
+                // Test volume calculation with bodyweight
+                const exercises = [
+                    {
+                        exercise_name: 'Push-ups',
+                        exercise_type: 'BODYWEIGHT',
+                        completed_sets: [
+                            { reps: 10 },
+                            { reps: 8 },
+                            { reps: 6 }
+                        ]
+                    }
+                ];
+                
+                const totalVolume = VolumeCalculator.calculateTotalVolume(exercises, userBodyweight);
+                resultsDiv.innerHTML += `<div class="success">✅ Volume calculation with bodyweight: ${totalVolume}kg</div>`;
+                
+                // Expected: 75kg × 0.75 × 24 reps = 1350kg
+                const expectedVolume = 75 * 0.75 * 24;
+                if (Math.abs(totalVolume - expectedVolume) < 0.01) {
+                    resultsDiv.innerHTML += `<div class="success">✅ Volume calculation correct: ${expectedVolume}kg</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="error">❌ Volume calculation incorrect. Expected: ${expectedVolume}kg, Got: ${totalVolume}kg</div>`;
+                }
+                
+                // Test API volume calculation
+                const apiResult = await window.apiService.calculateVolume(userBodyweight, exercises);
+                resultsDiv.innerHTML += `<div class="success">✅ API volume calculation: ${apiResult.total_volume_kg}kg</div>`;
+                
+                // Test user profile with bodyweight
+                const profile = new UserProfile({
+                    userId: 'test-user',
+                    bodyweight: userBodyweight
+                });
+                
+                profile.validate();
+                resultsDiv.innerHTML += `<div class="success">✅ User profile validation with bodyweight: ${profile.bodyweight}kg</div>`;
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Bodyweight Integration Error: ${error.message}</div>`;
+            }
+        };
+
+        console.log('Settings & User Profile Test Suite Loaded');
+    </script>
+</body>
+</html>

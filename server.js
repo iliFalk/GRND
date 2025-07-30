@@ -59,22 +59,19 @@ function validateTrainingPlan(plan) {
   }
 
   // Validate required fields at each level according to PRD
-  const requiredPlanFields = ['id', 'name', 'start_date', 'weeks'];
-  for (const field of requiredPlanFields) {
-    if (!plan.hasOwnProperty(field)) {
-      throw new Error(`Missing required field in training plan: ${field}`);
-    }
+  // Accept both README-compliant and legacy field names
+  const planId = plan.plan_id || plan.id;
+  const planName = plan.plan_name || plan.name;
+
+  if (!planId || typeof planId !== 'string' || planId.trim() === '') {
+    throw new Error('Training plan must have a valid plan_id or id');
   }
 
-  if (typeof plan.id !== 'string' || plan.id.trim() === '') {
-    throw new Error('Training plan id must be a non-empty string');
+  if (!planName || typeof planName !== 'string' || planName.trim() === '') {
+    throw new Error('Training plan must have a valid plan_name or name');
   }
 
-  if (typeof plan.name !== 'string' || plan.name.trim() === '') {
-    throw new Error('Training plan name must be a non-empty string');
-  }
-
-  if (typeof plan.start_date !== 'string' || isNaN(Date.parse(plan.start_date))) {
+  if (!plan.start_date || typeof plan.start_date !== 'string' || isNaN(Date.parse(plan.start_date))) {
     throw new Error('Training plan start_date must be a valid date string');
   }
 
@@ -123,19 +120,16 @@ function validateDay(day, weekNumber, dayNumber) {
     throw new Error(`Day ${dayNumber} in week ${weekNumber} is required and must be an object`);
   }
 
-  const requiredDayFields = ['id', 'name', 'day_type'];
-  for (const field of requiredDayFields) {
-    if (!day.hasOwnProperty(field)) {
-      throw new Error(`Missing required field in day ${dayNumber} of week ${weekNumber}: ${field}`);
-    }
+  // Accept both README-compliant and legacy field names
+  const dayId = day.day_id || day.id;
+  const dayName = day.day_name || day.name;
+
+  if (!dayId || typeof dayId !== 'string' || dayId.trim() === '') {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a valid day_id or id`);
   }
 
-  if (typeof day.id !== 'string' || day.id.trim() === '') {
-    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a valid id`);
-  }
-
-  if (typeof day.name !== 'string' || day.name.trim() === '') {
-    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a non-empty name`);
+  if (!dayName || typeof dayName !== 'string' || dayName.trim() === '') {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a valid day_name or name`);
   }
 
   if (day.day_type !== 'STANDARD' && day.day_type !== 'CIRCUIT') {
@@ -169,31 +163,30 @@ function validateExercise(exercise, weekNumber, dayNumber, exerciseNumber) {
     throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} is required and must be an object`);
   }
 
-  const requiredExerciseFields = ['id', 'name', 'exercise_type', 'target_sets', 'target_reps', 'completed_sets'];
-  for (const field of requiredExerciseFields) {
-    if (!exercise.hasOwnProperty(field)) {
-      throw new Error(`Missing required field in exercise ${exerciseNumber} of day ${dayNumber} in week ${weekNumber}: ${field}`);
-    }
+  // Accept both README-compliant and legacy field names
+  const exerciseId = exercise.exercise_id || exercise.id;
+  const exerciseName = exercise.exercise_name || exercise.name;
+  const targetSets = exercise.target_sets || exercise.sets;
+  const targetReps = exercise.target_reps || exercise.reps;
+
+  if (!exerciseId || typeof exerciseId !== 'string' || exerciseId.trim() === '') {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid exercise_id or id`);
   }
 
-  if (typeof exercise.id !== 'string' || exercise.id.trim() === '') {
-    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid id`);
-  }
-
-  if (typeof exercise.name !== 'string' || exercise.name.trim() === '') {
-    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a non-empty name`);
+  if (!exerciseName || typeof exerciseName !== 'string' || exerciseName.trim() === '') {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid exercise_name or name`);
   }
 
   if (exercise.exercise_type !== 'WEIGHTED' && exercise.exercise_type !== 'BODYWEIGHT') {
     throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid exercise_type (WEIGHTED or BODYWEIGHT)`);
   }
 
-  if (typeof exercise.target_sets !== 'number' || exercise.target_sets <= 0) {
-    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid target_sets`);
+  if (typeof targetSets !== 'number' || targetSets <= 0) {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have valid target_sets or sets`);
   }
 
-  if (typeof exercise.target_reps !== 'number' || exercise.target_reps <= 0) {
-    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid target_reps`);
+  if (typeof targetReps !== 'number' || targetReps <= 0) {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have valid target_reps or reps`);
   }
 
   if (!Array.isArray(exercise.completed_sets)) {

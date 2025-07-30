@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRND Workout Engine Test</title>
+    <link rel="stylesheet" href="frontend/css/style.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .workout-container {
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .timer-display {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .exercise-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+        }
+        .action-button {
+            background-color: #28a745;
+            font-size: 1.2em;
+            padding: 15px 30px;
+            border-radius: 50px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .action-button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>GRND Workout Engine Test</h1>
+        
+        <div class="test-section">
+            <h2>1. Standard Workout Mode Test</h2>
+            <button onclick="testStandardWorkout()">Test Standard Workout</button>
+            <div id="standard-results"></div>
+            <div id="standard-workout-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Circuit Workout Mode Test</h2>
+            <button onclick="testCircuitWorkout()">Test Circuit Workout</button>
+            <div id="circuit-results"></div>
+            <div id="circuit-workout-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Timer Functionality Test</h2>
+            <button onclick="testTimerFunctionality()">Test Timer</button>
+            <div id="timer-results"></div>
+            <div id="timer-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Volume Calculation During Workout</h2>
+            <button onclick="testWorkoutVolumeCalculation()">Test Volume Calculation</button>
+            <div id="volume-workout-results"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { WorkoutSession } from './frontend/js/models/WorkoutSession.js';
+        import { Day } from './frontend/js/models/Day.js';
+        import { Exercise } from './frontend/js/models/Exercise.js';
+        import { VolumeCalculator } from './frontend/js/utils/VolumeCalculator.js';
+        import { Timer } from './frontend/js/utils/Timer.js';
+
+        // Make classes available globally
+        window.WorkoutSession = WorkoutSession;
+        window.Day = Day;
+        window.Exercise = Exercise;
+        window.VolumeCalculator = VolumeCalculator;
+        window.Timer = Timer;
+
+        // Test data
+        const standardDayData = {
+            day_id: 'test-standard-day',
+            day_name: 'Upper Body Strength',
+            day_type: 'STANDARD',
+            exercises: [
+                {
+                    exercise_id: 'ex-1',
+                    exercise_name: 'Push-ups',
+                    description: 'Standard push-ups',
+                    exercise_type: 'BODYWEIGHT',
+                    target_sets: 3,
+                    target_reps: 10,
+                    completed_sets: []
+                },
+                {
+                    exercise_id: 'ex-2',
+                    exercise_name: 'Bench Press',
+                    description: 'Barbell bench press',
+                    exercise_type: 'WEIGHTED',
+                    target_sets: 3,
+                    target_reps: 8,
+                    completed_sets: []
+                }
+            ]
+        };
+
+        const circuitDayData = {
+            day_id: 'test-circuit-day',
+            day_name: 'Full Body Circuit',
+            day_type: 'CIRCUIT',
+            exercises: [],
+            circuit_config: {
+                target_rounds: 3,
+                circuit_exercises: [
+                    {
+                        exercise_id: 'ex-3',
+                        exercise_name: 'Squats',
+                        description: 'Bodyweight squats',
+                        exercise_type: 'BODYWEIGHT',
+                        target_sets: 1,
+                        target_reps: 15,
+                        completed_sets: []
+                    },
+                    {
+                        exercise_id: 'ex-4',
+                        exercise_name: 'Burpees',
+                        description: 'Full body burpees',
+                        exercise_type: 'BODYWEIGHT',
+                        target_sets: 1,
+                        target_reps: 10,
+                        completed_sets: []
+                    }
+                ]
+            }
+        };
+
+        window.testStandardWorkout = function() {
+            const resultsDiv = document.getElementById('standard-results');
+            const containerDiv = document.getElementById('standard-workout-container');
+            resultsDiv.innerHTML = '<div class="info">Testing Standard Workout Mode...</div>';
+            
+            try {
+                // Create a standard workout day
+                const day = new Day(standardDayData);
+                resultsDiv.innerHTML += `<div class="success">✅ Created standard day: ${day.day_name}</div>`;
+                resultsDiv.innerHTML += `<div class="success">✅ Day type: ${day.day_type}</div>`;
+                resultsDiv.innerHTML += `<div class="success">✅ Exercises count: ${day.exercises.length}</div>`;
+
+                // Create workout session
+                const session = new WorkoutSession({
+                    day: day,
+                    userId: 'test-user',
+                    timerConfig: {
+                        workoutType: 'STANDARD',
+                        totalWorkoutTime: 30,
+                        preparationTime: 10,
+                        defaultRestTime: 60
+                    }
+                });
+                resultsDiv.innerHTML += `<div class="success">✅ Created workout session</div>`;
+
+                // Simulate workout UI
+                containerDiv.innerHTML = `
+                    <div class="workout-container">
+                        <h3>Standard Workout: ${day.day_name}</h3>
+                        <div class="timer-display" id="standard-timer">00:00</div>
+                        <div class="exercise-card">
+                            <h4>Current Exercise: ${day.exercises[0].exercise_name}</h4>
+                            <p>Target: ${day.exercises[0].target_sets} sets × ${day.exercises[0].target_reps} reps</p>
+                            <p>Completed: ${day.exercises[0].completed_sets.length} sets</p>
+                        </div>
+                        <button class="action-button" onclick="simulateFinishSet()">FINISH SET</button>
+                    </div>
+                `;
+
+                // Store session globally for simulation
+                window.currentSession = session;
+                window.currentExerciseIndex = 0;
+
+                resultsDiv.innerHTML += `<div class="success">✅ Standard workout UI rendered</div>`;
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Standard Workout Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testCircuitWorkout = function() {
+            const resultsDiv = document.getElementById('circuit-results');
+            const containerDiv = document.getElementById('circuit-workout-container');
+            resultsDiv.innerHTML = '<div class="info">Testing Circuit Workout Mode...</div>';
+            
+            try {
+                // Create a circuit workout day
+                const day = new Day(circuitDayData);
+                resultsDiv.innerHTML += `<div class="success">✅ Created circuit day: ${day.day_name}</div>`;
+                resultsDiv.innerHTML += `<div class="success">✅ Day type: ${day.day_type}</div>`;
+                resultsDiv.innerHTML += `<div class="success">✅ Target rounds: ${day.circuit_config.target_rounds}</div>`;
+                resultsDiv.innerHTML += `<div class="success">✅ Circuit exercises: ${day.circuit_config.circuit_exercises.length}</div>`;
+
+                // Create workout session
+                const session = new WorkoutSession({
+                    day: day,
+                    userId: 'test-user',
+                    timerConfig: {
+                        workoutType: 'CIRCUIT',
+                        totalWorkoutTime: 20,
+                        preparationTime: 10,
+                        defaultRestTime: 90
+                    }
+                });
+                resultsDiv.innerHTML += `<div class="success">✅ Created circuit workout session</div>`;
+
+                // Simulate circuit workout UI
+                let exercisesHtml = '';
+                day.circuit_config.circuit_exercises.forEach((exercise, index) => {
+                    exercisesHtml += `
+                        <div class="exercise-card">
+                            <h4>${exercise.exercise_name}</h4>
+                            <p>Target: ${exercise.target_reps} reps</p>
+                            <p>Type: ${exercise.exercise_type}</p>
+                        </div>
+                    `;
+                });
+
+                containerDiv.innerHTML = `
+                    <div class="workout-container">
+                        <h3>Circuit Workout: ${day.day_name}</h3>
+                        <div class="timer-display" id="circuit-timer">00:00</div>
+                        <p><strong>Round 1 of ${day.circuit_config.target_rounds}</strong></p>
+                        ${exercisesHtml}
+                        <button class="action-button" onclick="simulateFinishRound()">FINISH ROUND</button>
+                    </div>
+                `;
+
+                // Store session globally for simulation
+                window.currentCircuitSession = session;
+                window.currentRound = 1;
+
+                resultsDiv.innerHTML += `<div class="success">✅ Circuit workout UI rendered</div>`;
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Circuit Workout Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testTimerFunctionality = function() {
+            const resultsDiv = document.getElementById('timer-results');
+            const containerDiv = document.getElementById('timer-container');
+            resultsDiv.innerHTML = '<div class="info">Testing Timer Functionality...</div>';
+            
+            try {
+                // Test Timer class
+                const timer = new Timer();
+                resultsDiv.innerHTML += `<div class="success">✅ Timer created</div>`;
+
+                // Create timer UI
+                containerDiv.innerHTML = `
+                    <div class="workout-container">
+                        <h3>Timer Test</h3>
+                        <div class="timer-display" id="test-timer">00:00</div>
+                        <button onclick="startTestTimer()">Start Timer</button>
+                        <button onclick="pauseTestTimer()">Pause Timer</button>
+                        <button onclick="resetTestTimer()">Reset Timer</button>
+                    </div>
+                `;
+
+                // Store timer globally
+                window.testTimer = timer;
+                window.timerInterval = null;
+
+                resultsDiv.innerHTML += `<div class="success">✅ Timer UI created</div>`;
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Timer Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testWorkoutVolumeCalculation = function() {
+            const resultsDiv = document.getElementById('volume-workout-results');
+            resultsDiv.innerHTML = '<div class="info">Testing Volume Calculation During Workout...</div>';
+            
+            try {
+                // Simulate completed workout data
+                const completedExercises = [
+                    {
+                        exercise_name: 'Push-ups',
+                        exercise_type: 'BODYWEIGHT',
+                        completed_sets: [
+                            { reps: 10 },
+                            { reps: 8 },
+                            { reps: 6 }
+                        ]
+                    },
+                    {
+                        exercise_name: 'Bench Press',
+                        exercise_type: 'WEIGHTED',
+                        completed_sets: [
+                            { reps: 8, weight: 60 },
+                            { reps: 6, weight: 65 },
+                            { reps: 4, weight: 70 }
+                        ]
+                    }
+                ];
+
+                const userBodyweight = 70;
+                let totalVolume = 0;
+
+                completedExercises.forEach(exercise => {
+                    const volume = VolumeCalculator.calculateExerciseVolume(exercise, userBodyweight);
+                    totalVolume += volume;
+                    resultsDiv.innerHTML += `<div class="success">✅ ${exercise.exercise_name}: ${volume}kg</div>`;
+                });
+
+                resultsDiv.innerHTML += `<div class="success">✅ Total Workout Volume: ${totalVolume}kg</div>`;
+
+                // Test workout session volume calculation
+                const session = new WorkoutSession({
+                    userId: 'test-user',
+                    completedExercises: completedExercises
+                });
+
+                session.calculateTotalVolume(userBodyweight);
+                resultsDiv.innerHTML += `<div class="success">✅ Session Total Volume: ${session.total_volume_kg}kg</div>`;
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Volume Calculation Error: ${error.message}</div>`;
+            }
+        };
+
+        // Simulation functions
+        window.simulateFinishSet = function() {
+            if (window.currentSession && window.currentExerciseIndex < window.currentSession.day.exercises.length) {
+                const exercise = window.currentSession.day.exercises[window.currentExerciseIndex];
+                
+                // Simulate logging a set
+                const reps = exercise.target_reps;
+                const weight = exercise.exercise_type === 'WEIGHTED' ? 60 : null;
+                
+                exercise.completed_sets.push({ reps, weight });
+                
+                // Update UI
+                const exerciseCard = document.querySelector('.exercise-card');
+                exerciseCard.innerHTML = `
+                    <h4>Current Exercise: ${exercise.exercise_name}</h4>
+                    <p>Target: ${exercise.target_sets} sets × ${exercise.target_reps} reps</p>
+                    <p>Completed: ${exercise.completed_sets.length} sets</p>
+                `;
+
+                // Check if exercise is complete
+                if (exercise.completed_sets.length >= exercise.target_sets) {
+                    window.currentExerciseIndex++;
+                    if (window.currentExerciseIndex < window.currentSession.day.exercises.length) {
+                        // Move to next exercise
+                        const nextExercise = window.currentSession.day.exercises[window.currentExerciseIndex];
+                        exerciseCard.innerHTML = `
+                            <h4>Current Exercise: ${nextExercise.exercise_name}</h4>
+                            <p>Target: ${nextExercise.target_sets} sets × ${nextExercise.target_reps} reps</p>
+                            <p>Completed: ${nextExercise.completed_sets.length} sets</p>
+                        `;
+                    } else {
+                        // Workout complete
+                        exerciseCard.innerHTML = `<h4>🎉 Workout Complete!</h4>`;
+                        document.querySelector('.action-button').style.display = 'none';
+                    }
+                }
+            }
+        };
+
+        window.simulateFinishRound = function() {
+            if (window.currentCircuitSession && window.currentRound <= window.currentCircuitSession.day.circuit_config.target_rounds) {
+                // Simulate completing all exercises in the round
+                window.currentCircuitSession.day.circuit_config.circuit_exercises.forEach(exercise => {
+                    const reps = exercise.target_reps;
+                    exercise.completed_sets.push({ reps });
+                });
+
+                window.currentRound++;
+                
+                if (window.currentRound <= window.currentCircuitSession.day.circuit_config.target_rounds) {
+                    // Update round display
+                    const roundDisplay = document.querySelector('#circuit-workout-container p');
+                    roundDisplay.innerHTML = `<strong>Round ${window.currentRound} of ${window.currentCircuitSession.day.circuit_config.target_rounds}</strong>`;
+                } else {
+                    // Circuit complete
+                    const container = document.getElementById('circuit-workout-container');
+                    container.innerHTML += `<div class="success">🎉 Circuit Complete!</div>`;
+                    document.querySelector('.action-button').style.display = 'none';
+                }
+            }
+        };
+
+        window.startTestTimer = function() {
+            if (window.testTimer) {
+                window.testTimer.start();
+                window.timerInterval = setInterval(() => {
+                    const display = document.getElementById('test-timer');
+                    const elapsed = window.testTimer.getElapsed();
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+        };
+
+        window.pauseTestTimer = function() {
+            if (window.testTimer) {
+                window.testTimer.pause();
+                if (window.timerInterval) {
+                    clearInterval(window.timerInterval);
+                    window.timerInterval = null;
+                }
+            }
+        };
+
+        window.resetTestTimer = function() {
+            if (window.testTimer) {
+                window.testTimer.reset();
+                if (window.timerInterval) {
+                    clearInterval(window.timerInterval);
+                    window.timerInterval = null;
+                }
+                document.getElementById('test-timer').textContent = '00:00';
+            }
+        };
+
+        console.log('Workout Engine Test Suite Loaded');
+    </script>
+</body>
+</html>

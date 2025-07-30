@@ -158,7 +158,7 @@ export class PlanEditor {
             <div class="plan-editor-overlay">
                 <div class="plan-editor-modal">
                     <div class="plan-editor-header">
-                        <h2>${this.plan.id ? 'Edit Training Plan' : 'Create New Training Plan'}</h2>
+                        <h2>${this.plan ? (this.plan.id ? 'Edit Training Plan' : 'Create New Training Plan') : 'Create New Training Plan'}</h2>
                         <button class="close-btn" title="Close">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>

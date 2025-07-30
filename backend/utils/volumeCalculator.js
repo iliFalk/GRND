@@ -17,12 +17,48 @@ class VolumeCalculator {
       return 0;
     }
 
+    // Validate user bodyweight
+    if (userBodyweight !== undefined && userBodyweight !== null) {
+      if (typeof userBodyweight !== 'number' || isNaN(userBodyweight)) {
+        throw new Error('User bodyweight must be a valid number');
+      }
+      if (userBodyweight < 0) {
+        throw new Error('User bodyweight cannot be negative');
+      }
+    }
+
+    // Validate bodyweight load percentage if provided
+    if (exercise.bodyweight_load_percentage !== undefined) {
+      if (typeof exercise.bodyweight_load_percentage !== 'number' || isNaN(exercise.bodyweight_load_percentage)) {
+        throw new Error('Bodyweight load percentage must be a valid number');
+      }
+      if (exercise.bodyweight_load_percentage < 0) {
+        throw new Error('Bodyweight load percentage cannot be negative');
+      }
+    }
+
     let totalVolume = 0;
 
     exercise.completed_sets.forEach(set => {
       if (exercise.exercise_type === 'WEIGHTED') {
         // Weighted exercise: Set Volume = weight_used × reps_completed
         if (set.weight !== undefined && set.weight !== null && set.reps !== undefined) {
+          // Validate weight
+          if (typeof set.weight !== 'number' || isNaN(set.weight)) {
+            throw new Error('Weight must be a valid number');
+          }
+          if (set.weight < 0) {
+            throw new Error('Weight cannot be negative');
+          }
+          
+          // Validate reps
+          if (typeof set.reps !== 'number' || isNaN(set.reps)) {
+            throw new Error('Reps must be a valid number');
+          }
+          if (set.reps < 0) {
+            throw new Error('Reps cannot be negative');
+          }
+          
           totalVolume += set.weight * set.reps;
         }
       } else if (exercise.exercise_type === 'BODYWEIGHT' && userBodyweight) {
@@ -31,6 +67,14 @@ class VolumeCalculator {
           ? exercise.bodyweight_load_percentage
           : 1;
         if (set.reps !== undefined) {
+          // Validate reps
+          if (typeof set.reps !== 'number' || isNaN(set.reps)) {
+            throw new Error('Reps must be a valid number');
+          }
+          if (set.reps < 0) {
+            throw new Error('Reps cannot be negative');
+          }
+          
           totalVolume += userBodyweight * loadPercentage * set.reps;
         }
       }

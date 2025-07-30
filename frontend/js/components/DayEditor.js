@@ -96,16 +96,66 @@ export class DayEditor {
 
     getFormData() {
         const form = this.container.querySelector('.day-form');
+        const circuitRoundsInput = form.querySelector('#circuit-rounds');
+        let circuitRoundsValue = 3; // Default value
+        
+        if (circuitRoundsInput) {
+            const parsedValue = parseInt(circuitRoundsInput.value);
+            if (!isNaN(parsedValue)) {
+                circuitRoundsValue = parsedValue;
+            }
+        }
+        
         return {
             name: form.querySelector('#day-name').value,
             description: form.querySelector('#day-description').value,
             day_type: form.querySelector('input[name="day-type"]:checked').value,
             circuit_config: {
-                target_rounds: parseInt(form.querySelector('#circuit-rounds').value) || 3,
+                target_rounds: circuitRoundsValue,
                 circuit_exercises: this.day.exercises.map(ex => ex.id)
             },
             notes: form.querySelector('#day-notes').value
         };
+    }
+
+    /**
+     * Validates a numeric value with optional min and max constraints
+     * @param {string|number} value - The value to validate
+     * @param {number} min - Minimum allowed value (optional)
+     * @param {number} max - Maximum allowed value (optional)
+     * @param {boolean} required - Whether the value is required
+     * @returns {Object} - Validation result { isValid: boolean, message: string }
+     */
+    validateNumericValue(value, min = null, max = null, required = true) {
+        // Check if value is required but empty
+        if (required && (value === undefined || value === null || value === '')) {
+            return { isValid: false, message: 'This field is required' };
+        }
+        
+        // If not required and empty, it's valid
+        if (!required && (value === undefined || value === null || value === '')) {
+            return { isValid: true, message: '' };
+        }
+        
+        // Convert to number if it's a string
+        const numValue = typeof value === 'string' ? parseFloat(value) : value;
+        
+        // Check if it's a valid number
+        if (isNaN(numValue)) {
+            return { isValid: false, message: 'Please enter a valid number' };
+        }
+        
+        // Check minimum value
+        if (min !== null && numValue < min) {
+            return { isValid: false, message: `Value must be at least ${min}` };
+        }
+        
+        // Check maximum value
+        if (max !== null && numValue > max) {
+            return { isValid: false, message: `Value cannot exceed ${max}` };
+        }
+        
+        return { isValid: true, message: '' };
     }
 
     validateForm(data) {
@@ -113,6 +163,22 @@ export class DayEditor {
             this.setError('Day name is required');
             return false;
         }
+        
+        // Validate circuit rounds if day type is Circuit
+        if (data.day_type === 'Circuit') {
+            const roundsValidation = this.validateNumericValue(
+                data.circuit_config.target_rounds,
+                1,
+                10,
+                true
+            );
+            
+            if (!roundsValidation.isValid) {
+                this.setError(`Circuit rounds: ${roundsValidation.message}`);
+                return false;
+            }
+        }
+        
         return true;
     }
 

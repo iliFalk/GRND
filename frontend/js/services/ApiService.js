@@ -21,17 +21,49 @@ export class ApiService {
         };
 
         try {
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            
+            // Add abort signal to config
+            config.signal = controller.signal;
+
             const response = await fetch(url, config);
+            
+            // Clear timeout as request completed
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `HTTP error! status: ${response.status}`);
+                let errorMessage = `HTTP error! status: ${response.status}`;
+
+                // Try to get JSON error message if available
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || error.error || errorMessage;
+                } catch (parseError) {
+                    // If response is not JSON, use the status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+
+                throw new Error(errorMessage);
             }
 
-            return await response.json();
+            // Check if response is JSON before parsing
+            const contentType = response.headers.get('Content-Type');
+            if (contentType && contentType.includes('application/json')) {
+                return await response.json();
+            } else {
+                // Handle non-JSON responses
+                throw new Error(`Unexpected response format: ${contentType}`);
+            }
         } catch (error) {
-            console.error('API request failed:', error);
-            throw error;
+            if (error.name === 'AbortError') {
+                console.error('API request timeout:', error);
+                throw new Error('Request timeout after 10 seconds');
+            } else {
+                console.error('API request failed:', error);
+                throw error;
+            }
         }
     }
 
@@ -61,6 +93,11 @@ export class ApiService {
 
     async getTrainingPlan(planId) {
         return this.request(`/training-plans/${planId}`);
+    }
+
+    // Day endpoints
+    async getDay(dayId) {
+        return this.request(`/days/${dayId}`);
     }
 
     async createTrainingPlan(planData) {
@@ -146,25 +183,59 @@ export class ApiService {
         const formData = new FormData();
         formData.append('image', imageFile);
 
-        const response = await fetch(`${this.baseUrl}/images/upload`, {
-            method: 'POST',
-            body: formData
-        });
+        try {
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-        if (!response.ok) {
-            throw new Error('Failed to upload image');
+            const response = await fetch(`${this.baseUrl}/images/upload`, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal
+            });
+
+            // Clear timeout as request completed
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error('Failed to upload image');
+            }
+
+            return response.json();
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.error('Image upload timeout:', error);
+                throw new Error('Image upload timeout after 10 seconds');
+            } else {
+                console.error('Image upload failed:', error);
+                throw error;
+            }
         }
-
-        return response.json();
     }
 
     // Health check
     async healthCheck() {
         try {
-            const response = await fetch(`${this.baseUrl}/health`);
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+            const response = await fetch(`${this.baseUrl}/health`, {
+                signal: controller.signal
+            });
+
+            // Clear timeout as request completed
+            clearTimeout(timeoutId);
+
             return response.ok;
-        } catch {
-            return false;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.error('Health check timeout:', error);
+                return false;
+            } else {
+                console.error('Health check failed:', error);
+                return false;
+            }
         }
     }
 

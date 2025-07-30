@@ -66,6 +66,32 @@ export class NavigationService {
             this.initializeView(viewName, params);
         } else {
             console.error(`View ${viewName} not found`);
+
+            // Show a "Page Not Found" message
+            const mainContent = document.querySelector('.app-content');
+            if (mainContent) {
+                mainContent.innerHTML = `
+                    <div class="not-found-view">
+                        <h2>Page Not Found</h2>
+                        <p>Sorry, the page you're looking for doesn't exist.</p>
+                        <button class="btn-primary" id="go-back-btn">Go Back</button>
+                    </div>
+                `;
+
+                // Add event listener for go back button
+                const goBackBtn = document.getElementById('go-back-btn');
+                if (goBackBtn) {
+                    goBackBtn.addEventListener('click', () => {
+                        // Go back to previous view
+                        if (this.viewHistory.length > 0) {
+                            const lastView = this.viewHistory.pop();
+                            this.showView(lastView.view, lastView.params);
+                        } else {
+                            this.showView('dashboard');
+                        }
+                    });
+                }
+            }
         }
     }
 

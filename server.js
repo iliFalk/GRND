@@ -4,7 +4,8 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
-const VolumeCalculator = require('./utils/volumeCalculator');
+const VolumeCalculator = require('./backend/utils/volumeCalculator');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('frontend'));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -222,7 +224,13 @@ app.get('/api/workout-data/:userId', async (req, res) => {
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      const trainingPlan = JSON.parse(data);
+      let trainingPlan;
+      try {
+        trainingPlan = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in training plan data:', parseError);
+        return res.status(500).json({ error: 'Invalid JSON format in training plan data' });
+      }
 
       // Validate the data structure
       try {
@@ -382,7 +390,13 @@ app.get('/api/user-profile/:userId', async (req, res) => {
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      const profiles = JSON.parse(data);
+      let profiles;
+      try {
+        profiles = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in user profiles data:', parseError);
+        return res.status(500).json({ error: 'Invalid JSON format in user profiles data' });
+      }
 
       if (!profiles[userId]) {
         return res.status(404).json({ error: 'User profile not found' });
@@ -420,7 +434,12 @@ app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
     let profiles = {};
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      profiles = JSON.parse(data);
+      try {
+        profiles = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in user profiles data:', parseError);
+        profiles = {}; // Start with empty object if JSON is invalid
+      }
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
       // File doesn't exist, start with empty object
@@ -455,7 +474,13 @@ app.delete('/api/user-profile/:userId', async (req, res) => {
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      let profiles = JSON.parse(data);
+      let profiles;
+      try {
+        profiles = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in user profiles data:', parseError);
+        return res.status(500).json({ error: 'Invalid JSON format in user profiles data' });
+      }
 
       if (!profiles[userId]) {
         return res.status(404).json({ error: 'User profile not found' });
@@ -500,6 +525,86 @@ app.use((error, req, res, next) => {
 
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
+
+// Unsplash API key endpoint
+app.get('/api/unsplash-key', (req, res) => {
+  const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY;
+  
+  if (!unsplashAccessKey) {
+    return res.status(500).json({ error: 'Unsplash API key not configured' });
+  }
+  
+  res.json({ accessKey: unsplashAccessKey });
+});
+
+// Training Plans endpoint
+app.get('/api/training-plans', async (req, res) => {
+  try {
+    // In a real implementation, this would query a database
+    // For now, we'll return a sample training plan structure
+    const samplePlans = [
+      {
+        id: 'plan-1',
+        name: 'Beginner Strength',
+        description: 'A 4-week program for beginners focusing on basic strength exercises',
+        durationWeeks: 4,
+        difficulty: 'Beginner',
+        imageUrl: '/uploads/beginner-strength.jpg'
+      },
+      {
+        id: 'plan-2',
+        name: 'Advanced Muscle',
+        description: 'An 8-week program for advanced lifters focusing on muscle growth',
+        durationWeeks: 8,
+        difficulty: 'Advanced',
+        imageUrl: '/uploads/advanced-muscle.jpg'
+      }
+    ];
+
+    res.json(samplePlans);
+  } catch (error) {
+    console.error('Error retrieving training plans:', error);
+    res.status(500).json({ error: 'Failed to retrieve training plans' });
+  }
+});
+
+// Day endpoint
+app.get('/api/days/:dayId', (req, res) => {
+  try {
+    const { dayId } = req.params;
+
+    // In a real implementation, this would query a database
+    // For now, we'll return a sample day structure
+    const sampleDay = {
+      id: dayId,
+      name: 'Upper Body Strength',
+      day_type: 'STANDARD',
+      exercises: [
+        {
+          id: 'exercise-1',
+          name: 'Bench Press',
+          exercise_type: 'WEIGHTED',
+          target_sets: 4,
+          target_reps: 8,
+          completed_sets: []
+        },
+        {
+          id: 'exercise-2',
+          name: 'Bent Over Rows',
+          exercise_type: 'WEIGHTED',
+          target_sets: 4,
+          target_reps: 10,
+          completed_sets: []
+        }
+      ]
+    };
+
+    res.json(sampleDay);
+  } catch (error) {
+    console.error('Error retrieving day:', error);
+    res.status(500).json({ error: 'Failed to retrieve day' });
+  }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -621,7 +726,12 @@ app.post('/api/workout-session', async (req, res) => {
     let sessionsData = { sessions: [] };
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      sessionsData = JSON.parse(data);
+      try {
+        sessionsData = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in workout sessions data:', parseError);
+        sessionsData = { sessions: [] }; // Start with empty array if JSON is invalid
+      }
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
       // File doesn't exist, start with empty array
@@ -652,7 +762,13 @@ app.get('/api/workout-sessions/:userId', async (req, res) => {
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      const sessionsData = JSON.parse(data);
+      let sessionsData;
+      try {
+        sessionsData = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in workout sessions data:', parseError);
+        return res.json([]); // Return empty array if JSON is invalid
+      }
 
       // Filter sessions for the specific user
       const userSessions = sessionsData.sessions.filter(session => session.userId === userId);
@@ -680,7 +796,13 @@ app.get('/api/workout-session/:sessionId', async (req, res) => {
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      const sessionsData = JSON.parse(data);
+      let sessionsData;
+      try {
+        sessionsData = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in workout sessions data:', parseError);
+        return res.status(500).json({ error: 'Invalid JSON format in workout sessions data' });
+      }
 
       // Find the specific session
       const session = sessionsData.sessions.find(session => session.id === sessionId);
@@ -712,7 +834,13 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
-      let sessionsData = JSON.parse(data);
+      let sessionsData;
+      try {
+        sessionsData = JSON.parse(data);
+      } catch (parseError) {
+        console.error('JSON parse error in workout sessions data:', parseError);
+        return res.status(500).json({ error: 'Invalid JSON format in workout sessions data' });
+      }
 
       // Find the session index
       const sessionIndex = sessionsData.sessions.findIndex(session => session.id === sessionId);

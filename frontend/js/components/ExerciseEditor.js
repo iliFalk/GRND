@@ -201,12 +201,13 @@ export class ExerciseEditor {
 
                     <div class="image-url-input">
                         <label for="image-url">Or enter image URL</label>
-                        <input type="url" id="image-url" value="${this.exercise.imageUrl || ''}" 
+                        <input type="url" id="image-url" value="${this.exercise.imageUrl || ''}"
                                placeholder="https://example.com/image.jpg">
                     </div>
                 </div>
             </div>
             ${this.renderVolumeCalculation()}
+        `;
     }
 
     renderExerciseParameters() {
@@ -406,34 +407,6 @@ export class ExerciseEditor {
             const file = e.target.files[0];
             if (file) {
                 this.handleImageUpload(file);
-            }
-       
-            /**
-             * Render volume calculation display
-             * @returns {string} HTML for volume calculation
-             */
-            renderVolumeCalculation() {
-                if (this.exercise.sets <= 0 || this.exercise.reps <= 0) {
-                    return '';
-                }
-       
-                const isBodyweight = this.exercise.name.toLowerCase().includes('bodyweight') ||
-                                    this.exercise.name.toLowerCase().includes('bw');
-       
-                const volume = isBodyweight
-                    ? this.exercise.sets * this.exercise.reps
-                    : (this.exercise.sets * this.exercise.reps * this.exercise.weight).toFixed(1);
-       
-                return `
-                    <div class="volume-calculation">
-                        <h4>Volume Calculation</h4>
-                        <div class="volume-result">
-                            ${isBodyweight ?
-                              `Bodyweight exercise: ${this.exercise.sets} sets × ${this.exercise.reps} reps = ${volume} units` :
-                              `${this.exercise.sets} sets × ${this.exercise.reps} reps × ${this.exercise.weight} lbs = ${volume} lbs`}
-                        </div>
-                    </div>
-                `;
             }
         });
 

@@ -152,9 +152,23 @@ export class Dashboard {
               // Create a simplified workout history component for the dashboard
               const user = await this.api.storage.getItem('user');
               if (!user) {
-                  throw new Error('User not found');
+                  // Display a message to the user instead of throwing an error
+                  historyContainer.innerHTML = `
+                      <div class="no-user-message">
+                          <p>Please log in or create a profile to view your workout history.</p>
+                          <button class="btn-primary" id="login-btn">Log In</button>
+                      </div>
+                  `;
+                  // Add event listener for login button
+                  const loginBtn = historyContainer.querySelector('#login-btn');
+                  if (loginBtn) {
+                      loginBtn.addEventListener('click', () => {
+                          this.navigation.navigateTo('login');
+                      });
+                  }
+                  return;
               }
-              
+
               // Fetch recent workout sessions (last 5)
               const sessions = await this.api.getWorkoutSessions(user.id, {
                   limit: 5,

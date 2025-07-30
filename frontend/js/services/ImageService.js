@@ -4,10 +4,33 @@
  */
 
 export class ImageService {
-    constructor(accessKey = 'YOUR_UNSPLASH_ACCESS_KEY') {
-        this.accessKey = accessKey;
+    constructor() {
+        this.accessKey = null;
         this.baseUrl = 'https://api.unsplash.com';
         this.cache = new Map();
+        this.keyPromise = this.fetchApiKey();
+    }
+
+    async fetchApiKey() {
+        try {
+            const response = await fetch('/api/unsplash-key');
+            if (!response.ok) {
+                throw new Error('Failed to fetch API key');
+            }
+            const data = await response.json();
+            this.accessKey = data.accessKey;
+            return this.accessKey;
+        } catch (error) {
+            console.error('Error fetching Unsplash API key:', error);
+            throw error;
+        }
+    }
+
+    async ensureApiKey() {
+        if (!this.accessKey) {
+            await this.keyPromise;
+        }
+        return this.accessKey;
     }
 
     async searchExerciseImages(query, count = 5) {
@@ -19,6 +42,13 @@ export class ImageService {
         }
 
         try {
+            // Ensure we have the API key
+            await this.ensureApiKey();
+            
+            if (!this.accessKey) {
+                throw new Error('Unsplash API key not available');
+            }
+
             const response = await fetch(
                 `${this.baseUrl}/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&orientation=squarish`,
                 {

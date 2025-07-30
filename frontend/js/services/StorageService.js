@@ -55,7 +55,13 @@ export class StorageService {
                 return null;
             }
             
-            const value = JSON.parse(serialized);
+            let value;
+            try {
+                value = JSON.parse(serialized);
+            } catch (parseError) {
+                console.error('Failed to parse JSON from storage:', parseError);
+                return null;
+            }
             this.cache.set(key, value);
             return value;
             

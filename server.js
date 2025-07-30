@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
@@ -50,22 +50,30 @@ function getUserDataPath(userId) {
   return path.join(__dirname, 'data', `${userId}.json`);
 }
 
-// Validation functions for hierarchical data
+// Validation functions for new PRD-compliant hierarchical data structure
 function validateTrainingPlan(plan) {
   if (!plan || typeof plan !== 'object') {
     throw new Error('Training plan is required and must be an object');
   }
 
-  // Validate required fields at each level
-  const requiredPlanFields = ['name', 'weeks'];
+  // Validate required fields at each level according to PRD
+  const requiredPlanFields = ['id', 'name', 'start_date', 'weeks'];
   for (const field of requiredPlanFields) {
     if (!plan.hasOwnProperty(field)) {
       throw new Error(`Missing required field in training plan: ${field}`);
     }
   }
 
+  if (typeof plan.id !== 'string' || plan.id.trim() === '') {
+    throw new Error('Training plan id must be a non-empty string');
+  }
+
   if (typeof plan.name !== 'string' || plan.name.trim() === '') {
     throw new Error('Training plan name must be a non-empty string');
+  }
+
+  if (typeof plan.start_date !== 'string' || isNaN(Date.parse(plan.start_date))) {
+    throw new Error('Training plan start_date must be a valid date string');
   }
 
   if (!Array.isArray(plan.weeks) || plan.weeks.length === 0) {
@@ -85,14 +93,14 @@ function validateWeek(week, weekNumber) {
     throw new Error(`Week ${weekNumber} is required and must be an object`);
   }
 
-  const requiredWeekFields = ['weekNumber', 'days'];
+  const requiredWeekFields = ['week_number', 'days'];
   for (const field of requiredWeekFields) {
     if (!week.hasOwnProperty(field)) {
       throw new Error(`Missing required field in week ${weekNumber}: ${field}`);
     }
   }
 
-  if (typeof week.weekNumber !== 'number' || week.weekNumber <= 0) {
+  if (typeof week.week_number !== 'number' || week.week_number <= 0) {
     throw new Error(`Week ${weekNumber} must have a valid week number`);
   }
 
@@ -113,24 +121,42 @@ function validateDay(day, weekNumber, dayNumber) {
     throw new Error(`Day ${dayNumber} in week ${weekNumber} is required and must be an object`);
   }
 
-  const requiredDayFields = ['dayNumber', 'exercises'];
+  const requiredDayFields = ['id', 'name', 'day_type'];
   for (const field of requiredDayFields) {
     if (!day.hasOwnProperty(field)) {
       throw new Error(`Missing required field in day ${dayNumber} of week ${weekNumber}: ${field}`);
     }
   }
 
-  if (typeof day.dayNumber !== 'number' || day.dayNumber <= 0 || day.dayNumber > 7) {
-    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a valid day number (1-7)`);
+  if (typeof day.id !== 'string' || day.id.trim() === '') {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a valid id`);
   }
 
-  if (!Array.isArray(day.exercises)) {
-    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have exercises array`);
+  if (typeof day.name !== 'string' || day.name.trim() === '') {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a non-empty name`);
   }
 
-  // Validate each exercise
-  for (const exercise of day.exercises) {
-    validateExercise(exercise, weekNumber, dayNumber, day.exercises.indexOf(exercise) + 1);
+  if (day.day_type !== 'STANDARD' && day.day_type !== 'CIRCUIT') {
+    throw new Error(`Day ${dayNumber} in week ${weekNumber} must have a valid day_type (STANDARD or CIRCUIT)`);
+  }
+
+  // For STANDARD days, validate exercises array
+  if (day.day_type === 'STANDARD') {
+    if (!Array.isArray(day.exercises)) {
+      throw new Error(`Day ${dayNumber} in week ${weekNumber} must have exercises array for STANDARD day type`);
+    }
+
+    // Validate each exercise
+    for (const exercise of day.exercises) {
+      validateExercise(exercise, weekNumber, dayNumber, day.exercises.indexOf(exercise) + 1);
+    }
+  }
+
+  // For CIRCUIT days, validate circuit_config
+  if (day.day_type === 'CIRCUIT') {
+    if (!day.circuit_config || typeof day.circuit_config !== 'object') {
+      throw new Error(`Day ${dayNumber} in week ${weekNumber} must have circuit_config for CIRCUIT day type`);
+    }
   }
 
   return true;
@@ -141,15 +167,46 @@ function validateExercise(exercise, weekNumber, dayNumber, exerciseNumber) {
     throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} is required and must be an object`);
   }
 
-  const requiredExerciseFields = ['name'];
+  const requiredExerciseFields = ['id', 'name', 'exercise_type', 'target_sets', 'target_reps', 'completed_sets'];
   for (const field of requiredExerciseFields) {
     if (!exercise.hasOwnProperty(field)) {
       throw new Error(`Missing required field in exercise ${exerciseNumber} of day ${dayNumber} in week ${weekNumber}: ${field}`);
     }
   }
 
+  if (typeof exercise.id !== 'string' || exercise.id.trim() === '') {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid id`);
+  }
+
   if (typeof exercise.name !== 'string' || exercise.name.trim() === '') {
     throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a non-empty name`);
+  }
+
+  if (exercise.exercise_type !== 'WEIGHTED' && exercise.exercise_type !== 'BODYWEIGHT') {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid exercise_type (WEIGHTED or BODYWEIGHT)`);
+  }
+
+  if (typeof exercise.target_sets !== 'number' || exercise.target_sets <= 0) {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid target_sets`);
+  }
+
+  if (typeof exercise.target_reps !== 'number' || exercise.target_reps <= 0) {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have a valid target_reps`);
+  }
+
+  if (!Array.isArray(exercise.completed_sets)) {
+    throw new Error(`Exercise ${exerciseNumber} in day ${dayNumber} of week ${weekNumber} must have completed_sets array`);
+  }
+
+  // Validate each completed set
+  for (const set of exercise.completed_sets) {
+    if (typeof set.reps !== 'number' || set.reps < 0) {
+      throw new Error(`Each set in exercise ${exerciseNumber} must have a valid reps number`);
+    }
+
+    if (exercise.exercise_type === 'WEIGHTED' && (set.weight === undefined || set.weight === null)) {
+      throw new Error(`Each set in WEIGHTED exercise ${exerciseNumber} must have a weight`);
+    }
   }
 
   return true;
@@ -179,15 +236,10 @@ app.get('/api/workout-data/:userId', async (req, res) => {
       if (error.code === 'ENOENT') {
         // File doesn't exist, return empty training plan structure
         res.json({
-          userId,
+          id: `${userId}-plan`,
           name: 'New Training Plan',
-          description: '',
-          durationWeeks: 0,
-          difficulty: 'beginner',
-          goal: '',
-          weeks: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          start_date: new Date().toISOString(),
+          weeks: []
         });
       } else {
         throw error;
@@ -225,7 +277,6 @@ app.post('/api/workout-data/:userId', async (req, res) => {
     const dataToSave = {
       ...trainingPlan,
       userId,
-      createdAt: trainingPlan.createdAt ? trainingPlan.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
@@ -248,9 +299,9 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
-    
+
     const imageUrl = `/uploads/${req.file.filename}`;
-    
+
     res.json({
       success: true,
       imageUrl,
@@ -260,6 +311,32 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
   } catch (error) {
     console.error('Error uploading image:', error);
     res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+// POST /api/calculate-volume - calculate workout volume
+app.post('/api/calculate-volume', (req, res) => {
+  try {
+    const { user_bodyweight, exercises } = req.body;
+
+    if (user_bodyweight === undefined || user_bodyweight === null) {
+      return res.status(400).json({ error: 'user_bodyweight is required' });
+    }
+
+    if (!Array.isArray(exercises)) {
+      return res.status(400).json({ error: 'exercises must be an array' });
+    }
+
+    // Calculate total volume using the updated VolumeCalculator
+    const totalVolume = VolumeCalculator.calculateTotalVolume(exercises, user_bodyweight);
+
+    res.json({
+      success: true,
+      total_volume_kg: totalVolume
+    });
+  } catch (error) {
+    console.error('Error calculating volume:', error);
+    res.status(500).json({ error: 'Failed to calculate volume' });
   }
 });
 // Validation functions for user profiles

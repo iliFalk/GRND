@@ -133,6 +133,29 @@ export class NavigationService {
                 );
                 workoutHistory.init();
             }
+        } else if (viewName === 'workout') {
+            // Initialize Workout component
+            const workoutContainer = document.getElementById('workout-view');
+            if (workoutContainer) {
+                const Workout = window.Workout || null;
+                if (Workout) {
+                    const workout = new Workout(
+                        workoutContainer,
+                        window.grndApp.api,
+                        window.grndApp.storage,
+                        this
+                    );
+                    
+                    // Initialize with dayId or sessionId if provided
+                    if (params.dayId) {
+                        workout.initWithDay(params.dayId);
+                    } else if (params.sessionId) {
+                        workout.initWithSession(params.sessionId);
+                    } else {
+                        workout.init();
+                    }
+                }
+            }
         }
     }
 
@@ -171,6 +194,10 @@ export class NavigationService {
 
     navigateToWorkout(dayId) {
         this.navigateTo('workout', { dayId });
+    }
+
+    navigateToWorkoutSession(sessionId) {
+        this.navigateTo('workout', { sessionId });
     }
 
     navigateToExercise(exerciseId) {

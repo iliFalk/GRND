@@ -11,7 +11,7 @@ export class ApiService {
 
     async request(endpoint, options = {}) {
         const url = `${this.baseUrl}${endpoint}`;
-        
+
         const config = {
             ...options,
             headers: {
@@ -22,12 +22,12 @@ export class ApiService {
 
         try {
             const response = await fetch(url, config);
-            
+
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.message || `HTTP error! status: ${response.status}`);
             }
-            
+
             return await response.json();
         } catch (error) {
             console.error('API request failed:', error);
@@ -145,16 +145,16 @@ export class ApiService {
     async uploadImage(imageFile) {
         const formData = new FormData();
         formData.append('image', imageFile);
-        
+
         const response = await fetch(`${this.baseUrl}/images/upload`, {
             method: 'POST',
             body: formData
         });
-        
+
         if (!response.ok) {
             throw new Error('Failed to upload image');
         }
-        
+
         return response.json();
     }
 
@@ -167,7 +167,18 @@ export class ApiService {
             return false;
         }
     }
-    
+
+    // Volume calculation endpoint
+    async calculateVolume(userBodyweight, exercises) {
+        return this.request('/calculate-volume', {
+            method: 'POST',
+            body: JSON.stringify({
+                user_bodyweight: userBodyweight,
+                exercises: exercises
+            })
+        });
+    }
+
     // Dashboard specific methods
     async getTodaysWorkout() {
         // This would be implemented to get today's specific workout
@@ -182,7 +193,7 @@ export class ApiService {
             ]
         };
     }
-    
+
     async getQuickStats() {
         // This would fetch quick stats for the dashboard
         // For now, we'll return a mock implementation

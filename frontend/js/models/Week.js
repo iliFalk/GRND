@@ -10,9 +10,7 @@ export class Week {
         this.id = data.id || null;
         this.weekNumber = data.weekNumber || 1;
         this.name = data.name || `Week ${this.weekNumber}`;
-        this.description = data.description || '';
         this.days = data.days ? data.days.map(d => new Day(d)) : [];
-        this.focus = data.focus || '';
     }
 
     get totalExercises() {
@@ -43,9 +41,7 @@ export class Week {
             id: this.id,
             weekNumber: this.weekNumber,
             name: this.name,
-            description: this.description,
-            days: this.days.map(day => day.toJSON()),
-            focus: this.focus
+            days: this.days.map(day => day.toJSON())
         };
     }
 

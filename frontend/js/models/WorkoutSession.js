@@ -21,6 +21,29 @@ export class WorkoutSession {
         this.duration = data.duration || 0; // in seconds
         this.status = data.status || 'in_progress'; // in_progress, completed, cancelled
 
+        // Timer configuration
+        this.timerConfig = data.timerConfig || {
+            totalWorkoutTime: 60, // in minutes
+            preparationTime: 10, // in seconds
+            defaultRestTime: 60, // in seconds
+            workoutType: 'STANDARD' // 'STANDARD' or 'CIRCUIT'
+        };
+
+        // Timer state
+        this.timerState = data.timerState || {
+            isActive: false,
+            isPreparation: false,
+            isRest: false,
+            currentExerciseIndex: 0,
+            currentSetIndex: 0,
+            currentRoundIndex: 0,
+            timers: {
+                total: { currentTime: 0, isRunning: false },
+                preparation: { currentTime: 0, isRunning: false },
+                rest: { currentTime: 0, isRunning: false }
+            }
+        };
+
         // Performance metrics
         this.totalVolume = data.totalVolume || 0;
         this.totalSets = data.totalSets || 0;
@@ -149,6 +172,8 @@ export class WorkoutSession {
             endTime: this.endTime,
             duration: this.duration,
             status: this.status,
+            timerConfig: this.timerConfig,
+            timerState: this.timerState,
             totalVolume: this.totalVolume,
             totalSets: this.totalSets,
             totalReps: this.totalReps,

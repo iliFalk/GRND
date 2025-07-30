@@ -94,8 +94,7 @@ export class PlanEditor {
             name: form.querySelector('#plan-name').value,
             description: form.querySelector('#plan-description').value,
             durationWeeks: parseInt(form.querySelector('#plan-duration').value),
-            difficulty: form.querySelector('#plan-difficulty').value,
-            goal: form.querySelector('#plan-goal').value
+            start_date: form.querySelector('#plan-start-date').value
         };
     }
 
@@ -189,8 +188,10 @@ export class PlanEditor {
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="plan-duration">Duration (weeks) *</label>
-                                    <input type="number" id="plan-duration" value="${this.plan.durationWeeks || 4}" 
+                                    <input type="number" id="plan-duration" value="${this.plan.durationWeeks || 4}"
                                            min="1" max="52" required>
+                                    <label for="plan-start-date">Start Date</label>
+                                    <input type="date" id="plan-start-date" value="${this.plan.start_date ? new Date(this.plan.start_date).toISOString().split('T')[0] : ''}">
                                 </div>
 
                                 <div class="form-group">

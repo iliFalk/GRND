@@ -2,6 +2,8 @@
  * Volume Calculator Utility
  * Provides functions for calculating workout volume
  */
+import { getBodyweightLoadPercentage } from './bodyweightLoadTable.js';
+
 export class VolumeCalculator {
   /**
    * Calculate volume for a single exercise
@@ -9,7 +11,7 @@ export class VolumeCalculator {
    * @param {number} exercise.sets - Number of sets
    * @param {number} exercise.reps - Number of reps
    * @param {number} [exercise.weight=0] - Weight used (for weighted exercises)
-   * @param {boolean} [exercise.isBodyweight=false] - Whether exercise is bodyweight
+   * @param {string} [exercise.exercise_type='WEIGHTED'] - Exercise type ('WEIGHTED' or 'BODYWEIGHT')
    * @param {number} [userBodyweight=0] - User's bodyweight in kg (for bodyweight exercises)
    * @param {number} [bodyweightLoadPercentage=1] - Percentage of bodyweight used (for bodyweight exercises)
    * @returns {number} - Calculated volume
@@ -21,7 +23,7 @@ export class VolumeCalculator {
 
     let volume = 0;
 
-    if (exercise.isBodyweight && userBodyweight > 0) {
+    if (exercise.exercise_type === 'BODYWEIGHT' && userBodyweight > 0) {
       // Bodyweight exercise: volume = (bodyweight * loadPercentage) * reps * sets
       volume = (userBodyweight * bodyweightLoadPercentage) * exercise.reps * exercise.sets;
     } else if (exercise.weight && exercise.weight > 0) {
@@ -39,10 +41,9 @@ export class VolumeCalculator {
    * Calculate total volume for a workout session
    * @param {Array} exercises - Array of exercise objects
    * @param {number} [userBodyweight=0] - User's bodyweight in kg
-   * @param {Object} [bodyweightLoadPercentages={}] - Object mapping exercise names to load percentages
    * @returns {number} - Total volume for all exercises
    */
-  static calculateTotalVolume(exercises, userBodyweight = 0, bodyweightLoadPercentages = {}) {
+  static calculateTotalVolume(exercises, userBodyweight = 0) {
     if (!Array.isArray(exercises)) {
       return 0;
     }
@@ -50,10 +51,8 @@ export class VolumeCalculator {
     let totalVolume = 0;
 
     exercises.forEach(exercise => {
-      // Determine bodyweight load percentage for this exercise
-      const loadPercentage = bodyweightLoadPercentages[exercise.name] !== undefined
-        ? bodyweightLoadPercentages[exercise.name]
-        : 1;
+      // Get bodyweight load percentage for this exercise
+      const loadPercentage = getBodyweightLoadPercentage(exercise.name);
 
       // Calculate volume for this exercise
       const volume = this.calculateExerciseVolume(
@@ -73,11 +72,10 @@ export class VolumeCalculator {
    * Calculate volume for circuit workouts
    * @param {Array} exercises - Array of exercise objects
    * @param {number} [userBodyweight=0] - User's bodyweight in kg
-   * @param {Object} [bodyweightLoadPercentages={}] - Object mapping exercise names to load percentages
    * @param {number} [circuitRounds=1] - Number of rounds in the circuit
    * @returns {number} - Total volume for circuit workout
    */
-  static calculateCircuitVolume(exercises, userBodyweight = 0, bodyweightLoadPercentages = {}, circuitRounds = 1) {
+  static calculateCircuitVolume(exercises, userBodyweight = 0, circuitRounds = 1) {
     if (!Array.isArray(exercises) || exercises.length === 0 || circuitRounds <= 0) {
       return 0;
     }
@@ -85,10 +83,8 @@ export class VolumeCalculator {
     let totalVolume = 0;
 
     exercises.forEach(exercise => {
-      // Determine bodyweight load percentage for this exercise
-      const loadPercentage = bodyweightLoadPercentages[exercise.name] !== undefined
-        ? bodyweightLoadPercentages[exercise.name]
-        : 1;
+      // Get bodyweight load percentage for this exercise
+      const loadPercentage = getBodyweightLoadPercentage(exercise.name);
 
       // Calculate volume for this exercise
       const volume = this.calculateExerciseVolume(
@@ -102,24 +98,5 @@ export class VolumeCalculator {
     });
 
     return totalVolume;
-  }
-
-  /**
-   * Get default bodyweight load percentages for common exercises
-   * @returns {Object} - Object mapping exercise names to default load percentages
-   */
-  static getDefaultBodyweightLoadPercentages() {
-    return {
-      'Push-ups': 0.75, // 75% bodyweight
-      'Pull-ups': 1.0,  // 100% bodyweight
-      'Squats': 0.85,   // 85% bodyweight
-      'Lunges': 0.7,    // 70% bodyweight
-      'Dips': 0.8,      // 80% bodyweight
-      'Plank': 0.5,     // 50% bodyweight (approximation)
-      'Burpees': 1.0,   // 100% bodyweight
-      'Mountain Climbers': 0.6, // 60% bodyweight
-      'Bodyweight Rows': 0.9, // 90% bodyweight
-      'Calisthenics': 0.8 // 80% bodyweight
-    };
   }
 }

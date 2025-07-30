@@ -7,11 +7,16 @@ import { Week } from './Week.js';
 
 export class TrainingPlan {
     constructor(data = {}) {
-        this.id = data.id || null;
-        this.name = data.name || '';
-        this.durationWeeks = data.durationWeeks || 0;
+        // README specifies: plan_id, plan_name, start_date, weeks
+        this.plan_id = data.plan_id || data.id || null;
+        this.plan_name = data.plan_name || data.name || '';
         this.start_date = data.start_date ? new Date(data.start_date) : new Date();
         this.weeks = data.weeks ? data.weeks.map(w => new Week(w)) : [];
+
+        // Keep legacy fields for backward compatibility
+        this.id = this.plan_id;
+        this.name = this.plan_name;
+        this.durationWeeks = data.durationWeeks || this.weeks.length;
         this.createdAt = data.createdAt ? new Date(data.createdAt) : new Date();
         this.updatedAt = data.updatedAt ? new Date(data.updatedAt) : new Date();
     }
@@ -43,11 +48,16 @@ export class TrainingPlan {
 
     toJSON() {
         return {
-            id: this.id,
-            name: this.name,
-            durationWeeks: this.durationWeeks,
+            // README-compliant fields
+            plan_id: this.plan_id,
+            plan_name: this.plan_name,
             start_date: this.start_date,
             weeks: this.weeks.map(week => week.toJSON()),
+
+            // Legacy fields for backward compatibility
+            id: this.plan_id,
+            name: this.plan_name,
+            durationWeeks: this.durationWeeks,
             createdAt: this.createdAt,
             updatedAt: this.updatedAt
         };

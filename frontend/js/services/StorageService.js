@@ -130,16 +130,37 @@ export class StorageService {
 
     async getCache(key) {
         const item = await this.getItem(`cache_${key}`);
-        
+
         if (!item) {
             return null;
         }
-        
+
         if (Date.now() > item.expiry) {
             await this.removeItem(`cache_${key}`);
             return null;
         }
-        
+
         return item.value;
+    }
+
+    // User profile methods as required by README
+    async setUserBodyweight(bodyweight) {
+        if (typeof bodyweight !== 'number' || bodyweight <= 0) {
+            throw new Error('Invalid bodyweight value');
+        }
+
+        return await this.setItem('user_bodyweight', bodyweight);
+    }
+
+    async getUserBodyweight() {
+        return await this.getItem('user_bodyweight');
+    }
+
+    async setUserProfile(profile) {
+        return await this.setItem('user_profile', profile);
+    }
+
+    async getUserProfile() {
+        return await this.getItem('user_profile');
     }
 }

@@ -96,7 +96,14 @@ export class PlanEditor {
 
         } catch (error) {
             console.error('Failed to save plan:', error);
-            this.setSaving(false, 'Failed to save plan. Please try again.');
+            let errorMsg = 'Failed to save plan. Please try again.';
+            if (error && error.message) {
+                errorMsg += `\n${error.message}`;
+            }
+            if (error && error.response && error.response.data) {
+                errorMsg += `\n${JSON.stringify(error.response.data)}`;
+            }
+            this.setSaving(false, errorMsg);
         }
     }
 

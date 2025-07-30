@@ -4,21 +4,29 @@
  */
 
 import { Day } from './Day.js';
+import { getBodyweightLoadPercentage } from '../utils/bodyweightLoadTable.js';
 
 export class WorkoutSession {
     constructor(data = {}) {
-        this.id = data.id || null;
+        // README specifies: session_id, date, total_duration, total_volume_kg, day_id_completed, performance_summary
+        this.session_id = data.session_id || data.id || null;
+        this.date = data.date ? new Date(data.date) : new Date();
+        this.total_duration = data.total_duration || data.duration || 0; // in seconds
+        this.total_volume_kg = data.total_volume_kg || data.totalVolume || 0;
+        this.day_id_completed = data.day_id_completed || data.dayId || null;
+        this.performance_summary = data.performance_summary || {};
+
+        // Legacy fields for backward compatibility
+        this.id = this.session_id;
         this.userId = data.userId || null;
         this.planId = data.planId || null;
         this.weekId = data.weekId || null;
-        this.dayId = data.dayId || null;
+        this.dayId = this.day_id_completed;
         this.day = data.day ? new Day(data.day) : null;
-
-        // Session metadata
-        this.date = data.date ? new Date(data.date) : new Date();
         this.startTime = data.startTime ? new Date(data.startTime) : new Date();
         this.endTime = data.endTime ? new Date(data.endTime) : null;
-        this.duration = data.duration || 0; // in seconds
+        this.duration = this.total_duration;
+        this.totalVolume = this.total_volume_kg;
         this.status = data.status || 'in_progress'; // in_progress, completed, cancelled
 
         // Timer configuration
@@ -86,7 +94,8 @@ export class WorkoutSession {
 
     complete() {
         this.endTime = new Date();
-        this.duration = Math.floor((this.endTime - this.startTime) / 1000);
+        this.total_duration = Math.floor((this.endTime - this.startTime) / 1000);
+        this.duration = this.total_duration; // Legacy field
         this.status = 'completed';
 
         // Calculate totals
@@ -147,34 +156,49 @@ export class WorkoutSession {
          * @param {Object} [bodyweightLoadPercentages={}] - Object mapping exercise names to load percentages
          */
         calculateTotalVolume(userBodyweight = 0, bodyweightLoadPercentages = {}) {
-            this.totalVolume = 0;
+            this.total_volume_kg = 0;
             this.completedExercises.forEach(exercise => {
+                // Use the hardcoded bodyweight load table as specified in README
+                const exerciseName = exercise.exercise_name || exercise.name || '';
+                const loadPercentage = bodyweightLoadPercentages[exerciseName] !== undefined
+                    ? bodyweightLoadPercentages[exerciseName]
+                    : getBodyweightLoadPercentage(exerciseName);
+
                 const volume = WorkoutSession.calculateExerciseVolume(
                     exercise,
                     userBodyweight,
-                    bodyweightLoadPercentages
+                    loadPercentage
                 );
                 exercise.volume = volume;
-                this.totalVolume += volume;
+                this.total_volume_kg += volume;
             });
+            this.totalVolume = this.total_volume_kg; // Legacy field
         }
 
     toJSON() {
         return {
-            id: this.id,
+            // README-compliant fields
+            session_id: this.session_id,
+            date: this.date,
+            total_duration: this.total_duration,
+            total_volume_kg: this.total_volume_kg,
+            day_id_completed: this.day_id_completed,
+            performance_summary: this.performance_summary,
+
+            // Legacy fields for backward compatibility
+            id: this.session_id,
             userId: this.userId,
             planId: this.planId,
             weekId: this.weekId,
-            dayId: this.dayId,
+            dayId: this.day_id_completed,
             day: this.day ? this.day.toJSON() : null,
-            date: this.date,
             startTime: this.startTime,
             endTime: this.endTime,
-            duration: this.duration,
+            duration: this.total_duration,
             status: this.status,
             timerConfig: this.timerConfig,
             timerState: this.timerState,
-            totalVolume: this.totalVolume,
+            totalVolume: this.total_volume_kg,
             totalSets: this.totalSets,
             totalReps: this.totalReps,
             averageRPE: this.averageRPE,

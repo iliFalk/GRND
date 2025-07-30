@@ -250,6 +250,60 @@ export class ApiService {
         });
     }
 
+    // README-specified endpoints
+    // GET /api/workout-data/:userId - retrieve user's training plan data
+    async getWorkoutData(userId) {
+        return this.request(`/workout-data/${userId}`);
+    }
+
+    // POST /api/workout-data/:userId - save user's training plan data
+    async saveWorkoutData(userId, trainingPlan) {
+        return this.request(`/workout-data/${userId}`, {
+            method: 'POST',
+            body: JSON.stringify(trainingPlan)
+        });
+    }
+
+    // User Profile endpoints as specified in README
+    async getUserProfile(userId) {
+        return this.request(`/user-profile/${userId}`);
+    }
+
+    async saveUserProfile(userId, profile) {
+        return this.request(`/user-profile/${userId}`, {
+            method: 'POST',
+            body: JSON.stringify(profile)
+        });
+    }
+
+    async deleteUserProfile(userId) {
+        return this.request(`/user-profile/${userId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    // Workout Session endpoints as specified in README
+    async createWorkoutSessionLog(sessionData) {
+        return this.request('/workout-session', {
+            method: 'POST',
+            body: JSON.stringify(sessionData)
+        });
+    }
+
+    async getUserWorkoutSessions(userId) {
+        return this.request(`/workout-sessions/${userId}`);
+    }
+
+    async getWorkoutSessionById(sessionId) {
+        return this.request(`/workout-session/${sessionId}`);
+    }
+
+    async deleteWorkoutSession(sessionId) {
+        return this.request(`/workout-session/${sessionId}`, {
+            method: 'DELETE'
+        });
+    }
+
     // Dashboard specific methods
     async getTodaysWorkout() {
         // This would be implemented to get today's specific workout

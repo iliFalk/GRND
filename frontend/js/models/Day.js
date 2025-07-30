@@ -7,15 +7,20 @@ import { Exercise } from './Exercise.js';
 
 export class Day {
     constructor(data = {}) {
-        this.id = data.id || null;
-        this.dayNumber = data.dayNumber || 1;
-        this.name = data.name || '';
+        // README specifies: day_id, day_name, day_type, exercises OR circuit_config
+        this.day_id = data.day_id || data.id || null;
+        this.day_name = data.day_name || data.name || '';
         this.day_type = data.day_type || 'STANDARD'; // 'STANDARD' or 'CIRCUIT'
         this.exercises = data.exercises ? data.exercises.map(e => new Exercise(e)) : [];
         this.circuit_config = data.circuit_config || {
             target_rounds: 3,
             circuit_exercises: []
         };
+
+        // Legacy fields for backward compatibility
+        this.id = this.day_id;
+        this.name = this.day_name;
+        this.dayNumber = data.dayNumber || 1;
         this.isCompleted = data.isCompleted || false;
         this.completedAt = data.completedAt ? new Date(data.completedAt) : null;
     }
@@ -73,12 +78,17 @@ export class Day {
 
     toJSON() {
         return {
-            id: this.id,
-            dayNumber: this.dayNumber,
-            name: this.name,
+            // README-compliant fields
+            day_id: this.day_id,
+            day_name: this.day_name,
             day_type: this.day_type,
             exercises: this.exercises.map(exercise => exercise.toJSON()),
             circuit_config: this.circuit_config,
+
+            // Legacy fields for backward compatibility
+            id: this.day_id,
+            name: this.day_name,
+            dayNumber: this.dayNumber,
             isCompleted: this.isCompleted,
             completedAt: this.completedAt
         };

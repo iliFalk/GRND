@@ -10,36 +10,34 @@ export class Day {
         this.id = data.id || null;
         this.dayNumber = data.dayNumber || 1;
         this.name = data.name || '';
-        this.type = data.type || 'Standard'; // 'Standard' or 'Circuit'
-        this.description = data.description || '';
+        this.day_type = data.day_type || 'STANDARD'; // 'STANDARD' or 'CIRCUIT'
         this.exercises = data.exercises ? data.exercises.map(e => new Exercise(e)) : [];
-        this.restDay = data.restDay || false;
-        this.duration = data.duration || 0; // in minutes
+        this.circuit_config = data.circuit_config || {
+            target_rounds: 3,
+            circuit_exercises: []
+        };
         this.isCompleted = data.isCompleted || false;
         this.completedAt = data.completedAt ? new Date(data.completedAt) : null;
-        this.notes = data.notes || '';
     }
 
     get totalSets() {
-        if (this.type === 'Circuit') {
+        if (this.day_type === 'CIRCUIT') {
             return this.exercises.reduce((total, exercise) => total + (exercise.sets || 0), 0);
         }
         return this.exercises.length;
     }
 
     get totalReps() {
-        if (this.type === 'Circuit') {
+        if (this.day_type === 'CIRCUIT') {
             return this.exercises.reduce((total, exercise) => total + (exercise.reps || 0), 0);
         }
         return this.exercises.reduce((total, exercise) => total + (exercise.reps || 0), 0);
     }
 
     get estimatedDuration() {
-        if (this.restDay) return 0;
-        
         let baseDuration = 0;
-        
-        if (this.type === 'Circuit') {
+
+        if (this.day_type === 'CIRCUIT') {
             // Circuit training: 30 seconds per exercise + 30 seconds rest
             baseDuration = this.exercises.length * 1; // 1 minute per exercise
         } else {
@@ -48,7 +46,7 @@ export class Day {
                 return total + (exercise.sets * 3); // 3 minutes per set
             }, 0);
         }
-        
+
         // Add warm-up and cool-down
         return baseDuration + 10 + 5; // 10 min warm-up, 5 min cool-down
     }
@@ -78,14 +76,11 @@ export class Day {
             id: this.id,
             dayNumber: this.dayNumber,
             name: this.name,
-            type: this.type,
-            description: this.description,
+            day_type: this.day_type,
             exercises: this.exercises.map(exercise => exercise.toJSON()),
-            restDay: this.restDay,
-            duration: this.duration,
+            circuit_config: this.circuit_config,
             isCompleted: this.isCompleted,
-            completedAt: this.completedAt,
-            notes: this.notes
+            completedAt: this.completedAt
         };
     }
 

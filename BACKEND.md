@@ -32,6 +32,9 @@ This directory contains the backend server for the GRND Telegram Mini App.
 ### Image Upload
 - `POST /api/upload-image` - Upload exercise images (multipart/form-data)
 
+### Volume Calculation
+- `POST /api/calculate-volume` - Calculate workout volume
+
 ## Directory Structure
 
 ```
@@ -40,31 +43,97 @@ This directory contains the backend server for the GRND Telegram Mini App.
 ├── package.json       # Dependencies and scripts
 ├── data/              # User JSON data storage
 ├── uploads/           # Exercise image uploads
+├── utils/             # Utility functions
+│   └── volumeCalculator.js # Volume calculation logic
 └── test-api.js        # API testing script
 ```
 
 ## Data Format
 
-### Workout Data JSON Structure
+### Training Plan JSON Structure (PRD-compliant)
 ```json
 {
-  "userId": "telegram-user-id",
-  "workouts": [
+  "id": "training-plan-uuid",
+  "name": "Training Plan Name",
+  "start_date": "2025-07-29T11:43:00.000Z",
+  "weeks": [
     {
-      "id": "workout-uuid",
-      "name": "Workout Name",
-      "exercises": [
+      "week_number": 1,
+      "days": [
         {
-          "name": "Exercise Name",
-          "sets": 3,
-          "reps": 10,
-          "weight": 50,
-          "imageUrl": "/uploads/image-filename.jpg"
+          "id": "day-uuid",
+          "name": "Day Name",
+          "day_type": "STANDARD",
+          "exercises": [
+            {
+              "id": "exercise-uuid",
+              "name": "Exercise Name",
+              "exercise_type": "WEIGHTED",
+              "target_sets": 3,
+              "target_reps": 10,
+              "completed_sets": [
+                { "reps": 10, "weight": 50 },
+                { "reps": 8, "weight": 50 },
+                { "reps": 7, "weight": 50 }
+              ]
+            },
+            {
+              "id": "exercise-uuid",
+              "name": "Push-ups",
+              "exercise_type": "BODYWEIGHT",
+              "bodyweight_load_percentage": 0.75,
+              "target_sets": 3,
+              "target_reps": 10,
+              "completed_sets": [
+                { "reps": 10 },
+                { "reps": 8 },
+                { "reps": 7 }
+              ]
+            }
+          ]
         }
       ]
     }
-  ],
-  "lastUpdated": "2025-07-29T11:43:00.000Z"
+  ]
+}
+```
+
+### Volume Calculation Request
+```json
+{
+  "user_bodyweight": 75,
+  "exercises": [
+    {
+      "id": "exercise-uuid",
+      "name": "Push-ups",
+      "exercise_type": "BODYWEIGHT",
+      "bodyweight_load_percentage": 0.75,
+      "completed_sets": [
+        { "reps": 10 },
+        { "reps": 8 },
+        { "reps": 7 }
+      ]
+    },
+    {
+      "id": "exercise-uuid",
+      "name": "Bench Press",
+      "exercise_type": "WEIGHTED",
+      "completed_sets": [
+        { "reps": 8, "weight": 60 },
+        { "reps": 6, "weight": 60 },
+        { "reps": 6, "weight": 60 },
+        { "reps": 5, "weight": 60 }
+      ]
+    }
+  ]
+}
+```
+
+### Volume Calculation Response
+```json
+{
+  "success": true,
+  "total_volume_kg": 3202.5
 }
 ```
 
@@ -88,3 +157,6 @@ node test-api.js
 - ✅ Async/await patterns
 - ✅ 5MB file upload limit
 - ✅ Image file type validation
+- ✅ PRD-compliant hierarchical data structure
+- ✅ Volume calculation according to PRD requirements
+- ✅ Backward compatibility during transition

@@ -95,8 +95,6 @@ export class PlanList {
                 <p class="plan-description">${plan.description || 'No description provided'}</p>
                 <div class="plan-meta">
                     <span class="plan-duration">${plan.durationWeeks} weeks</span>
-                    <span class="plan-difficulty">${plan.difficulty}</span>
-                    <span class="plan-goal">${plan.goal}</span>
                 </div>
                 <div class="plan-stats">
                     <span class="stat">
@@ -104,6 +102,9 @@ export class PlanList {
                     </span>
                     <span class="stat">
                         <strong>${plan.weeks.length}</strong> weeks
+                    </span>
+                    <span class="stat">
+                        <strong>${plan.start_date ? new Date(plan.start_date).toLocaleDateString() : 'Not started'}</strong> start date
                     </span>
                 </div>
             </div>

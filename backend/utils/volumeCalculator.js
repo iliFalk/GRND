@@ -1,48 +1,51 @@
 /**
  * Volume Calculator Utility for Backend
- * Provides functions for calculating workout volume
+ * Provides functions for calculating workout volume according to PRD requirements
  */
 class VolumeCalculator {
   /**
-   * Calculate volume for a single exercise
+   * Calculate volume for a single exercise according to PRD
    * @param {Object} exercise - The exercise object
-   * @param {number} exercise.sets - Number of sets
-   * @param {number} exercise.reps - Number of reps
-   * @param {number} [exercise.weight=0] - Weight used (for weighted exercises)
-   * @param {boolean} [exercise.isBodyweight=false] - Whether exercise is bodyweight
-   * @param {number} [userBodyweight=0] - User's bodyweight in kg (for bodyweight exercises)
-   * @param {number} [bodyweightLoadPercentage=1] - Percentage of bodyweight used (for bodyweight exercises)
-   * @returns {number} - Calculated volume
+   * @param {string} exercise.exercise_type - 'WEIGHTED' or 'BODYWEIGHT'
+   * @param {number} [exercise.bodyweight_load_percentage=1] - Percentage of bodyweight for bodyweight exercises
+   * @param {Array} exercise.completed_sets - Array of completed sets with reps and weight
+   * @param {number} userBodyweight - User's bodyweight in kg (required for bodyweight exercises)
+   * @returns {number} - Calculated volume in kg
    */
-  static calculateExerciseVolume(exercise, userBodyweight = 0, bodyweightLoadPercentage = 1) {
-    if (!exercise || exercise.sets <= 0 || exercise.reps <= 0) {
+  static calculateExerciseVolume(exercise, userBodyweight) {
+    if (!exercise || !Array.isArray(exercise.completed_sets) || exercise.completed_sets.length === 0) {
       return 0;
     }
 
-    let volume = 0;
+    let totalVolume = 0;
 
-    if (exercise.isBodyweight && userBodyweight > 0) {
-      // Bodyweight exercise: volume = (bodyweight * loadPercentage) * reps * sets
-      volume = (userBodyweight * bodyweightLoadPercentage) * exercise.reps * exercise.sets;
-    } else if (exercise.weight && exercise.weight > 0) {
-      // Weighted exercise: volume = weight * reps * sets
-      volume = exercise.weight * exercise.reps * exercise.sets;
-    } else {
-      // Bodyweight exercise with default 1x bodyweight or no weight specified
-      volume = exercise.reps * exercise.sets;
-    }
+    exercise.completed_sets.forEach(set => {
+      if (exercise.exercise_type === 'WEIGHTED') {
+        // Weighted exercise: Set Volume = weight_used × reps_completed
+        if (set.weight !== undefined && set.weight !== null && set.reps !== undefined) {
+          totalVolume += set.weight * set.reps;
+        }
+      } else if (exercise.exercise_type === 'BODYWEIGHT' && userBodyweight) {
+        // Bodyweight exercise: Set Volume = user_bodyweight × bodyweight_load_percentage × reps_completed
+        const loadPercentage = exercise.bodyweight_load_percentage !== undefined
+          ? exercise.bodyweight_load_percentage
+          : 1;
+        if (set.reps !== undefined) {
+          totalVolume += userBodyweight * loadPercentage * set.reps;
+        }
+      }
+    });
 
-    return volume;
+    return totalVolume;
   }
 
   /**
-   * Calculate total volume for a workout session
+   * Calculate total volume for multiple exercises
    * @param {Array} exercises - Array of exercise objects
-   * @param {number} [userBodyweight=0] - User's bodyweight in kg
-   * @param {Object} [bodyweightLoadPercentages={}] - Object mapping exercise names to load percentages
-   * @returns {number} - Total volume for all exercises
+   * @param {number} userBodyweight - User's bodyweight in kg
+   * @returns {number} - Total volume for all exercises in kg
    */
-  static calculateTotalVolume(exercises, userBodyweight = 0, bodyweightLoadPercentages = {}) {
+  static calculateTotalVolume(exercises, userBodyweight) {
     if (!Array.isArray(exercises)) {
       return 0;
     }
@@ -50,20 +53,7 @@ class VolumeCalculator {
     let totalVolume = 0;
 
     exercises.forEach(exercise => {
-      // Determine bodyweight load percentage for this exercise
-      const loadPercentage = bodyweightLoadPercentages[exercise.name] !== undefined
-        ? bodyweightLoadPercentages[exercise.name]
-        : 1;
-
-      // Calculate volume for this exercise
-      const volume = this.calculateExerciseVolume(
-        exercise,
-        userBodyweight,
-        loadPercentage
-      );
-
-      // Add to total
-      totalVolume += volume;
+      totalVolume += this.calculateExerciseVolume(exercise, userBodyweight);
     });
 
     return totalVolume;

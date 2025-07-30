@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Timer Test</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <h1 class="app-title">GRND - Workout Timer Test</h1>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-content">
+            <!-- Workout View -->
+            <div id="workout-view" class="view active">
+                <!-- Workout component will be rendered here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        // Import required modules
+        import { Timer } from './js/utils/Timer.js';
+        import { WorkoutTimer } from './js/components/WorkoutTimer.js';
+        import { TimerSetupModal } from './js/components/TimerSetupModal.js';
+        import { LogSetModal } from './js/components/LogSetModal.js';
+        import { LogRoundModal } from './js/components/LogRoundModal.js';
+        import { WorkoutSession } from './js/models/WorkoutSession.js';
+        import { Day } from './js/models/Day.js';
+        import { Exercise } from './js/models/Exercise.js';
+        
+        // Mock API service
+        const mockApiService = {
+            getDay: async (dayId) => {
+                // Return mock day data
+                const exercises = [
+                    new Exercise({
+                        id: 1,
+                        name: 'Push-ups',
+                        exercise_type: 'BODYWEIGHT',
+                        sets: 3,
+                        reps: 10,
+                        weight: 0,
+                        restTime: 60,
+                        instructions: 'Keep your body straight and lower your chest to the ground.'
+                    }),
+                    new Exercise({
+                        id: 2,
+                        name: 'Squats',
+                        exercise_type: 'BODYWEIGHT',
+                        sets: 3,
+                        reps: 15,
+                        weight: 0,
+                        restTime: 60,
+                        instructions: 'Lower your hips until your thighs are parallel to the ground.'
+                    }),
+                    new Exercise({
+                        id: 3,
+                        name: 'Plank',
+                        exercise_type: 'BODYWEIGHT',
+                        sets: 3,
+                        reps: 1,
+                        duration: 30,
+                        weight: 0,
+                        restTime: 60,
+                        instructions: 'Hold a straight line from head to heels.'
+                    })
+                ];
+                
+                return new Day({
+                    id: dayId,
+                    dayNumber: 1,
+                    name: 'Test Workout',
+                    day_type: 'STANDARD',
+                    exercises: exercises
+                });
+            },
+            
+            getUserProfile: async (userId) => {
+                // Return mock user profile
+                return {
+                    id: userId,
+                    bodyweight: 70
+                };
+            },
+            
+            getWorkoutSession: async (sessionId) => {
+                // Return mock session data
+                return null;
+            },
+            
+            updateWorkoutSession: async (sessionId, sessionData) => {
+                console.log('Updating workout session:', sessionData);
+                return sessionData;
+            }
+        };
+        
+        // Mock storage service
+        const mockStorageService = {
+            getItem: async (key) => {
+                console.log('Getting item from storage:', key);
+                if (key === 'user') {
+                    return { id: 1, firstName: 'Test', lastName: 'User' };
+                }
+                return null;
+            },
+            
+            setItem: async (key, value) => {
+                console.log('Setting item in storage:', key, value);
+                return true;
+            }
+        };
+        
+        // Mock navigation service
+        const mockNavigationService = {
+            navigateTo: (view, params) => {
+                console.log('Navigating to:', view, params);
+            }
+        };
+        
+        // Test function
+        async function testWorkoutTimer() {
+            console.log('Testing Workout Timer System...');
+            
+            try {
+                // Test Timer class
+                console.log('Testing Timer class...');
+                const timer = new Timer({
+                    duration: 5000, // 5 seconds
+                    isCountdown: true,
+                    onUpdate: (data) => {
+                        console.log('Timer update:', data);
+                    },
+                    onComplete: (data) => {
+                        console.log('Timer complete:', data);
+                    }
+                });
+                
+                timer.start();
+                
+                // Test WorkoutTimer component
+                console.log('Testing WorkoutTimer component...');
+                const workoutTimerContainer = document.createElement('div');
+                document.body.appendChild(workoutTimerContainer);
+                
+                const workoutTimer = new WorkoutTimer({
+                    container: workoutTimerContainer,
+                    onTimerEvent: (event) => {
+                        console.log('Workout timer event:', event);
+                    }
+                });
+                
+                // Test TimerSetupModal
+                console.log('Testing TimerSetupModal...');
+                const timerSetupModal = new TimerSetupModal({
+                    onSave: (config) => {
+                        console.log('Timer setup saved:', config);
+                    },
+                    onCancel: () => {
+                        console.log('Timer setup cancelled');
+                    }
+                });
+                
+                // Test LogSetModal
+                console.log('Testing LogSetModal...');
+                const logSetModal = new LogSetModal({
+                    onSave: (setData) => {
+                        console.log('Set data saved:', setData);
+                    },
+                    onCancel: () => {
+                        console.log('Set logging cancelled');
+                    }
+                });
+                
+                // Test LogRoundModal
+                console.log('Testing LogRoundModal...');
+                const logRoundModal = new LogRoundModal({
+                    onSave: (roundData) => {
+                        console.log('Round data saved:', roundData);
+                    },
+                    onCancel: () => {
+                        console.log('Round logging cancelled');
+                    }
+                });
+                
+                // Test WorkoutSession model
+                console.log('Testing WorkoutSession model...');
+                const workoutSession = new WorkoutSession({
+                    userId: 1,
+                    timerConfig: {
+                        totalWorkoutTime: 30,
+                        preparationTime: 10,
+                        defaultRestTime: 60,
+                        workoutType: 'STANDARD'
+                    }
+                });
+                
+                console.log('Workout session created:', workoutSession);
+                
+                // Test with mock data
+                console.log('Testing with mock data...');
+                const workoutContainer = document.getElementById('workout-view');
+                
+                // Dynamically import Workout component
+                const { Workout } = await import('./js/components/Workout.js');
+                
+                const workout = new Workout(
+                    workoutContainer,
+                    mockApiService,
+                    mockStorageService,
+                    mockNavigationService
+                );
+                
+                await workout.init();
+                
+                // Test with day data
+                await workout.initWithDay(1);
+                
+                console.log('All tests completed successfully!');
+                
+                // Show success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'success-message';
+                successMessage.innerHTML = `
+                    <h2>Workout Timer Test Successful!</h2>
+                    <p>All components have been initialized and tested successfully.</p>
+                    <button id="open-timer-setup-btn">Open Timer Setup</button>
+                    <button id="open-log-set-btn">Open Log Set</button>
+                    <button id="open-log-round-btn">Open Log Round</button>
+                `;
+                
+                workoutContainer.appendChild(successMessage);
+                
+                // Add event listeners for test buttons
+                document.getElementById('open-timer-setup-btn').addEventListener('click', () => {
+                    timerSetupModal.open();
+                });
+                
+                document.getElementById('open-log-set-btn').addEventListener('click', () => {
+                    logSetModal.open({
+                        exercise: {
+                            name: 'Test Exercise',
+                            reps: 10,
+                            weight: 50
+                        },
+                        plannedReps: 10,
+                        plannedWeight: 50
+                    });
+                });
+                
+                document.getElementById('open-log-round-btn').addEventListener('click', () => {
+                    logRoundModal.open({
+                        exercises: [
+                            {
+                                name: 'Exercise 1',
+                                reps: 10,
+                                weight: 50
+                            },
+                            {
+                                name: 'Exercise 2',
+                                reps: 15,
+                                weight: 30
+                            }
+                        ],
+                        roundNumber: 1
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Test failed:', error);
+                
+                // Show error message
+                const workoutContainer = document.getElementById('workout-view');
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.innerHTML = `
+                    <h2>Test Failed</h2>
+                    <p>Error: ${error.message}</p>
+                    <p>Check the console for more details.</p>
+                `;
+                
+                workoutContainer.appendChild(errorMessage);
+            }
+        }
+        
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', testWorkoutTimer);
+    </script>
+</body>
+</html>

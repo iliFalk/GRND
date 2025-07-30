@@ -99,8 +99,11 @@ export class DayEditor {
         return {
             name: form.querySelector('#day-name').value,
             description: form.querySelector('#day-description').value,
-            type: form.querySelector('input[name="day-type"]:checked').value,
-            restDay: form.querySelector('#rest-day').checked,
+            day_type: form.querySelector('input[name="day-type"]:checked').value,
+            circuit_config: {
+                target_rounds: parseInt(form.querySelector('#circuit-rounds').value) || 3,
+                circuit_exercises: this.day.exercises.map(ex => ex.id)
+            },
             notes: form.querySelector('#day-notes').value
         };
     }
@@ -156,11 +159,7 @@ export class DayEditor {
                 <div class="form-row">
                     <div class="form-group">
                         <label for="circuit-rounds">Target Rounds</label>
-                        <input type="number" id="circuit-rounds" value="${this.day.circuitRounds || 3}" min="1" max="10">
-                    </div>
-                    <div class="form-group">
-                        <label for="circuit-rest">Rest Between Rounds (seconds)</label>
-                        <input type="number" id="circuit-rest" value="${this.day.circuitRest || 60}" min="0" max="300">
+                        <input type="number" id="circuit-rounds" value="${this.day.circuit_config?.target_rounds || 3}" min="1" max="10">
                     </div>
                 </div>
             </div>

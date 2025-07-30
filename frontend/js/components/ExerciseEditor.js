@@ -107,32 +107,26 @@ export class ExerciseEditor {
         const data = {
             name: form.querySelector('#exercise-name').value,
             description: form.querySelector('#exercise-description').value,
-            type: type,
-            muscleGroups: form.querySelector('#exercise-muscle-groups').value
-                .split(',')
-                .map(m => m.trim())
-                .filter(m => m),
-            equipment: form.querySelector('#exercise-equipment').value,
+            exercise_type: type,
+            bodyweight_load_percentage: parseFloat(form.querySelector('#bodyweight-load').value) || 1.0,
             instructions: form.querySelector('#exercise-instructions').value,
-            videoUrl: form.querySelector('#exercise-video').value,
             imageUrl: this.exercise.imageUrl || ''
         };
 
         // Exercise parameters based on type
-        if (type === 'strength') {
+        if (type === 'WEIGHTED') {
             data.sets = parseInt(form.querySelector('#exercise-sets').value) || 0;
             data.reps = parseInt(form.querySelector('#exercise-reps').value) || 0;
             data.weight = parseFloat(form.querySelector('#exercise-weight').value) || 0;
             data.restTime = parseInt(form.querySelector('#exercise-rest').value) || 60;
-        } else if (type === 'cardio') {
-            data.duration = parseInt(form.querySelector('#exercise-duration').value) || 0;
-            data.distance = parseFloat(form.querySelector('#exercise-distance').value) || 0;
-        } else if (type === 'flexibility') {
-            data.duration = parseInt(form.querySelector('#exercise-duration').value) || 0;
+        } else if (type === 'BODYWEIGHT') {
+            data.sets = parseInt(form.querySelector('#exercise-sets').value) || 0;
+            data.reps = parseInt(form.querySelector('#exercise-reps').value) || 0;
+            data.restTime = parseInt(form.querySelector('#exercise-rest').value) || 60;
         }
 
         // Circuit-specific fields
-        if (this.day && this.day.type === 'Circuit') {
+        if (this.day && this.day.day_type === 'CIRCUIT') {
             data.circuitOrder = parseInt(form.querySelector('#circuit-order').value) || 0;
             data.circuitRounds = parseInt(form.querySelector('#circuit-rounds').value) || 1;
         }
@@ -145,7 +139,7 @@ export class ExerciseEditor {
             this.setError('Exercise name is required');
             return false;
         }
-        if (data.type === 'strength' && (data.sets <= 0 || data.reps <= 0)) {
+        if ((data.exercise_type === 'WEIGHTED' || data.exercise_type === 'BODYWEIGHT') && (data.sets <= 0 || data.reps <= 0)) {
             this.setError('Sets and reps must be greater than 0 for strength exercises');
             return false;
         }
@@ -216,9 +210,9 @@ export class ExerciseEditor {
     }
 
     renderExerciseParameters() {
-        const type = this.exercise.type || 'strength';
+        const type = this.exercise.exercise_type || 'WEIGHTED';
 
-        if (type === 'strength') {
+        if (type === 'WEIGHTED') {
             return `
                 <div class="exercise-parameters">
                     <h4>Exercise Parameters</h4>
@@ -232,7 +226,7 @@ export class ExerciseEditor {
                             <input type="number" id="exercise-reps" value="${this.exercise.reps || 10}" min="1" max="100">
                         </div>
                         <div class="form-group">
-                            <label for="exercise-weight">Weight (lbs)</label>
+                            <label for="exercise-weight">Weight (kg)</label>
                             <input type="number" id="exercise-weight" value="${this.exercise.weight || 0}" min="0" step="0.5">
                         </div>
                         <div class="form-group">
@@ -241,53 +235,40 @@ export class ExerciseEditor {
                         </div>
                     </div>
                 </div>
-
-                <!-- Volume calculation display -->
-                ${this.exercise.sets > 0 && this.exercise.reps > 0 ? `
-                <div class="volume-calculation">
-                    <h4>Volume Calculation</h4>
-                    <div class="volume-result">
-                        ${this.exercise.isBodyweight ?
-                          `Bodyweight exercise: ${this.exercise.sets} sets × ${this.exercise.reps} reps = ${this.exercise.sets * this.exercise.reps} units` :
-                          `${this.exercise.sets} sets × ${this.exercise.reps} reps × ${this.exercise.weight} lbs = ${(this.exercise.sets * this.exercise.reps * this.exercise.weight).toFixed(1)} lbs`}
+            `;
+        } else if (type === 'BODYWEIGHT') {
+            return `
+                <div class="exercise-parameters">
+                    <h4>Exercise Parameters</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="exercise-sets">Sets</label>
+                            <input type="number" id="exercise-sets" value="${this.exercise.sets || 3}" min="1" max="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="exercise-reps">Reps</label>
+                            <input type="number" id="exercise-reps" value="${this.exercise.reps || 10}" min="1" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="bodyweight-load">Bodyweight Load (%)</label>
+                            <input type="number" id="bodyweight-load" value="${this.exercise.bodyweight_load_percentage * 100 || 100}" min="1" max="200" step="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="exercise-rest">Rest (seconds)</label>
+                            <input type="number" id="exercise-rest" value="${this.exercise.restTime || 60}" min="0" max="300">
+                        </div>
                     </div>
                 </div>
-                ` : ''}
-        } else if (type === 'cardio') {
+            `;
+        } else {
             return `
                 <div class="exercise-parameters">
                     <h4>Exercise Parameters</h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="exercise-duration">Duration (seconds)</label>
-                            <input type="number" id="exercise-duration" value="${this.exercise.duration || 60}" min="1">
+                            <input type="number" id="exercise-duration" value="${this.exercise.duration || 30}" min="1">
                         </div>
-                        <div class="form-group">
-                            <label for="exercise-distance">Distance (miles)</label>
-                            <input type="number" id="exercise-distance" value="${this.exercise.distance || 0}" min="0" step="0.1">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Volume calculation display -->
-                ${this.exercise.sets > 0 && this.exercise.reps > 0 ? `
-                <div class="volume-calculation">
-                    <h4>Volume Calculation</h4>
-                    <div class="volume-result">
-                        ${this.exercise.name.toLowerCase().includes('bodyweight') ||
-                          this.exercise.name.toLowerCase().includes('bw') ?
-                          `Bodyweight exercise: ${this.exercise.sets} sets × ${this.exercise.reps} reps = ${this.exercise.sets * this.exercise.reps} units` :
-                          `${this.exercise.sets} sets × ${this.exercise.reps} reps × ${this.exercise.weight} lbs = ${(this.exercise.sets * this.exercise.reps * this.exercise.weight).toFixed(1)} lbs`}
-                    </div>
-                </div>
-                ` : ''}
-        } else {
-            return `
-                <div class="exercise-parameters">
-                    <h4>Exercise Parameters</h4>
-                    <div class="form-group">
-                        <label for="exercise-duration">Duration (seconds)</label>
-                        <input type="number" id="exercise-duration" value="${this.exercise.duration || 30}" min="1">
                     </div>
                 </div>
             `;
@@ -345,9 +326,9 @@ export class ExerciseEditor {
                                 <div class="form-group">
                                     <label for="exercise-type">Type</label>
                                     <select id="exercise-type">
-                                        <option value="strength" ${this.exercise.type === 'strength' ? 'selected' : ''}>Strength</option>
-                                        <option value="cardio" ${this.exercise.type === 'cardio' ? 'selected' : ''}>Cardio</option>
-                                        <option value="flexibility" ${this.exercise.type === 'flexibility' ? 'selected' : ''}>Flexibility</option>
+                                        <option value="WEIGHTED" ${this.exercise.exercise_type === 'WEIGHTED' ? 'selected' : ''}>Weighted</option>
+                                        <option value="BODYWEIGHT" ${this.exercise.exercise_type === 'BODYWEIGHT' ? 'selected' : ''}>Bodyweight</option>
+                                        <option value="CARDIO" ${this.exercise.exercise_type === 'CARDIO' ? 'selected' : ''}>Cardio</option>
                                     </select>
                                 </div>
                                 <div class="form-group">

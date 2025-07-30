@@ -1,1 +1,8 @@
-{}
+{
+  "test-user": {
+    "userId": "test-user",
+    "bodyweight": 70,
+    "createdAt": "2025-07-30T21:29:44.568Z",
+    "updatedAt": "2025-07-30T21:29:44.568Z"
+  }
+}

@@ -97,7 +97,18 @@ class VolumeCalculator {
     let totalVolume = 0;
 
     exercises.forEach(exercise => {
-      totalVolume += this.calculateExerciseVolume(exercise, userBodyweight);
+      // Get bodyweight load percentage from the hardcoded table
+      const exerciseName = exercise.exercise_name || exercise.name || '';
+      const bodyweightLoadPercentages = this.getDefaultBodyweightLoadPercentages();
+      const loadPercentage = bodyweightLoadPercentages[exerciseName] || 1.0;
+
+      // Update exercise to include the load percentage for calculation
+      const exerciseWithLoadPercentage = {
+        ...exercise,
+        bodyweight_load_percentage: loadPercentage
+      };
+
+      totalVolume += this.calculateExerciseVolume(exerciseWithLoadPercentage, userBodyweight);
     });
 
     return totalVolume;

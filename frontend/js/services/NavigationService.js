@@ -114,7 +114,13 @@ export class NavigationService {
         document.dispatchEvent(event);
 
         // Initialize specific components
-        if (viewName === 'plan-list') {
+        if (viewName === 'dashboard') {
+            // Dashboard is handled by GRNDApp, no additional initialization needed
+            console.log('Dashboard view initialized');
+        } else if (viewName === 'plans') {
+            // Basic plans view is handled by GRNDApp, no additional initialization needed
+            console.log('Plans view initialized');
+        } else if (viewName === 'plan-list') {
             // Initialize PlanList component
             const planListContainer = document.getElementById('plan-list-view');
             if (planListContainer) {
@@ -171,7 +177,7 @@ export class NavigationService {
                         window.grndApp.storage,
                         this
                     );
-                    
+
                     // Initialize with dayId or sessionId if provided
                     if (params.dayId) {
                         workout.initWithDay(params.dayId);
@@ -182,6 +188,78 @@ export class NavigationService {
                     }
                 }
             }
+        } else if (viewName === 'settings') {
+            // Initialize Settings view
+            console.log('Settings view initialized');
+            this.initializeSettingsView(params);
+        }
+    }
+
+    initializeSettingsView(params) {
+        // Initialize settings functionality as per README requirements
+        const settingsView = document.getElementById('settings-view');
+        if (!settingsView) return;
+
+        // Add bodyweight input functionality as specified in README
+        const bodyweightSection = settingsView.querySelector('.bodyweight-section');
+        if (!bodyweightSection) {
+            // Create bodyweight input section if it doesn't exist
+            const bodyweightHTML = `
+                <div class="setting-item bodyweight-section">
+                    <label for="bodyweight-input">Bodyweight (kg):</label>
+                    <input type="number" id="bodyweight-input" min="30" max="300" step="0.1"
+                           placeholder="Enter your bodyweight">
+                    <button id="save-bodyweight-btn" class="btn-primary">Save</button>
+                </div>
+            `;
+            settingsView.querySelector('.settings-list').insertAdjacentHTML('afterbegin', bodyweightHTML);
+
+            // Add event listener for saving bodyweight
+            const saveBtn = document.getElementById('save-bodyweight-btn');
+            const bodyweightInput = document.getElementById('bodyweight-input');
+
+            if (saveBtn && bodyweightInput) {
+                saveBtn.addEventListener('click', async () => {
+                    const bodyweight = parseFloat(bodyweightInput.value);
+                    if (bodyweight && bodyweight > 0) {
+                        try {
+                            // Save bodyweight to storage/API
+                            if (window.grndApp && window.grndApp.storage) {
+                                await window.grndApp.storage.setUserBodyweight(bodyweight);
+                                console.log('Bodyweight saved:', bodyweight);
+                                // Show success feedback
+                                saveBtn.textContent = 'Saved!';
+                                setTimeout(() => {
+                                    saveBtn.textContent = 'Save';
+                                }, 2000);
+                            }
+                        } catch (error) {
+                            console.error('Failed to save bodyweight:', error);
+                            saveBtn.textContent = 'Error';
+                            setTimeout(() => {
+                                saveBtn.textContent = 'Save';
+                            }, 2000);
+                        }
+                    }
+                });
+            }
+
+            // Load existing bodyweight if available
+            this.loadUserBodyweight();
+        }
+    }
+
+    async loadUserBodyweight() {
+        try {
+            if (window.grndApp && window.grndApp.storage) {
+                const bodyweight = await window.grndApp.storage.getUserBodyweight();
+                const bodyweightInput = document.getElementById('bodyweight-input');
+                if (bodyweight && bodyweightInput) {
+                    bodyweightInput.value = bodyweight;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load bodyweight:', error);
         }
     }
 
@@ -214,8 +292,25 @@ export class NavigationService {
     }
 
     // Utility methods for specific navigation
-    navigateToPlanDetail(planId) {
-        this.navigateTo('plan-detail', { planId });
+    navigateToPlanList() {
+        this.navigateTo('plan-list');
+    }
+
+    navigateToPlanEditor(planId = null) {
+        this.navigateTo('plan-editor', { planId });
+    }
+
+    navigateToDayEditor(dayId, weekId, planId) {
+        this.navigateTo('day-editor', { day: dayId, week: weekId, plan: planId });
+    }
+
+    navigateToExerciseEditor(exerciseId, dayId, weekId, planId) {
+        this.navigateTo('exercise-editor', {
+            exercise: exerciseId,
+            day: dayId,
+            week: weekId,
+            plan: planId
+        });
     }
 
     navigateToWorkout(dayId) {
@@ -226,8 +321,12 @@ export class NavigationService {
         this.navigateTo('workout', { sessionId });
     }
 
-    navigateToExercise(exerciseId) {
-        this.navigateTo('exercise', { exerciseId });
+    navigateToWorkoutHistory() {
+        this.navigateTo('workout-history');
+    }
+
+    navigateToSettings() {
+        this.navigateTo('settings');
     }
 
     // Get current view name

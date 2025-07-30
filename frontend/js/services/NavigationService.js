@@ -124,16 +124,75 @@ export class NavigationService {
             // Initialize PlanList component
             const planListContainer = document.getElementById('plan-list-view');
             if (planListContainer) {
-                const planList = new window.PlanList(planListContainer, window.grndApp.api, this);
+                console.log('Initializing PlanList component...');
+                
+                // Check if required components are available
+                if (!window.PlanList) {
+                    console.error('PlanList component not available globally');
+                    this.showError('PlanList component not available');
+                    return;
+                }
+                
+                if (!window.grndApp || !window.grndApp.api) {
+                    console.error('GRNDApp or API service not available');
+                    this.showError('API service not available');
+                    return;
+                }
+                
+                try {
+                    const planList = new window.PlanList(planListContainer, window.grndApp.api, this);
+                    console.log('PlanList component initialized successfully');
+                } catch (error) {
+                    console.error('Failed to initialize PlanList component:', error);
+                    this.showError('Failed to initialize plan list');
+                }
+            } else {
+                console.error('plan-list-view container not found');
+                this.showError('Plan list container not found');
             }
         } else if (viewName === 'plan-editor') {
             // Initialize PlanEditor component
             const planEditorContainer = document.getElementById('plan-editor-view');
             if (planEditorContainer) {
-                const planEditor = new window.PlanEditor(planEditorContainer, window.grndApp.api, this);
-                if (params.plan) {
-                    planEditor.setPlan(params.plan);
+                console.log('Initializing PlanEditor component...');
+                
+                // Check if required components are available
+                if (!window.PlanEditor) {
+                    console.error('PlanEditor component not available globally');
+                    this.showError('PlanEditor component not available');
+                    return;
                 }
+                
+                if (!window.grndApp || !window.grndApp.api) {
+                    console.error('GRNDApp or API service not available');
+                    this.showError('API service not available');
+                    return;
+                }
+                
+                try {
+                    // Create new PlanEditor instance
+                    const planEditor = new window.PlanEditor(planEditorContainer, window.grndApp.api, this);
+                    
+                    // Initialize the component
+                    planEditor.init();
+                    
+                    console.log('PlanEditor component initialized successfully');
+                    
+                    // Set plan if provided in params
+                    if (params.plan) {
+                        console.log('Setting plan data:', params.plan);
+                        planEditor.setPlan(params.plan);
+                    } else {
+                        console.log('Creating new plan (no params provided)');
+                        planEditor.setPlan(null);
+                    }
+                } catch (error) {
+                    console.error('Failed to initialize PlanEditor component:', error);
+                    this.showError('Failed to initialize plan editor');
+                }
+            } else {
+                console.error('plan-editor-view container not found');
+                this.showError('Plan editor container not found');
             }
         } else if (viewName === 'day-editor') {
             // Initialize DayEditor component
@@ -337,5 +396,34 @@ export class NavigationService {
     // Check if can go back
     canGoBack() {
         return this.viewHistory.length > 0;
+    }
+
+    // Show error message
+    showError(message) {
+        console.error('Navigation Error:', message);
+        // Create a simple error display
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #ff3b30;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        
+        document.body.appendChild(errorDiv);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 3000);
     }
 }

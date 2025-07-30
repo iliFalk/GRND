@@ -101,15 +101,37 @@ export class ApiService {
     }
 
     async createTrainingPlan(planData) {
-        return this.request('/training-plans', {
+        // Get current user ID from Telegram or storage
+        let userId = 'default-user'; // Fallback
+        
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            userId = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+        } else if (window.grndApp && window.grndApp.getCurrentUser) {
+            const user = window.grndApp.getCurrentUser();
+            userId = user ? user.id.toString() : userId;
+        }
+
+        // Use the README-compliant endpoint
+        return this.request(`/workout-data/${userId}`, {
             method: 'POST',
             body: JSON.stringify(planData)
         });
     }
 
     async updateTrainingPlan(planId, planData) {
-        return this.request(`/training-plans/${planId}`, {
-            method: 'PUT',
+        // Get current user ID from Telegram or storage
+        let userId = 'default-user'; // Fallback
+        
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            userId = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+        } else if (window.grndApp && window.grndApp.getCurrentUser) {
+            const user = window.grndApp.getCurrentUser();
+            userId = user ? user.id.toString() : userId;
+        }
+
+        // Use the README-compliant endpoint
+        return this.request(`/workout-data/${userId}`, {
+            method: 'POST',
             body: JSON.stringify(planData)
         });
     }

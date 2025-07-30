@@ -45,7 +45,15 @@ export class PlanList {
     }
 
     handleCreatePlan() {
-        this.navigationService.navigateTo('plan-editor');
+        console.log('Create plan button clicked');
+        console.log('Navigation service available:', !!this.navigationService);
+        
+        if (this.navigationService && typeof this.navigationService.navigateTo === 'function') {
+            console.log('Navigating to plan-editor...');
+            this.navigationService.navigateTo('plan-editor');
+        } else {
+            console.error('Navigation service or navigateTo method not available');
+        }
     }
 
     handleEditPlan(plan) {

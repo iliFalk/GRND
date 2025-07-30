@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Create Plan Functionality</title>
+    <link rel="stylesheet" href="frontend/css/style.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { background-color: #d4edda; color: #155724; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .info { background-color: #d1ecf1; color: #0c5460; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test Create Plan Functionality</h1>
+        
+        <div class="test-section">
+            <h2>1. Test Plan Creation Flow</h2>
+            <button onclick="testPlanCreation()">Test Create Plan</button>
+            <div id="plan-creation-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Plan Editor UI</h2>
+            <button onclick="testPlanEditorUI()">Test Plan Editor UI</button>
+            <div id="plan-editor-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test Plan Duplication</h2>
+            <button onclick="testPlanDuplication()">Test Plan Duplication</button>
+            <div id="plan-duplication-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Test API Integration</h2>
+            <button onclick="testAPIIntegration()">Test API Integration</button>
+            <div id="api-results"></div>
+        </div>
+    </div>
+
+    <!-- Hidden views for testing -->
+    <div id="plan-list-view" class="view" style="display: none;"></div>
+    <div id="plan-editor-view" class="view" style="display: none;"></div>
+
+    <script type="module">
+        import { PlanList } from './frontend/js/components/PlanList.js';
+        import { PlanEditor } from './frontend/js/components/PlanEditor.js';
+        import { TrainingPlan } from './frontend/js/models/TrainingPlan.js';
+        import { ApiService } from './frontend/js/services/ApiService.js';
+        import { NavigationService } from './frontend/js/services/NavigationService.js';
+        import { StorageService } from './frontend/js/services/StorageService.js';
+
+        // Initialize services
+        window.apiService = new ApiService();
+        window.navigationService = new NavigationService();
+        window.storageService = new StorageService();
+
+        // Make components available globally
+        window.PlanList = PlanList;
+        window.PlanEditor = PlanEditor;
+        window.TrainingPlan = TrainingPlan;
+
+        window.testPlanCreation = function() {
+            const resultsDiv = document.getElementById('plan-creation-results');
+            resultsDiv.innerHTML = '<div class="info">Testing Plan Creation Flow...</div>';
+            
+            try {
+                // Test 1: Create PlanList component
+                const planListContainer = document.getElementById('plan-list-view');
+                const planList = new PlanList(planListContainer, window.apiService, window.navigationService);
+                
+                resultsDiv.innerHTML += '<div class="success">✅ PlanList component created</div>';
+                
+                // Test 2: Check if handleCreatePlan method exists
+                if (typeof planList.handleCreatePlan === 'function') {
+                    resultsDiv.innerHTML += '<div class="success">✅ handleCreatePlan method exists</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ handleCreatePlan method missing</div>';
+                }
+                
+                // Test 3: Simulate button click
+                const originalNavigateTo = window.navigationService.navigateTo;
+                let navigationCalled = false;
+                let navigationParams = null;
+                
+                window.navigationService.navigateTo = function(viewName, params) {
+                    navigationCalled = true;
+                    navigationParams = { viewName, params };
+                    resultsDiv.innerHTML += `<div class="success">✅ Navigation called: ${viewName}</div>`;
+                };
+                
+                planList.handleCreatePlan();
+                
+                if (navigationCalled && navigationParams.viewName === 'plan-editor') {
+                    resultsDiv.innerHTML += '<div class="success">✅ Navigation to plan-editor successful</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ Navigation to plan-editor failed</div>';
+                }
+                
+                // Restore original navigation method
+                window.navigationService.navigateTo = originalNavigateTo;
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Plan Creation Test Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testPlanEditorUI = function() {
+            const resultsDiv = document.getElementById('plan-editor-results');
+            resultsDiv.innerHTML = '<div class="info">Testing Plan Editor UI...</div>';
+            
+            try {
+                // Test 1: Create PlanEditor component
+                const planEditorContainer = document.getElementById('plan-editor-view');
+                const planEditor = new PlanEditor(planEditorContainer, window.apiService, window.navigationService);
+                
+                resultsDiv.innerHTML += '<div class="success">✅ PlanEditor component created</div>';
+                
+                // Test 2: Check if required methods exist
+                const requiredMethods = ['setPlan', 'handleSave', 'handleCancel', 'handleDuplicatePlan'];
+                requiredMethods.forEach(method => {
+                    if (typeof planEditor[method] === 'function') {
+                        resultsDiv.innerHTML += `<div class="success">✅ ${method} method exists</div>`;
+                    } else {
+                        resultsDiv.innerHTML += `<div class="error">❌ ${method} method missing</div>`;
+                    }
+                });
+                
+                // Test 3: Create empty plan
+                planEditor.setPlan(null);
+                resultsDiv.innerHTML += '<div class="success">✅ Empty plan set successfully</div>';
+                
+                // Test 4: Check if form elements are rendered
+                setTimeout(() => {
+                    const planNameInput = planEditorContainer.querySelector('#plan-name');
+                    const planTypeSelect = planEditorContainer.querySelector('#plan-type');
+                    const saveButton = planEditorContainer.querySelector('.save-btn');
+                    
+                    if (planNameInput) {
+                        resultsDiv.innerHTML += '<div class="success">✅ Plan name input field found</div>';
+                    } else {
+                        resultsDiv.innerHTML += '<div class="error">❌ Plan name input field missing</div>';
+                    }
+                    
+                    if (planTypeSelect) {
+                        resultsDiv.innerHTML += '<div class="success">✅ Plan type select field found</div>';
+                    } else {
+                        resultsDiv.innerHTML += '<div class="error">❌ Plan type select field missing</div>';
+                    }
+                    
+                    if (saveButton) {
+                        resultsDiv.innerHTML += '<div class="success">✅ Save button found</div>';
+                    } else {
+                        resultsDiv.innerHTML += '<div class="error">❌ Save button missing</div>';
+                    }
+                }, 100);
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Plan Editor UI Test Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testPlanDuplication = function() {
+            const resultsDiv = document.getElementById('plan-duplication-results');
+            resultsDiv.innerHTML = '<div class="info">Testing Plan Duplication...</div>';
+            
+            try {
+                // Test 1: Create PlanEditor component with existing plan
+                const planEditorContainer = document.getElementById('plan-editor-view');
+                const planEditor = new PlanEditor(planEditorContainer, window.apiService, window.navigationService);
+                
+                // Create a sample plan
+                const samplePlan = new TrainingPlan({
+                    plan_id: 'test-plan-123',
+                    plan_name: 'Test Plan for Duplication',
+                    plan_type: 'STANDARD',
+                    description: 'A test plan to duplicate',
+                    weeks: []
+                });
+                
+                planEditor.setPlan(samplePlan);
+                resultsDiv.innerHTML += '<div class="success">✅ Sample plan set for duplication test</div>';
+                
+                // Test 2: Check if duplicate button appears
+                setTimeout(() => {
+                    const duplicateButton = planEditorContainer.querySelector('.duplicate-btn');
+                    
+                    if (duplicateButton) {
+                        resultsDiv.innerHTML += '<div class="success">✅ Duplicate button found for existing plan</div>';
+                    } else {
+                        resultsDiv.innerHTML += '<div class="error">❌ Duplicate button missing for existing plan</div>';
+                    }
+                    
+                    // Test 3: Check if handleDuplicatePlan method exists
+                    if (typeof planEditor.handleDuplicatePlan === 'function') {
+                        resultsDiv.innerHTML += '<div class="success">✅ handleDuplicatePlan method exists</div>';
+                    } else {
+                        resultsDiv.innerHTML += '<div class="error">❌ handleDuplicatePlan method missing</div>';
+                    }
+                }, 100);
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ Plan Duplication Test Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testAPIIntegration = function() {
+            const resultsDiv = document.getElementById('api-results');
+            resultsDiv.innerHTML = '<div class="info">Testing API Integration...</div>';
+            
+            try {
+                // Test 1: Check if createTrainingPlan method exists
+                if (typeof window.apiService.createTrainingPlan === 'function') {
+                    resultsDiv.innerHTML += '<div class="success">✅ createTrainingPlan method exists</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ createTrainingPlan method missing</div>';
+                }
+                
+                // Test 2: Check if updateTrainingPlan method exists
+                if (typeof window.apiService.updateTrainingPlan === 'function') {
+                    resultsDiv.innerHTML += '<div class="success">✅ updateTrainingPlan method exists</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ updateTrainingPlan method missing</div>';
+                }
+                
+                // Test 3: Create sample plan data
+                const samplePlanData = {
+                    plan_id: 'test-api-plan-' + Date.now(),
+                    plan_name: 'API Test Plan',
+                    plan_type: 'STANDARD',
+                    description: 'Testing API integration',
+                    start_date: new Date().toISOString(),
+                    weeks: []
+                };
+                
+                resultsDiv.innerHTML += '<div class="success">✅ Sample plan data created</div>';
+                
+                // Test 4: Validate plan data structure
+                if (samplePlanData.plan_id && samplePlanData.plan_name && samplePlanData.plan_type) {
+                    resultsDiv.innerHTML += '<div class="success">✅ Plan data structure valid</div>';
+                } else {
+                    resultsDiv.innerHTML += '<div class="error">❌ Plan data structure invalid</div>';
+                }
+                
+                // Note: We won't actually call the API to avoid creating real data
+                resultsDiv.innerHTML += '<div class="info">ℹ️ API call test skipped to avoid creating real data</div>';
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="error">❌ API Integration Test Error: ${error.message}</div>`;
+            }
+        };
+
+        console.log('Create Plan Test Suite Loaded');
+    </script>
+</body>
+</html>

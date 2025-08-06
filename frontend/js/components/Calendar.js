@@ -57,59 +57,67 @@ export class Calendar {
     const startDayIndex = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Monday as first day
     const today = new Date();
     
-    // Create calendar header
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December'];
-    
+    const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     let calendarHTML = `
-      <div class="calendar-header">
-        <button class="nav-btn" id="prev-month"><</button>
-        <h3 class="calendar-title">${monthNames[month]} ${year}</h3>
-        <button class="nav-btn" id="next-month">></button>
-        <button class="today-btn" id="today-btn">Today</button>
-      </div>
-      <div class="calendar-grid">
-        <div class="calendar-day-header">Mon</div>
-        <div class="calendar-day-header">Tue</div>
-        <div class="calendar-day-header">Wed</div>
-        <div class="calendar-day-header">Thu</div>
-        <div class="calendar-day-header">Fri</div>
-        <div class="calendar-day-header">Sat</div>
-        <div class="calendar-day-header">Sun</div>
+      <div class="calendar">
+        <div class="calendar-header">
+          <div class="controls">
+            <button class="btn-secondary" id="prev-month" aria-label="Previous month">◀</button>
+            <button class="btn-secondary" id="next-month" aria-label="Next month">▶</button>
+          </div>
+          <div class="month">${monthNames[month]} ${year}</div>
+          <div class="controls">
+            <button class="btn-tertiary" id="today-btn">Today</button>
+          </div>
+        </div>
+        <div class="calendar-weekdays">
+          ${weekdayNames.map(d => `<div class="calendar-weekday">${d}</div>`).join('')}
+        </div>
+        <div class="calendar-grid">
     `;
     
-    // Add empty cells for days before the first day of the month
+    // Add empty cells leading from previous month
     for (let i = 0; i < startDayIndex; i++) {
-      calendarHTML += '<div class="calendar-day empty"></div>';
+      calendarHTML += '<div class="calendar-cell dimmed" aria-hidden="true"></div>';
     }
     
-    // Add cells for each day of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const isToday = date.toDateString() === today.toDateString();
       const isWorkoutDay = this.isWorkoutScheduled(date);
       const isCompleted = this.isWorkoutCompleted(date);
       const isMissed = this.isWorkoutMissed(date);
-      
-      let dayClass = 'calendar-day';
-      if (isToday) dayClass += ' today';
-      if (isWorkoutDay) dayClass += ' workout-day';
-      if (isCompleted) dayClass += ' completed';
-      if (isMissed) dayClass += ' missed';
-      
       const workout = this.getWorkoutForDate(date);
-      
+
+      const classes = ["calendar-cell"]; 
+      if (isToday) classes.push("today");
+      // selected state can be added by interaction later
+
+      const badges = [];
+      if (isWorkoutDay) {
+        badges.push(`<span class="badge primary" title="Workout scheduled">${workout?.type === 'cardio' ? 'Cardio' : 'Workout'}</span>`);
+      }
+      if (isCompleted) {
+        badges.push(`<span class="badge success" title="Completed">Done</span>`);
+      } else if (isMissed) {
+        badges.push(`<span class="badge" title="Missed">Missed</span>`);
+      }
+
       calendarHTML += `
-        <div class="${dayClass}" data-date="${date.toISOString().split('T')[0]}" title="${workout ? workout.name : ''}">
-          <div class="day-number">${day}</div>
-          ${isWorkoutDay ? '<div class="workout-indicator"></div>' : ''}
-          ${isCompleted ? '<div class="completion-indicator">✓</div>' : ''}
-          ${isMissed ? '<div class="missed-indicator"></div>' : ''}
+        <div class="${classes.join(' ')}" data-date="${date.toISOString().split('T')[0]}">
+          <div class="calendar-date">${day}</div>
+          <div class="calendar-badges">${badges.join('')}</div>
         </div>
       `;
     }
-    
-    calendarHTML += '</div>';
+
+    calendarHTML += `
+        </div>
+      </div>
+    `;
     
     this.container.innerHTML = calendarHTML;
     this.addEventListeners();
@@ -144,10 +152,13 @@ export class Calendar {
       });
     }
     
-    // Day click events
-    const dayElements = this.container.querySelectorAll('.calendar-day:not(.empty)');
+    // Day click events with selection toggle
+    const dayElements = this.container.querySelectorAll('.calendar-cell:not(.dimmed)');
     dayElements.forEach(dayElement => {
       dayElement.addEventListener('click', (e) => {
+        const currentSelected = this.container.querySelector('.calendar-cell.selected');
+        if (currentSelected) currentSelected.classList.remove('selected');
+        e.currentTarget.classList.add('selected');
         const date = e.currentTarget.dataset.date;
         this.onDayClick(date);
       });

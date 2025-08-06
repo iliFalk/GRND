@@ -51,16 +51,28 @@ export class Dashboard {
       }
       
       let lastPerfHTML = '';
+
+      // Helper to abbreviate numbers (reuse if already defined above)
+      const abbr = (n) => {
+        if (n == null) return '0';
+        const abs = Math.abs(n);
+        if (abs >= 1_000_000) return (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1) + 'M';
+        if (abs >= 1_000) return (n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1) + 'k';
+        return String(n);
+      };
+
       const perf = this.workoutData?.lastPerformance;
+
       if (Array.isArray(perf) && perf.length) {
         const workoutType = this.workoutData?.name || 'Workout';
         const totalSets = perf.reduce((sum, it) => sum + (Number(it.sets) || 0), 0);
-        const totalVolume = perf.reduce((sum, it) => {
+        const totalVolumeRaw = perf.reduce((sum, it) => {
           const sets = Number(it.sets) || 0;
           const reps = Number(it.reps) || 0;
           const weight = Number(it.weight) || 0;
           return sum + (sets * reps * weight);
         }, 0);
+        const totalVolume = `${abbr(totalVolumeRaw)} kg`;
         const durationMin = this.workoutData?.durationMinutes ?? this.workoutData?.duration ?? null;
         const durationLabel = durationMin != null ? `${durationMin} min` : '—';
 
@@ -81,7 +93,7 @@ export class Dashboard {
               <span class="dot"></span>
               <span class="sets">${totalSets} sets</span>
               <span class="dot"></span>
-              <span class="volume">${totalVolume.toLocaleString()} kg</span>
+              <span class="volume">${totalVolume}</span>
               <span class="dot"></span>
               <span class="duration">${durationLabel}</span>
             </div>
@@ -196,7 +208,7 @@ export class Dashboard {
 
       // Fill deltas and fallbacks
       const volumeEl = this.container.querySelector('#kpi-volume');
-      if (volumeEl && this.stats?.weeklyVolume != null) volumeEl.textContent = `${this.stats.weeklyVolume} kg`;
+      if (volumeEl && this.stats?.weeklyVolume != null) volumeEl.textContent = `${abbr(this.stats.weeklyVolume)} kg`;
       const deltaEl = this.container.querySelector('#kpi-volume-delta');
       if (deltaEl && this.stats?.weeklyDelta != null) deltaEl.textContent = `${this.stats.weeklyDelta > 0 ? '+' : ''}${this.stats.weeklyDelta}%`;
 

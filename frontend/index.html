@@ -22,20 +22,55 @@
     <!-- Main App Container -->
     <div id="app">
         <!-- Header -->
-        <header class="app-header">
+        <header class="app-header" role="banner">
             <h1 class="app-title">GRND</h1>
         </header>
 
         <!-- Main Content Area -->
-        <main class="app-content">
+        <main class="app-content" role="main">
             <!-- Dashboard View -->
-            <div id="dashboard-view" class="view active">
-                <!-- Dashboard component will be rendered here -->
+            <div id="dashboard-view" class="view active" aria-labelledby="dashboard-title">
+                <section class="dashboard-hero card" aria-label="Quick actions">
+                    <h2 id="dashboard-title">Dashboard</h2>
+                    <div class="cta">
+                        <button class="btn-secondary" data-action="view-history">History</button>
+                        <button class="btn-primary" data-action="start-workout">Start Workout</button>
+                    </div>
+                </section>
+
+                <section class="kpi-grid" aria-label="Key stats">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Sessions</div>
+                        <div class="kpi-value" id="kpi-sessions">—</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Volume</div>
+                        <div class="kpi-value" id="kpi-volume">—</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Streak</div>
+                        <div class="kpi-value" id="kpi-streak">—</div>
+                    </div>
+                </section>
+
+                <div class="section-title">
+                    <h3>Continue plan</h3>
+                    <span class="hint">What’s next</span>
+                </div>
+                <div class="list-card">
+                    <div class="list-row">
+                        <div>
+                            <div class="row-title">Bench Day</div>
+                            <div class="row-sub">Week 3 · Day 2</div>
+                        </div>
+                        <div class="row-meta">~ 52 min</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Plans View -->
-            <div id="plans-view" class="view">
-                <h2>Training Plans</h2>
+            <div id="plans-view" class="view" aria-labelledby="plans-title">
+                <h2 id="plans-title">Training Plans</h2>
                 <div class="plans-list">
                     <div class="plan-card">
                         <h3>Beginner Strength</h3>
@@ -78,20 +113,20 @@
             </div>
 
             <!-- Settings View -->
-            <div id="settings-view" class="view">
-                <h2>Settings</h2>
-                <div class="settings-list">
-                    <div class="setting-item">
+            <div id="settings-view" class="view" aria-labelledby="settings-title">
+                <h2 id="settings-title">Settings</h2>
+                <div class="settings-list" role="list">
+                    <div class="setting-item" role="listitem">
                         <span>Notifications</span>
                         <label class="toggle">
-                            <input type="checkbox" checked>
+                            <input type="checkbox" checked aria-label="Enable notifications">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <div class="setting-item">
+                    <div class="setting-item" role="listitem">
                         <span>Dark Mode</span>
                         <label class="toggle">
-                            <input type="checkbox">
+                            <input type="checkbox" aria-label="Enable dark mode">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -100,7 +135,7 @@
         </main>
 
         <!-- Bottom Navigation -->
-        <nav class="bottom-nav">
+        <nav class="bottom-nav" role="navigation" aria-label="Primary">
             <button class="nav-item active" data-view="dashboard">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>

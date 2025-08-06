@@ -36,6 +36,8 @@ export class GRNDApp {
                 this.api = new ApiService();
                 this.imageService = new ImageService();
                 this.navigation = new NavigationService();
+                // Initialize navigation so buttons work
+                this.navigation.init();
             } catch (serviceError) {
                 console.error('Failed to initialize services:', serviceError);
                 this.showError('Failed to initialize app services');

@@ -172,8 +172,8 @@ export class GRNDApp {
         const dashboardView = document.getElementById('dashboard-view');
         if (!dashboardView) return;
 
-        // Initialize Dashboard component
-        this.dashboard = new Dashboard(dashboardView, this.api, this.navigation);
+        // Initialize Dashboard component with storage service
+        this.dashboard = new Dashboard(dashboardView, this.api, this.navigation, this.storage);
         this.dashboard.init();
     }
 

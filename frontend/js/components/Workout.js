@@ -126,10 +126,24 @@ export class Workout {
       if (!user) {
         throw new Error('User not found');
       }
-      
-      // Load user profile
-      const userProfile = await this.api.getUserProfile(user.id);
-      return userProfile || { id: user.id, bodyweight: 70 }; // Default bodyweight
+      try {
+        // Try to load existing profile
+        const userProfile = await this.api.getUserProfile(user.id);
+        return userProfile || { id: user.id, bodyweight: 70 };
+      } catch (err) {
+        // If profile not found, create a default one
+        if (String(err.message).includes('404') || String(err.message).toLowerCase().includes('not found')) {
+          const defaultProfile = { userId: String(user.id), bodyweight: 70 };
+          try {
+            await this.api.saveUserProfile(String(user.id), defaultProfile);
+            return { id: user.id, bodyweight: defaultProfile.bodyweight };
+          } catch (saveErr) {
+            console.warn('Failed to auto-create user profile, falling back to defaults:', saveErr);
+            return { id: user.id, bodyweight: 70 };
+          }
+        }
+        throw err;
+      }
     } catch (error) {
       console.error('Failed to load user profile:', error);
       return { id: 1, bodyweight: 70 }; // Default fallback

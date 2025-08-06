@@ -2,10 +2,11 @@ import { Calendar } from './Calendar.js';
 import { WorkoutHistory } from './WorkoutHistory.js';
 
 export class Dashboard {
-  constructor(container, apiService, navigationService) {
+  constructor(container, apiService, navigationService, storageService) {
     this.container = container;
     this.api = apiService;
     this.navigation = navigationService;
+    this.storage = storageService;
     this.workoutData = null;
     this.stats = null;
     this.calendar = null;
@@ -149,8 +150,8 @@ export class Dashboard {
       const historyContainer = this.container.querySelector('#workout-history-content');
       if (historyContainer) {
           try {
-              // Create a simplified workout history component for the dashboard
-              const user = await this.api.storage.getItem('user');
+              // Get user from storage (not from ApiService)
+              const user = this.storage ? await this.storage.getItem('user') : (window?.grndApp?.storage ? await window.grndApp.storage.getItem('user') : null);
               if (!user) {
                   // Display a message to the user instead of throwing an error
                   historyContainer.innerHTML = `
@@ -159,7 +160,6 @@ export class Dashboard {
                           <button class="btn-primary" id="login-btn">Log In</button>
                       </div>
                   `;
-                  // Add event listener for login button
                   const loginBtn = historyContainer.querySelector('#login-btn');
                   if (loginBtn) {
                       loginBtn.addEventListener('click', () => {
@@ -170,12 +170,9 @@ export class Dashboard {
               }
 
               // Fetch recent workout sessions (last 5)
-              const sessions = await this.api.getWorkoutSessions(user.id, {
-                  limit: 5,
-                  sort: 'startTime:desc'
-              });
+              const sessions = await this.api.getUserWorkoutSessions(user.id);
               
-              if (sessions.length === 0) {
+              if (!sessions || sessions.length === 0) {
                   historyContainer.innerHTML = '<p>No recent workouts found.</p>';
                   return;
               }

@@ -64,13 +64,21 @@ export class Calendar {
     let calendarHTML = `
       <div class="calendar">
         <div class="calendar-header">
-          <div class="controls">
-            <button class="btn-secondary" id="prev-month" aria-label="Previous month">◀</button>
-            <button class="btn-secondary" id="next-month" aria-label="Next month">▶</button>
-          </div>
-          <div class="month">${monthNames[month]} ${year}</div>
-          <div class="controls">
-            <button class="btn-tertiary" id="today-btn">Today</button>
+          <div class="calendar-left" id="calendar-left"></div>
+          <div class="month"><span class="month-year">${year}</span><span class="month-name">${monthNames[month]}</span></div>
+          <div class="calendar-right">
+            <div class="controls">
+              <button class="btn-secondary calendar-nav" id="prev-month" data-dir="prev" aria-label="Previous month">
+                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                  <polyline points="15 6 9 12 15 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                </svg>
+              </button>
+              <button class="btn-secondary calendar-nav" id="next-month" data-dir="next" aria-label="Next month">
+                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                  <polyline points="9 6 15 12 9 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
         <div class="calendar-weekdays">
@@ -122,6 +130,27 @@ export class Calendar {
     this.container.innerHTML = calendarHTML;
     this.addEventListeners();
     this.addTouchListeners();
+
+    // Populate left side with today's date (e.g., Thu, Aug 7)
+    const leftEl = this.container.querySelector('#calendar-left');
+    if (leftEl) {
+      const leftDate = new Date();
+      const formatter = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      leftEl.textContent = formatter.format(leftDate);
+    }
+
+    // Fallback: if SVG icons are not visible, show text chevrons
+    const prev = this.container.querySelector('#prev-month');
+    const next = this.container.querySelector('#next-month');
+    [prev, next].forEach(btn => {
+      if (!btn) return;
+      const svg = btn.querySelector('svg');
+      if (!svg) return;
+      const box = svg.getBoundingClientRect();
+      if (!box.width || !box.height) {
+        btn.classList.add('no-icon');
+      }
+    });
   }
 
   addEventListeners() {
@@ -196,65 +225,37 @@ export class Calendar {
   }
 
   isWorkoutScheduled(date) {
-    // In a real implementation, this would check against the user's workout plan
-    // For now, we'll simulate some workout days
-    const dayOfWeek = date.getDay();
-    // Simulate workouts on Monday, Wednesday, and Friday
-    return dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5;
-  }
-  
-  getWorkoutForDate(date) {
-    // In a real implementation, this would return the actual workout for the date
-    // For now, we'll return a mock workout
-    if (this.isWorkoutScheduled(date)) {
-      const dayOfWeek = date.getDay();
-      if (dayOfWeek === 1) {
-        return { name: 'Upper Body Strength', type: 'strength' };
-      } else if (dayOfWeek === 3) {
-        return { name: 'Lower Body Power', type: 'strength' };
-      } else if (dayOfWeek === 5) {
-        return { name: 'Cardio & Core', type: 'cardio' };
-      }
-    }
-    return null;
+    // Check if a workout is scheduled for the given date
+    return this.workoutData.some(workout => {
+      return this.workoutSessions.some(session => {
+        return session.date.toDateString() === date.toDateString();
+      });
+    });
   }
 
   isWorkoutCompleted(date) {
-    // Check if workout was completed on this date
-    return this.workoutSessions.some(session => 
-      session.date.toDateString() === date.toDateString() && session.completed
-    );
+    // Check if the workout for the given date is completed
+    const session = this.workoutSessions.find(session => session.date.toDateString() === date.toDateString());
+    return session ? session.completed : false;
   }
 
   isWorkoutMissed(date) {
-    // Check if workout was missed (scheduled but not completed and in the past)
-    const today = new Date();
-    return this.isWorkoutScheduled(date) && 
-           !this.isWorkoutCompleted(date) && 
-           date < today;
+    // Check if the workout for the given date is missed
+    const session = this.workoutSessions.find(session => session.date.toDateString() === date.toDateString());
+    return session ? !session.completed : false;
+  }
+
+  getWorkoutForDate(date) {
+    // Get the workout details for a specific date
+    const session = this.workoutSessions.find(session => session.date.toDateString() === date.toDateString());
+    return session ? this.workoutData.find(workout => workout.id === session.workoutId) : null;
   }
 
   onDayClick(date) {
-    // Handle day click event
-    console.log('Day clicked:', date);
-    // In a real implementation, this might show workout details or navigate to workout view
-  }
-
-  // Method to update calendar with new data
-  async updateData() {
-    await this.fetchWorkoutData();
-    this.render();
-  }
-
-  // Method to navigate to a specific date
-  goToToday() {
-    this.currentDate = new Date();
-    this.render();
-  }
-
-  // Method to navigate to a specific month
-  goToMonth(year, month) {
-    this.currentDate = new Date(year, month, 1);
-    this.render();
+    // Handle the event when a day is clicked
+    const workout = this.getWorkoutForDate(new Date(date));
+    if (workout) {
+      this.navigation.navigateToWorkoutDetail(workout.id);
+    }
   }
 }

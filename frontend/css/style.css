@@ -965,10 +965,23 @@ input:checked + .slider:before {
 
 /* Calendar Layout */
 .calendar { background:#FFFFFF; border:1px solid var(--border-color); border-radius: 12px; padding: 12px; }
-.calendar-header { display:flex; align-items:center; justify-content: space-between; gap: 8px; padding: 6px 4px 10px; }
-.calendar-header .month { font-weight: 600; color: var(--text-primary); font-size: 16px; }
-.calendar-header .controls { display:flex; align-items:center; gap: 6px; }
-.calendar-header .controls button { border-radius: 8px; padding: 6px 8px; }
+.calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 12px 8px 10px; position: relative; }
+.calendar-header .month { grid-column: 2; justify-self: center; font-weight: 700; }
+.calendar-header .calendar-left { grid-column: 1; justify-self: start; color: var(--text-secondary); font-size: 16px; }
+.calendar-header .calendar-right { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.calendar-header .calendar-right .controls { display: flex; gap: 10px; }
+.calendar-header .controls { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.calendar-header #prev-month, .calendar-header #next-month { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--accent-indigo) !important; }
+.calendar-header #prev-month svg, .calendar-header #next-month svg { width: 22px; height: 22px; display: block; fill: currentColor; }
+.calendar-header #prev-month *, .calendar-header #next-month * { pointer-events: none; }
+
+.calendar-header .month { display: grid; place-items: center; line-height: 1.1; }
+.calendar-header .month-year { font-size: 14px; color: var(--text-secondary); display: block; }
+.calendar-header .month-name { font-size: 22px; font-weight: 700; color: var(--text-primary); display: block; }
+@media (min-width: 420px) {
+  .calendar-header .month-year { font-size: 16px; }
+  .calendar-header .month-name { font-size: 24px; }
+}
 
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
@@ -1482,3 +1495,25 @@ body, html { width: 100%; overflow-x: hidden; }
 @media (max-width: 420px) {
   .brand-side { display: inline; }
 }
+
+/* Calendar controls visibility for SVG icons */
+.calendar-header .controls { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.calendar-header .controls .btn-secondary { color: var(--accent-indigo) !important; text-indent: 0; }
+
+/* Force visibility of calendar header SVG arrows */
+.calendar-header .controls button { line-height: 0; }
+.calendar-header #prev-month, .calendar-header #next-month { color: var(--accent-indigo) !important; }
+.calendar-header #prev-month svg, .calendar-header #next-month svg { width: 22px; height: 22px; display: block; fill: currentColor; }
+.calendar-header #prev-month *, .calendar-header #next-month * { pointer-events: none; }
+
+/* Calendar header nav buttons (from scratch) */
+.calendar-header .controls { display: flex; gap: 8px; margin-left: auto; }
+.calendar-nav { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--accent-indigo) !important; line-height: 0; }
+.calendar-nav svg { display: block; width: 22px; height: 22px; }
+.calendar-nav svg polyline { stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Fallback chevrons if SVGs fail */
+.calendar-nav { position: relative; }
+.calendar-nav.no-icon::before { content: '›'; position: absolute; font-size: 22px; line-height: 1; color: currentColor; }
+.calendar-nav.no-icon[data-dir="prev"]::before { content: '‹'; }
+.calendar-nav.no-icon[data-dir="next"]::before { content: '›'; }

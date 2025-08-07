@@ -728,15 +728,23 @@ input:checked + .slider:before {
 }
 
 .input-group label {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+  width: 100%;
+  text-align: left;
 }
 
 .input-group input {
-  padding: var(--spacing-xs);
-  border: 1px solid #ddd;
-  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
   font-size: var(--font-size-md);
+  background: #fff;
+  color: var(--text-primary);
+  width: 100%;
 }
 
 /* Controls Section Styles */

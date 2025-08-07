@@ -106,6 +106,10 @@ export class Dashboard {
 
       this.container.innerHTML = `
           <div class="dashboard">
+              <!-- Workout Calendar (moved to top) -->
+              <div class="card calendar-container" id="calendar-container">
+              </div>
+              
               ${lastPerfHTML}
               
               <!-- Today's Focus Card -->
@@ -179,21 +183,7 @@ export class Dashboard {
                   </div>
               </div>
               
-              <!-- Workout Calendar -->
-              <div class="card calendar-container" id="calendar-container">
-              </div>
-              
-              <!-- Workout History -->
-              <div class="card workout-history-container" id="workout-history-container">
-                  <h3>Recent Workouts</h3>
-                  <div id="workout-history-content">
-                      <div class="loading">
-                          <div class="spinner"></div>
-                          <p>Loading workout history...</p>
-                      </div>
-                  </div>
-                  <button class="btn-secondary" id="view-all-history">View All History</button>
-              </div>
+              <!-- Workout History section removed -->
           </div>
       `;
 

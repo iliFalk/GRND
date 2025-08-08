@@ -24,26 +24,32 @@ export class Calendar {
 
   async fetchWorkoutData() {
     try {
-      // Fetch user's workout schedule
-      // For now, we'll use a mock implementation since we don't have user-specific data
+      // Mock data for demonstration with color support
       this.workoutData = [
-        // Mock data for demonstration
-        { id: 1, name: 'Upper Body Strength', description: 'Focus on chest, back, and shoulders' },
-        { id: 2, name: 'Lower Body Power', description: 'Focus on legs and glutes' }
+        { id: 1, name: 'Upper Body Strength', description: 'Focus on chest, back, and shoulders', color: '#e74c3c' },
+        { id: 2, name: 'Lower Body Power', description: 'Focus on legs and glutes', color: '#3498db' }
       ];
       
-      // Fetch workout sessions for completion status
-      // In a real implementation, we would get the current user ID
-      // For now, we'll use a mock implementation
+      // Mock sessions with associated workoutId
+      // In a real implementation, you'd fetch from an API using userId
       this.workoutSessions = [
-        // Mock data for demonstration
-        { date: new Date(2025, 6, 15), completed: true },
-        { date: new Date(2025, 6, 20), completed: false },
-        { date: new Date(2025, 6, 25), completed: true }
+        { date: new Date(2025, 6, 15), completed: true, workoutId: 1 },
+        { date: new Date(2025, 6, 20), completed: false, workoutId: 2 },
+        { date: new Date(2025, 6, 25), completed: true, workoutId: 1 }
       ];
     } catch (error) {
       console.error('Failed to fetch workout data:', error);
     }
+  }
+
+  getColorForDate(date) {
+    const session = this.workoutSessions.find(s => s.date.toDateString() === date.toDateString());
+    if (session) {
+      if (session.color) return session.color;
+      const workout = this.workoutData.find(w => w.id === session.workoutId);
+      return workout?.color || null;
+    }
+    return null;
   }
 
   render() {
@@ -54,7 +60,8 @@ export class Calendar {
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     
-    const startDayIndex = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Monday as first day
+    // Monday as the first day of the week
+    const startDayIndex = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     const today = new Date();
     
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -95,18 +102,21 @@ export class Calendar {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const isToday = date.toDateString() === today.toDateString();
-      const isWorkoutDay = this.isWorkoutScheduled(date);
+      const color = this.getColorForDate(date);
+      const isWorkoutDay = !!color;
       const isCompleted = this.isWorkoutCompleted(date);
       const isMissed = this.isWorkoutMissed(date);
       const workout = this.getWorkoutForDate(date);
 
       const classes = ["calendar-cell"]; 
       if (isToday) classes.push("today");
-      // selected state can be added by interaction later
+      // Optional: selected state can be added by interaction later
 
+      // Color dot to indicate workout color
+      const colorDot = color ? `<span class="color-dot" title="Workout color" style="background:${color}"></span>` : '';
       const badges = [];
       if (isWorkoutDay) {
-        badges.push(`<span class="badge primary" title="Workout scheduled">${workout?.type === 'cardio' ? 'Cardio' : 'Workout'}</span>`);
+        badges.push(`<span class="badge primary" title="Workout scheduled">${workout?.name ?? 'Workout'}</span>`);
       }
       if (isCompleted) {
         badges.push(`<span class="badge success" title="Completed">Done</span>`);
@@ -117,7 +127,7 @@ export class Calendar {
       calendarHTML += `
         <div class="${classes.join(' ')}" data-date="${date.toISOString().split('T')[0]}">
           <div class="calendar-date">${day}</div>
-          <div class="calendar-badges">${badges.join('')}</div>
+          <div class="calendar-badges">${colorDot}${badges.join('')}</div>
         </div>
       `;
     }
@@ -172,7 +182,7 @@ export class Calendar {
       });
     }
     
-    // Today button
+    // Today button (optional; not present in header but keep for compatibility)
     const todayBtn = this.container.querySelector('#today-btn');
     if (todayBtn) {
       todayBtn.addEventListener('click', () => {
@@ -225,28 +235,20 @@ export class Calendar {
   }
 
   isWorkoutScheduled(date) {
-    // Check if a workout is scheduled for the given date
-    return this.workoutData.some(workout => {
-      return this.workoutSessions.some(session => {
-        return session.date.toDateString() === date.toDateString();
-      });
-    });
+    return this.workoutSessions.some(session => session.date.toDateString() === date.toDateString());
   }
 
   isWorkoutCompleted(date) {
-    // Check if the workout for the given date is completed
     const session = this.workoutSessions.find(session => session.date.toDateString() === date.toDateString());
     return session ? session.completed : false;
   }
 
   isWorkoutMissed(date) {
-    // Check if the workout for the given date is missed
     const session = this.workoutSessions.find(session => session.date.toDateString() === date.toDateString());
-    return session ? !session.completed : false;
+    return session ? (!session.completed) : false;
   }
 
   getWorkoutForDate(date) {
-    // Get the workout details for a specific date
     const session = this.workoutSessions.find(session => session.date.toDateString() === date.toDateString());
     return session ? this.workoutData.find(workout => workout.id === session.workoutId) : null;
   }
@@ -259,3 +261,6 @@ export class Calendar {
     }
   }
 }
+
+// Make Calendar component globally available
+window.Calendar = Calendar;

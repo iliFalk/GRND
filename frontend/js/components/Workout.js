@@ -34,11 +34,12 @@ export class Workout {
     this.controlsContainer = null;
     
     // State
-    this.isInitialized = false;
-    this.isWorkoutActive = false;
-    this.currentExerciseIndex = 0;
-    this.currentSetIndex = 0;
-    this.currentRoundIndex = 0;
+  this.isInitialized = false;
+  this.isWorkoutActive = false;
+  this.currentExerciseIndex = 0;
+  this.currentSetIndex = 0;
+  this.currentRoundIndex = 0;
+  this.currentWorkoutColor = null;
   }
   
   async init() {
@@ -82,7 +83,8 @@ export class Workout {
         userId: this.userProfile.id,
         timerConfig: {
           workoutType: day.day_type || 'STANDARD'
-        }
+        },
+        color: this.currentWorkoutColor
       });
       
       // Show timer setup modal

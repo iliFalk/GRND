@@ -5,6 +5,7 @@
 
 import { TrainingPlan } from '../models/TrainingPlan.js';
 import { Week } from '../models/Week.js';
+import { Workout } from '../models/Workout.js';
 
 export class PlanEditor {
     constructor(container, apiService, navigationService) {
@@ -218,7 +219,8 @@ export class PlanEditor {
             description: form.querySelector('#plan-description').value,
             plan_type: form.querySelector('#plan-type').value,
             durationWeeks: parseInt(form.querySelector('#plan-duration').value) || 4,
-            start_date: form.querySelector('#plan-start-date').value || null
+            start_date: form.querySelector('#plan-start-date').value || null,
+            default_workout_color: form.querySelector('#plan-default-workout-color').value
         };
     }
 
@@ -341,6 +343,10 @@ export class PlanEditor {
                                 <textarea id="plan-description" rows="3" 
                                           placeholder="Describe your training plan...">${plan.description || ''}</textarea>
                             </div>
+                            <div class="form-group">
+                                <label for="plan-default-workout-color">Default Workout Color</label>
+                                <input type="color" id="plan-default-workout-color" value="${plan.default_workout_color || '#0085E0'}">
+                            </div>
 
                             <div class="form-row">
                                 <div class="form-group">
@@ -427,5 +433,18 @@ export class PlanEditor {
                 this.handleCancel();
             }
         });
+    }
+
+    applyDefaultColorToNewWorkout(workout) {
+        if (!workout) return null;
+        if (this.plan && typeof this.plan.applyDefaultColorToNewWorkout === 'function') {
+            return this.plan.applyDefaultColorToNewWorkout(workout);
+        }
+        return workout;
+    }
+
+    createNewWorkoutForPlan(data) {
+        const w = new Workout(data);
+        return this.applyDefaultColorToNewWorkout(w);
     }
 }

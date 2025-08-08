@@ -14,6 +14,7 @@ export class TrainingPlan {
         this.description = data.description || '';
         this.start_date = data.start_date ? new Date(data.start_date) : new Date();
         this.weeks = data.weeks ? data.weeks.map(w => new Week(w)) : [];
+this.default_workout_color = data.default_workout_color || data.defaultColor || null;
 
         // Keep legacy fields for backward compatibility
         this.id = this.plan_id;
@@ -48,6 +49,15 @@ export class TrainingPlan {
         return currentWeek.days[dayIndex] || null;
     }
 
+    applyDefaultColorToNewWorkout(workout) {
+        if (!workout) return null;
+        // If the workout doesn't have a color, apply the plan's default color if available
+        if (!workout.color && this.default_workout_color) {
+            workout.color = this.default_workout_color;
+        }
+        return workout;
+    }
+
     toJSON() {
         return {
             // README-compliant fields
@@ -57,6 +67,7 @@ export class TrainingPlan {
             description: this.description,
             start_date: this.start_date,
             weeks: this.weeks.map(week => week.toJSON()),
+            default_workout_color: this.default_workout_color,
 
             // Legacy fields for backward compatibility
             id: this.plan_id,

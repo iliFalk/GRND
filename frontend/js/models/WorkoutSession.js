@@ -15,6 +15,8 @@ export class WorkoutSession {
         this.total_volume_kg = data.total_volume_kg || data.totalVolume || 0;
         this.day_id_completed = data.day_id_completed || data.dayId || null;
         this.performance_summary = data.performance_summary || {};
+        // Color for this workout session
+        this.color = data.color || null;
 
         // Legacy fields for backward compatibility
         this.id = this.session_id;
@@ -207,7 +209,8 @@ export class WorkoutSession {
             mood: this.mood,
             energyLevel: this.energyLevel,
             location: this.location,
-            device: this.device
+            device: this.device,
+            color: this.color
         };
     }
 

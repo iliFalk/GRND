@@ -972,8 +972,8 @@ input:checked + .slider:before {
 .dashboard-card h3 { margin: 0 0 8px; font-size: 16px; }
 
 /* Calendar Layout */
-.calendar { background:#FFFFFF; border:1px solid var(--border-color); border-radius: 12px; padding: 12px; }
-.calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 12px 8px 10px; position: relative; }
+.calendar { background:#FFFFFF; border:1px solid var(--border-color); border-radius: 6px; padding: 4px; font-size: 11px; }
+.calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 8px 6px 8px; position: relative; }
 .calendar-header .month { grid-column: 2; justify-self: center; font-weight: 700; }
 .calendar-header .calendar-left { grid-column: 1; justify-self: start; color: var(--text-secondary); font-size: 16px; }
 .calendar-header .calendar-right { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
@@ -991,14 +991,16 @@ input:checked + .slider:before {
   .calendar-header .month-name { font-size: 24px; }
 }
 
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; font-size: 10px; color: var(--text-muted); }
 .calendar-weekday { text-align:center; font-size: 12px; color: var(--text-secondary); padding: 6px 0; }
 
-.calendar-cell { position: relative; background:#FFFFFF; border:1px solid var(--border-color); border-radius: 10px; min-height: 64px; padding: 6px; display:flex; flex-direction: column; }
+.calendar-cell { position: relative; background:#FFFFFF; border:1px solid var(--border-color); border-radius: 8px; min-height: 56px; padding: 4px; display:flex; flex-direction: column; }
 .calendar-cell.dimmed { opacity: 0.55; }
 .calendar-date { font-size: 12px; color: var(--text-secondary); align-self:flex-end; }
+/* Calendar Badges */
 .calendar-badges { margin-top: auto; display:flex; flex-wrap: wrap; gap: 4px; }
+.color-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:4px; vertical-align: text-bottom; }
 .badge { font-size: 11px; line-height: 1; padding: 4px 6px; border-radius: 999px; border:1px solid var(--border-color); color: var(--text-secondary); background:#F8FAFC; }
 .badge.primary { border-color: rgba(0,133,224,0.3); color: var(--accent-indigo); background: rgba(0,133,224,0.08); }
 .badge.success { border-color: rgba(16,185,129,0.3); color: var(--accent-green); background: rgba(16,185,129,0.08); }

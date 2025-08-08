@@ -1589,16 +1589,24 @@ body, html { width: 100%; overflow-x: hidden; }
     z-index: 1;
     /* Default status color, can be overridden by specific status classes */
     color: #475569; /* slate-600 */
-    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8), 0 0 2px rgba(0, 0, 0, 0.1);
+    /* Remove text-shadow for status labels and use a subtle text stroke (contour) for legibility */
+    text-shadow: none;
+    -webkit-text-stroke: 0.9px rgba(0, 0, 0, 0.28);
+    text-stroke: 0.9px rgba(0, 0, 0, 0.28);
+    -webkit-text-fill-color: currentColor;
 }
 
 /* Status-specific styles */
 .calendar-status--completed {
     color: #059669; /* green-600 */
+    -webkit-text-stroke: 0.9px rgba(0, 0, 0, 0.28);
+    text-stroke: 0.9px rgba(0, 0, 0, 0.28);
 }
 
 .calendar-status--missed {
     color: #dc2626; /* red-600 */
+    -webkit-text-stroke: 0.9px rgba(0, 0, 0, 0.28);
+    text-stroke: 0.9px rgba(0, 0, 0, 0.28);
 }
 
 /* Modifier for days without workouts */
@@ -1610,12 +1618,14 @@ body, html { width: 100%; overflow-x: hidden; }
 /* Status-specific styles */
 .calendar-status--done {
     color: #065f46; /* dark green, emerald-800 */
-    /* text-shadow is inherited, should be sufficient */
+    -webkit-text-stroke: 0.9px rgba(0, 0, 0, 0.28);
+    text-stroke: 0.9px rgba(0, 0, 0, 0.28);
 }
 
 .calendar-status--missed {
     color: #991b1b; /* dark red, red-800 */
-    /* text-shadow is inherited, should be sufficient */
+    -webkit-text-stroke: 0.9px rgba(0, 0, 0, 0.28);
+    text-stroke: 0.9px rgba(0, 0, 0, 0.28);
 }
 
 /* Hover effect for cells (optional, but good for interactivity) */

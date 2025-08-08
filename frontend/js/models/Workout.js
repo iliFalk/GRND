@@ -7,7 +7,9 @@ export class Workout {
     this.id = data.id || null;
     this.name = data.name || '';
     this.description = data.description || '';
-    this.color = data.color || null; // hex color assigned to this workout
+    // Color property for UI components (calendar, planner).
+    // Defaults to a generic blue (#4A90E2) if not provided.
+    this.color = data.color || "#4A90E2";
     // Optional metadata
     this.duration = data.duration || 0;
     this.category = data.category || null;
@@ -28,3 +30,6 @@ export class Workout {
     return new Workout(data);
   }
 }
+
+
+// TODO: Update WorkoutEditor component to include UI for modifying the 'color' property.

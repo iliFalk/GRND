@@ -5,6 +5,11 @@
     box-sizing: border-box;
 }
 
+/* Utility: generic hidden helper used by JS components */
+.hidden {
+    display: none !important;
+}
+
 :root {
     /* Colors */
     --bg-color: #F7F8FA;
@@ -564,16 +569,105 @@ input:checked + .slider:before {
   font-family: 'Courier New', monospace;
 }
 
-.timer-controls {
+/* Split timer values: elapsed (green) and remaining (dark red) */
+.timer-values {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-elapsed {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--accent-green);
+  font-family: 'Courier New', monospace;
+}
+
+/* Slightly smaller remaining time displayed below in dark red */
+.timer-remaining {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: #8B0000; /* dark red */
+  font-family: 'Courier New', monospace;
+  opacity: 0.95;
+}
+
+/* Utility classes applied by the timer component when values update */
+.timer-elapsed-active { color: var(--accent-green) !important; }
+.timer-remaining-active { color: #8B0000 !important; font-weight: 700 !important; }
+
+.timer-controls {
+  position: relative;
+  display: flex;
+  justify-content: center; /* center a single wide control */
+  align-items: center;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
+  padding: 0 8px;
 }
 
 .timer-controls button {
   min-width: 100px;
   border-radius: 10px;
+}
+
+/* Wide centered play/pause toggle used in the workout view */
+.btn-toggle {
+  width: 100%;
+  max-width: 420px; /* limits how wide it grows on large screens */
+  height: 56px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(2,6,23,0.06);
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.08s ease;
+  user-select: none;
+}
+
+/* Make glyph/icon larger inside the toggle when present */
+.btn-toggle::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+
+/* Slight press effect */
+.btn-toggle:active {
+  transform: translateY(1px);
+}
+
+/* Variant styling: primary (running/pause) vs secondary (resume/play) are handled
+   by switching btn-primary / btn-secondary classes from the component logic. */
+
+/* Layout rules to ensure Start is centered, Resume on the left and Pause on the right (scoped to timer) */
+.workout-timer-container #start-workout-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  /* keep visual prominence */
+  box-shadow: 0 6px 12px rgba(79,70,229,0.08);
+}
+
+.workout-timer-container #resume-workout-btn {
+  order: 1;
+  margin-right: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.workout-timer-container #pause-workout-btn {
+  order: 3;
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* Workout Container Styles */
@@ -1679,8 +1773,10 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 .focus-card.focus-accent-green h2 { color: var(--accent-green); }
 .focus-card.focus-accent-green h2::after { background: var(--accent-green); }
 
-/* Centered and larger Start button */
-#start-workout-btn {
+/* Centered and larger Start button for dashboard focus card */
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn {
   background: var(--accent-green);
   color: #fff;
   border: none;
@@ -1692,14 +1788,18 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
   font-size: 16px;
 }
 
-/* Make Start button larger */
-#start-workout-btn {
+/* Make Start button larger (dashboard focus card) */
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn {
   padding: 18px 28px;
   font-size: 18px;
   border-radius: 14px;
 }
 @media (min-width: 480px) {
-  #start-workout-btn { padding: 20px 36px; font-size: 20px; }
+  .focus-card #start-workout-dashboard-btn,
+  .focus-card .primary-btn,
+  .focus-card #start-workout-btn { padding: 20px 36px; font-size: 20px; }
 }
 
 .focus-card { text-align: center; }
@@ -1711,8 +1811,10 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 .performance ul { margin: 0; padding-left: 18px; }
 .performance li { margin: 4px 0; font-size: 14px; color: var(--text-primary); }
 
-/* Start button normalization */
-#start-workout-btn { background: var(--accent-green); color: #fff; border: none; padding: 10px 14px; border-radius: 10px; display: inline-block; margin-top: 8px; font-weight: 600; }
+/* Start button normalization (dashboard focus card) */
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn { background: var(--accent-green); color: #fff; border: none; padding: 10px 14px; border-radius: 10px; display: inline-block; margin-top: 8px; font-weight: 600; }
 
 /* KPI visual to match reference */
 .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -1771,7 +1873,9 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 .app-title { font-size: clamp(18px, 2.8vw, var(--font-size-xl)); }
 .focus-card h2 { font-size: clamp(18px, 3.6vw, 22px); }
 .focus-card h3 { font-size: clamp(16px, 3.2vw, 18px); }
-#start-workout-btn { font-size: clamp(16px, 3.6vw, 20px); padding: clamp(12px, 3vw, 20px) clamp(16px, 5vw, 36px); }
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn { font-size: clamp(16px, 3.6vw, 20px); padding: clamp(12px, 3vw, 20px) clamp(16px, 5vw, 36px); }
 
 /* Respect safe areas on devices with notches */
 .app-header { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }

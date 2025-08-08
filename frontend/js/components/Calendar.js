@@ -163,7 +163,7 @@ export class Calendar {
       const status = this.getWorkoutStatus(date);
       
       // Build cell classes
-      const classes = ["calendar-cell", "calendar-cell--small"];
+      const classes = ["calendar-cell"];
       if (isToday) classes.push("today");
       
       // Color style handling - apply workout color as background if available

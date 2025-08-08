@@ -995,7 +995,7 @@ input:checked + .slider:before {
 .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; font-size: 10px; color: var(--text-muted); }
 .calendar-weekday { text-align:center; font-size: 12px; color: var(--text-secondary); padding: 6px 0; }
 
-.calendar-cell { position: relative; background:#FFFFFF; border:1px solid var(--border-color); border-radius: 8px; min-height: 56px; padding: 4px; display:flex; flex-direction: column; }
+.calendar-cell { position: relative; background:#FFFFFF; border:1px solid var(--border-color); border-radius: 8px; padding: 4px; display:flex; flex-direction: column; aspect-ratio: 1/1; justify-content: center; align-items: center; }
 .calendar-cell.dimmed { opacity: 0.55; }
 .calendar-date { font-size: 12px; color: var(--text-secondary); align-self:flex-end; }
 /* Calendar Badges */
@@ -1013,9 +1013,13 @@ input:checked + .slider:before {
 .calendar-cell.today { outline: 2px solid var(--accent-indigo); outline-offset: -2px; }
 .calendar-cell.selected { box-shadow: inset 0 0 0 2px var(--accent-indigo); }
 
-/* Responsive calendar heights */
-@media (max-width: 420px) {
-  .calendar-cell { min-height: 56px; }
+/* Status text positioning */
+.calendar-status {
+  margin-top: auto;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 0;
 }
 
 /* Animations */
@@ -1527,3 +1531,152 @@ body, html { width: 100%; overflow-x: hidden; }
 .calendar-nav.no-icon::before { content: '›'; position: absolute; font-size: 22px; line-height: 1; color: currentColor; }
 .calendar-nav.no-icon[data-dir="prev"]::before { content: '‹'; }
 .calendar-nav.no-icon[data-dir="next"]::before { content: '›'; }
+
+/* Calendar Grid: smaller, crisper cells for compact calendar view
+   Variables introduced to ease future tweaks */
+.calendar-grid {
+  --calendar-cell-size: clamp(28px, 5vw, 40px);
+  --calendar-font: clamp(10px, 1.6vw, 12px);
+  --calendar-gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--calendar-gap);
+}
+.calendar-grid .day-cell {
+  height: var(--calendar-cell-size);
+  min-height: var(--calendar-cell-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--calendar-font);
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  box-shadow: none;
+}
+.calendar-grid .day-cell:hover {
+  border-color: #cbd5e1;
+}
+
+/* --- Calendar Component Styles --- */
+
+/*
+  Calendar cell styles for compact display.
+  The calendar component will set the `--workout-color` CSS variable inline on each `.calendar-cell`
+  to indicate the workout status color. If not set, it will fall back to a default neutral color.
+  The primary classes used by the calendar component are:
+  - `.calendar-cell`: The base class for each day cell in the calendar.
+  - `.calendar-cell--small`: A modifier to enforce compact sizing.
+  - `.calendar-day-number`: The element displaying the day number.
+  - `.calendar-status`: The element displaying the workout status ("Done"/"Missed").
+  - `.calendar-cell--no-workout`: A modifier for days without any workout.
+  - `.calendar-status--done`: A modifier for a "Done" status.
+  - `.calendar-status--missed`: A modifier for a "Missed" status.
+*/
+
+.calendar-cell {
+    aspect-ratio: 1/1;
+    /*
+      --workout-color is expected to be set inline by the calendar component.
+      Fallback to a light gray for cells without a specific workout color.
+    */
+    --workout-color-fallback: #e5e7eb; /* A light neutral gray */
+    background-color: var(--workout-color, var(--workout-color-fallback));
+    
+    /* Default cell styling, can be overridden by .calendar-cell--small */
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: 1px solid transparent; /* For subtle separation */
+    transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+    position: relative; /* For potential overlays or pseudo-elements */
+}
+
+/* Ensure text is legible against the background color.
+   A simple approach: if the background is dark, use white text with a shadow.
+   This is a basic implementation; a more robust solution might involve
+   calculating luminance if more precise control is needed.
+   For now, we assume `--workout-color` will be a color that provides sufficient contrast
+   or is light enough for dark text. If it's dark, text-shadow helps.
+*/
+.calendar-day-number {
+    color: #0f172a; /* Dark slate-900, good for light backgrounds */
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    text-align: center;
+    line-height: 1;
+    /* Add a subtle text-shadow for better readability on various backgrounds */
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.6), 0 0 2px rgba(0, 0, 0, 0.2);
+    z-index: 1; /* Ensure it's above any potential pseudo-element backgrounds */
+}
+
+.calendar-status {
+    font-size: 10px;
+    font-variant: small-caps;
+    text-transform: lowercase;
+    opacity: 0.85;
+    font-weight: 500;
+    line-height: 1;
+    margin-top: 1px;
+    z-index: 1; /* Ensure it's above any potential pseudo-element backgrounds */
+    /* Default status color, can be overridden by specific status classes */
+    color: #475569; /* slate-600 */
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8), 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Modifier for compact/small cells */
+.calendar-cell--small {
+    width: 28px; /* Adjusted to the smaller end of the suggested range */
+    aspect-ratio: 1/1;
+    height: 28px;
+    padding: 1px;
+}
+
+.calendar-cell--small .calendar-day-number {
+    font-size: 11px; /* Slightly smaller font for compact cells */
+}
+
+.calendar-cell--small .calendar-status {
+    font-size: 9px; /* Even smaller for compact cells */
+}
+
+/* Modifier for days without workouts */
+.calendar-cell--no-workout {
+    --workout-color: var(--workout-color-fallback); /* Ensure it uses the fallback */
+    border-color: var(--border-color); /* Show border for neutral cells */
+}
+
+/* Status-specific styles */
+.calendar-status--done {
+    color: #065f46; /* dark green, emerald-800 */
+    /* text-shadow is inherited, should be sufficient */
+}
+
+.calendar-status--missed {
+    color: #991b1b; /* dark red, red-800 */
+    /* text-shadow is inherited, should be sufficient */
+}
+
+/* Hover effect for cells (optional, but good for interactivity) */
+.calendar-cell:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+    z-index: 10; /* Ensure it pops above other cells */
+    cursor: pointer;
+}
+
+/* If a grid container is used, these cells will align nicely.
+   These styles only target the cells themselves, not the grid layout.
+   Example grid container (for reference, not to be added here):
+   .calendar-grid {
+       display: grid;
+       grid-template-columns: repeat(7, 1fr); // For a weekly view
+       gap: 4px;
+   }
+*/

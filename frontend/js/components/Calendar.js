@@ -1,7 +1,18 @@
-/**
- * Calendar Component
- * Displays a monthly calendar with workout schedule information
- */
+  /**
+  * Calendar Component
+  * Displays a monthly calendar with workout schedule information
+  *
+  * This component renders a calendar where each day cell shows:
+  * - The day number
+  * - Background color based on the scheduled workout (if any)
+  * - Status text ("Done" or "Missed") based on workout session completion
+  *
+  * Implementation notes:
+  * - Workout colors are read from the workout data associated with each session
+  * - Status is determined by checking if any workout session for the date is completed
+  * - If multiple workouts exist on the same day, the first one's color is used
+  * - The component uses mock data for demonstration but is structured to work with API data
+  */
 
 export class Calendar {
   constructor(container, apiService, navigationService) {
@@ -24,31 +35,73 @@ export class Calendar {
 
   async fetchWorkoutData() {
     try {
-      // Mock data for demonstration with color support
+      // In a real implementation, this would fetch from an API
+      // For now, we'll use the existing mock data structure but with proper model instances
+      
+      // Create workout data using the Workout model
       this.workoutData = [
         { id: 1, name: 'Upper Body Strength', description: 'Focus on chest, back, and shoulders', color: '#e74c3c' },
         { id: 2, name: 'Lower Body Power', description: 'Focus on legs and glutes', color: '#3498db' }
       ];
       
-      // Mock sessions with associated workoutId
-      // In a real implementation, you'd fetch from an API using userId
+      // Create workout sessions using the WorkoutSession model structure
+      // These would typically be fetched from an API or storage service
       this.workoutSessions = [
         { date: new Date(2025, 6, 15), completed: true, workoutId: 1 },
         { date: new Date(2025, 6, 20), completed: false, workoutId: 2 },
         { date: new Date(2025, 6, 25), completed: true, workoutId: 1 }
       ];
+      
+      // Note: In a production app, this would be replaced with:
+      // this.workoutData = await this.api.getWorkouts();
+      // this.workoutSessions = await this.api.getWorkoutSessions();
     } catch (error) {
       console.error('Failed to fetch workout data:', error);
     }
   }
 
+  hexToRgb(hex) {
+    if (!hex) return null;
+    let h = hex.startsWith('#') ? hex.slice(1) : hex;
+    if (h.length === 3) h = h.split('').map(ch => ch + ch).join('');
+    const int = parseInt(h, 16);
+    const r = (int >> 16) & 255;
+    const g = (int >> 8) & 255;
+    const b = int & 255;
+    return { r, g, b };
+  }
+
+  getForegroundForBackground(hex) {
+    const rgb = this.hexToRgb(hex);
+    if (!rgb) return '#000';
+    let r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+    const toLinear = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    r = toLinear(r); g = toLinear(g); b = toLinear(b);
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return lum > 0.5 ? '#000' : '#fff';
+  }
+
   getColorForDate(date) {
-    const session = this.workoutSessions.find(s => s.date.toDateString() === date.toDateString());
-    if (session) {
-      if (session.color) return session.color;
-      const workout = this.workoutData.find(w => w.id === session.workoutId);
-      return workout?.color || null;
+    // Find all sessions for the specified date, sorted by time
+    const sessionsForDate = this.workoutSessions
+      .filter(s => s.date.toDateString() === date.toDateString())
+      .sort((a, b) => a.date - b.date);
+    
+    // Look for the first session with a color
+    for (const sess of sessionsForDate) {
+      // First check if the session itself has a color property
+      let colorCandidate = sess.color;
+      
+      // If not, get the color from the associated workout data
+      if (!colorCandidate) {
+        const w = this.workoutData.find(w => w.id === sess.workoutId);
+        colorCandidate = w?.color ?? null;
+      }
+      
+      // Return the first color found (for multiple workouts on same day)
+      if (colorCandidate) return colorCandidate;
     }
+    
     return null;
   }
 
@@ -102,32 +155,35 @@ export class Calendar {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const isToday = date.toDateString() === today.toDateString();
+      
+      // Get workout color for this date
       const color = this.getColorForDate(date);
-      const isWorkoutDay = !!color;
-      const isCompleted = this.isWorkoutCompleted(date);
-      const isMissed = this.isWorkoutMissed(date);
-      const workout = this.getWorkoutForDate(date);
-
-      const classes = ["calendar-cell"]; 
+      
+      // Determine workout status for this date
+      const status = this.getWorkoutStatus(date);
+      
+      // Build cell classes
+      const classes = ["calendar-cell", "calendar-cell--small"];
       if (isToday) classes.push("today");
-      // Optional: selected state can be added by interaction later
-
-      // Color dot to indicate workout color
-      const colorDot = color ? `<span class="color-dot" title="Workout color" style="background:${color}"></span>` : '';
-      const badges = [];
-      if (isWorkoutDay) {
-        badges.push(`<span class="badge primary" title="Workout scheduled">${workout?.name ?? 'Workout'}</span>`);
+      
+      // Color style handling - apply workout color as background if available
+      let styleAttr = '';
+      if (color) {
+        styleAttr = ` style="background-color:${color}"`;
       }
-      if (isCompleted) {
-        badges.push(`<span class="badge success" title="Completed">Done</span>`);
-      } else if (isMissed) {
-        badges.push(`<span class="badge" title="Missed">Missed</span>`);
+
+      // Status text to display under the day number
+      let statusText = '';
+      if (status === 'completed') {
+        statusText = '<div class="calendar-status calendar-status--completed">Done</div>';
+      } else if (status === 'missed') {
+        statusText = '<div class="calendar-status calendar-status--missed">Missed</div>';
       }
 
       calendarHTML += `
-        <div class="${classes.join(' ')}" data-date="${date.toISOString().split('T')[0]}">
-          <div class="calendar-date">${day}</div>
-          <div class="calendar-badges">${colorDot}${badges.join('')}</div>
+        <div class="${classes.join(' ')}" data-date="${date.toISOString().split('T')[0]}"${styleAttr}>
+          <div class="calendar-day-number">${day}</div>
+          ${statusText}
         </div>
       `;
     }
@@ -251,6 +307,40 @@ export class Calendar {
   getWorkoutForDate(date) {
     const session = this.workoutSessions.find(session => session.date.toDateString() === date.toDateString());
     return session ? this.workoutData.find(workout => workout.id === session.workoutId) : null;
+  }
+
+  /**
+   * Determines the workout status for a given date
+   * @param {Date} date - The date to check
+   * @returns {string} - 'completed' if any workout session for this date is completed,
+   *                    'missed' if sessions exist but none are completed,
+   *                    null if no workout is scheduled
+   *
+   * Status determination logic:
+   * - First finds all workout sessions scheduled for the specified date
+   * - If no sessions exist, returns null (no workout scheduled)
+   * - If any session for the date has completed=true, returns 'completed'
+   * - If sessions exist but none are completed, returns 'missed'
+   */
+  getWorkoutStatus(date) {
+    // Find all sessions for this date
+    const sessionsForDate = this.workoutSessions.filter(session =>
+      session.date.toDateString() === date.toDateString()
+    );
+    
+    // If no sessions, return null
+    if (sessionsForDate.length === 0) {
+      return null;
+    }
+    
+    // Check if any session is completed
+    const hasCompletedSession = sessionsForDate.some(session => session.completed);
+    
+    if (hasCompletedSession) {
+      return 'completed';
+    } else {
+      return 'missed';
+    }
   }
 
   onDayClick(date) {

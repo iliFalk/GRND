@@ -118,7 +118,7 @@ export class Dashboard {
                       <h3>${this.workoutData.name}</h3>
                       <p>${this.workoutData.description || 'No description available'}</p>
                       
-                      <button class="primary-btn" id="start-workout-btn" data-day-id="${this.workoutData.id}">
+                      <button class="primary-btn" id="start-workout-dashboard-btn" data-day-id="${this.workoutData.id}">
                           Start Workout
                       </button>
                   ` : `
@@ -237,8 +237,8 @@ export class Dashboard {
         });
       }
 
-      // Add event listener for start workout button
-      const startBtn = this.container.querySelector('#start-workout-btn');
+      // Add event listener for start workout button (dashboard)
+      const startBtn = this.container.querySelector('#start-workout-dashboard-btn');
       if (startBtn) {
           startBtn.addEventListener('click', (e) => {
               const dayId = e.target.dataset.dayId;

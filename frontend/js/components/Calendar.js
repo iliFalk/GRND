@@ -1,4 +1,4 @@
-  /**
+/**
   * Calendar Component
   * Displays a monthly calendar with workout schedule information
   *
@@ -122,8 +122,8 @@ export class Calendar {
     const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     let calendarHTML = `
-      <div class="calendar">
-        <div class="calendar-header">
+      <div class="calendar collapsed">
+        <div class="calendar-header" aria-expanded="false">
           <div class="calendar-left" id="calendar-left"></div>
           <div class="month"><span class="month-year">${year}</span><span class="month-name">${monthNames[month]}</span></div>
           <div class="calendar-right">
@@ -175,7 +175,7 @@ export class Calendar {
       // Status text to display under the day number
       let statusText = '';
       if (status === 'completed') {
-        statusText = '<div class="calendar-status calendar-status--completed">Done</div>';
+        statusText = '<div class="calendar-status calendar-status--completed" style="color:#0b5ed7 !important">Done</div>';
       } else if (status === 'missed') {
         statusText = '<div class="calendar-status calendar-status--missed">Missed</div>';
       }
@@ -196,6 +196,17 @@ export class Calendar {
     this.container.innerHTML = calendarHTML;
     this.addEventListeners();
     this.addTouchListeners();
+
+    // Force status label styles at runtime to override any inherited/inline styling
+    // (handles cases where cell background or other CSS rules override the status color)
+    const forcedStatusEls = this.container.querySelectorAll('.calendar-status.calendar-status--completed, .calendar-status.calendar-status--done');
+    forcedStatusEls.forEach(el => {
+      el.style.setProperty('color', '#0b5ed7', 'important');
+      el.style.setProperty('-webkit-text-fill-color', '#0b5ed7', 'important');
+      el.style.setProperty('-webkit-text-stroke', '0', 'important');
+      el.style.setProperty('text-stroke', '0', 'important');
+      el.style.setProperty('text-shadow', 'none', 'important');
+    });
 
     // Populate left side with today's date (e.g., Thu, Aug 7)
     const leftEl = this.container.querySelector('#calendar-left');
@@ -235,6 +246,20 @@ export class Calendar {
       nextBtn.addEventListener('click', () => {
         this.currentDate.setMonth(this.currentDate.getMonth() + 1);
         this.render();
+      });
+    }
+    
+    
+    // Allow clicking the header (except controls) to toggle collapse as well
+    const headerEl = this.container.querySelector('.calendar-header');
+    if (headerEl) {
+      headerEl.addEventListener('click', (e) => {
+        // Ignore clicks on nav buttons
+        if (e.target.closest('.calendar-nav')) return;
+        const calendarEl = this.container.querySelector('.calendar');
+        const isCollapsed = calendarEl.classList.toggle('collapsed');
+        // Reflect expanded state on the header for accessibility
+        headerEl.setAttribute('aria-expanded', String(!isCollapsed));
       });
     }
     

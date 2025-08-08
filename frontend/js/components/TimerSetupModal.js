@@ -11,7 +11,7 @@ export class TimerSetupModal {
     
     // Default configuration
     this.config = {
-      totalWorkoutTime: 60, // in minutes
+      totalWorkoutTime: 20, // in minutes (changed default)
       preparationTime: 10, // in seconds
       defaultRestTime: 60, // in seconds
       ...options.config
@@ -106,10 +106,38 @@ export class TimerSetupModal {
       }
     });
     
-    // Handle input validation
+    // Handle input validation and enable wheel adjustments
     const inputs = this.modalElement.querySelectorAll('input[type="number"]');
     inputs.forEach(input => {
+      // Keep existing validation on input
       input.addEventListener('input', (e) => this.validateInput(e.target));
+
+      // Allow changing the numeric value with the mouse wheel while hovering.
+      // We prevent the default page scroll and increment/decrement using the
+      // input's `step`, `min` and `max` attributes.
+      input.addEventListener('wheel', (e) => {
+        // Prevent page from scrolling when adjusting values
+        e.preventDefault();
+
+        const step = parseInt(input.step, 10) || 1;
+        const min = (input.min !== '') ? parseInt(input.min, 10) : -Infinity;
+        const max = (input.max !== '') ? parseInt(input.max, 10) : Infinity;
+        let value = parseInt(input.value, 10);
+        if (isNaN(value)) value = 0;
+
+        // Wheel up (deltaY < 0) -> increase, wheel down -> decrease
+        if (e.deltaY < 0) value += step;
+        else value -= step;
+
+        // Clamp to min/max
+        if (value < min) value = min;
+        if (value > max) value = max;
+
+        // Update input and trigger validation + input event listeners
+        input.value = value;
+        // Trigger the input event so other listeners react (and validate)
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }, { passive: false });
     });
   }
   

@@ -86,7 +86,6 @@ export class Dashboard {
           <div class="info-card" id="last-performance-card" role="button" aria-expanded="false">
             <div class="info-header">
               <h4>Last Performance</h4>
-              <span class="chev" aria-hidden="true">▼</span>
             </div>
             <div class="summary" aria-hidden="true">
               <span class="type">${workoutType}</span>

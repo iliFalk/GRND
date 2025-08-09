@@ -55,14 +55,6 @@ export class TimerSetupModal {
             <small>Rest time between sets/rounds</small>
           </div>
           
-          <div class="form-group">
-            <label for="workout-type">Workout Type</label>
-            <select id="workout-type">
-              <option value="STANDARD">Standard</option>
-              <option value="CIRCUIT">Circuit</option>
-            </select>
-            <small>Choose your workout type</small>
-          </div>
         </div>
         
         <div class="modal-footer">
@@ -161,7 +153,6 @@ export class TimerSetupModal {
     const totalWorkoutTimeInput = this.modalElement.querySelector('#total-workout-time');
     const preparationTimeInput = this.modalElement.querySelector('#preparation-time');
     const defaultRestTimeInput = this.modalElement.querySelector('#default-rest-time');
-    const workoutTypeSelect = this.modalElement.querySelector('#workout-type');
     
     if (totalWorkoutTimeInput) {
       totalWorkoutTimeInput.value = this.config.totalWorkoutTime;
@@ -173,10 +164,6 @@ export class TimerSetupModal {
     
     if (defaultRestTimeInput) {
       defaultRestTimeInput.value = this.config.defaultRestTime;
-    }
-    
-    if (workoutTypeSelect) {
-      workoutTypeSelect.value = this.config.workoutType || 'STANDARD';
     }
     
     // Show modal
@@ -205,13 +192,11 @@ export class TimerSetupModal {
     const totalWorkoutTimeInput = this.modalElement.querySelector('#total-workout-time');
     const preparationTimeInput = this.modalElement.querySelector('#preparation-time');
     const defaultRestTimeInput = this.modalElement.querySelector('#default-rest-time');
-    const workoutTypeSelect = this.modalElement.querySelector('#workout-type');
     
     // Update configuration
     this.config.totalWorkoutTime = parseInt(totalWorkoutTimeInput.value);
     this.config.preparationTime = parseInt(preparationTimeInput.value);
     this.config.defaultRestTime = parseInt(defaultRestTimeInput.value);
-    this.config.workoutType = workoutTypeSelect.value;
     
     // Close modal
     this.modalElement.classList.add('hidden');

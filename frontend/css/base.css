@@ -1,0 +1,147 @@
+/* base.css
+   Contains resets, CSS variables, global typography, accessibility helpers and core body styles.
+*/
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Utility: generic hidden helper used by JS components */
+.hidden {
+    display: none !important;
+}
+
+:root {
+    /* Colors */
+    --bg-color: #F7F8FA;
+    --card-bg: #FFFFFF;
+    --text-primary: #0F172A; /* slate-900 */
+    --text-secondary: #475569; /* slate-600 */
+    --text-muted: #94A3B8; /* slate-400 */
+    --accent-indigo: #0085E0; /* updated primary */
+    --accent-indigo-hover: #0072bf;
+    --accent-green: #10B981; /* success accent */
+    --border-color: #E5E7EB;
+    /* Keep CSS var API compatible */
+    --accent-color: var(--accent-indigo);
+    --success-color: var(--accent-green);
+    --warning-color: #F59E0B;
+    --error-color: #EF4444;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    
+    /* Layout */
+    --header-height: 60px;
+    --nav-height: 80px;
+    --safe-area-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Base body and app container resets */
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    background-image: radial-gradient(40rem 20rem at 110% -10%, rgba(79,70,229,0.06), transparent 60%),
+                      radial-gradient(32rem 16rem at -10% -10%, rgba(16,185,129,0.06), transparent 60%);
+}
+
+/* App Container (left in base for global app sizing) */
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+    background-color: var(--bg-color);
+    border-radius: 16px;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: var(--spacing-sm);
+}
+
+h2 {
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--spacing-md);
+}
+
+h3 {
+    font-size: var(--font-size-lg);
+}
+
+h4 {
+    font-size: var(--font-size-md);
+}
+
+p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Accessibility helpers */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent-indigo);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+/* Animations used across components */
+@keyframes slideIn {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Ensure no horizontal overflow */
+body, html { width: 100%; overflow-x: hidden; }

@@ -1,0 +1,73 @@
+/* modals.css
+   Modal overlays and modal content used by TimerSetupModal and other overlays
+*/
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15,23,42,0.35);
+  padding: calc(var(--spacing-md) + 8px);
+  z-index: 1200;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Modal content (the white card inside the overlay) */
+.modal-overlay .modal-content {
+  background: var(--card-bg);
+  width: 100%;
+  max-width: 640px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(2,6,23,0.18);
+  padding: var(--spacing-md);
+  overflow: auto;
+  max-height: calc(100vh - 120px);
+  position: relative;
+}
+
+/* Header / close button */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 8px;
+}
+.modal-close-btn:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--text-primary);
+}
+
+/* Body and footer spacing */
+.modal-body {
+  padding-top: 6px;
+  padding-bottom: 12px;
+  display: grid;
+  gap: 12px;
+}
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+/* Keep the JS-driven hidden helper in sync for the modal variant */
+.timer-setup-modal.hidden { display: none !important; }
+
+/* Ensure bottom nav sits under overlays (in case other components set z-index) */
+.bottom-nav {
+  z-index: 200;
+}

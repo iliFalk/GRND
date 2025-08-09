@@ -1,0 +1,85 @@
+/* planner.css
+   Plan / training plan related styles: plan-card, plan-form, plan-info, plan lists
+*/
+
+.plan-card {
+    background-color: var(--card-bg);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--border-color);
+}
+
+.plan-card h3 {
+    margin: 0 0 var(--spacing-xs) 0;
+}
+
+.plan-card p {
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--text-secondary);
+}
+
+/* Plan form layout */
+.plan-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.plan-info {
+    background-color: #F3F4F6;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+    margin-top: var(--spacing-md);
+}
+
+.plan-info p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0;
+}
+
+/* Plan list / plan card list */
+.plans-list {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.list-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 6px;
+    background: #fff;
+}
+
+/* Polished list rows (used in plan lists and history) */
+.list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.list-row + .list-row {
+  margin-top: 4px;
+}
+
+.list-row:hover {
+  background: #F8FAFC;
+}
+
+.row-title { font-weight: 600; color: var(--text-primary); }
+.row-sub { font-size: 12px; color: var(--text-secondary); }
+.row-meta { font-size: 12px; color: var(--text-muted); }
+
+/* Duplicate button helper used in planner UI */
+.duplicate-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+}

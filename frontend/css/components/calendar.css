@@ -65,7 +65,7 @@
      Center it inside the header grid column using justify-self: center.
      Pointer-events remain disabled so it doesn't block header clicks. */
   position: relative;
-  left: auto;
+  left: -55px; /* shifted 5px to the left */
   top: auto;
   transform: none;
   display: grid;

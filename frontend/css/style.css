@@ -681,13 +681,45 @@ input:checked + .slider:before {
   text-align: center; /* ensure icon centered if content is text glyph */
 }
 
-/* Make glyph/icon larger inside the toggle when present */
+/* Remove pseudo-element that added invisible space before the icon — it pushed the glyph off-center.
+   Keeping the icon centered is handled by the button's flexbox rules (.btn-toggle). */
 .btn-toggle::before {
-  content: "";
-  display: inline-block;
-  width: 1em;
-  height: 1em;
+  content: none;
+  display: none;
+}
+
+/* Force SVG icon sizing and centering inside the toggle.
+   The SVGs in the button are authored at 48x48; these rules ensure they render at that size,
+   inherit the button color via currentColor, and don't affect layout. */
+/* Icon sizing + centering for play/pause SVGs */
+.btn-toggle .icon {
+  width: 48px;
+  height: 48px;
+  display: block;           /* ensure the SVG is treated as a block so auto margins work */
+  margin: 0 auto;          /* horizontally center the SVG inside the button */
+  flex: 0 0 48px;          /* prevent flex stretching/shrinking */
+  vertical-align: middle;
   line-height: 1;
+  pointer-events: none;
+  fill: currentColor;
+}
+
+/* Ensure SVG elements inside the .icon class fill currentColor (for inline SVGs using fill attributes) */
+.btn-toggle .icon svg,
+.btn-toggle .icon path {
+  width: 48px;
+  height: 48px;
+  fill: currentColor !important;
+  stroke: none;
+  display: block;
+}
+
+/* Do not override individual SVG shape geometry (e.g. <rect>). Let shapes use their author-specified attributes. */
+.btn-toggle .icon rect {
+  /* Respect the rect's own width/height attributes so pause bars render correctly */
+  fill: currentColor !important;
+  stroke: none;
+  display: block;
 }
 
 /* Slight press effect */
@@ -2080,3 +2112,77 @@ body, html { width: 100%; overflow-x: hidden; }
        gap: 4px;
    }
 */
+
+/* Modal overlay + Timer Setup modal styles
+   Fixes positioning so the timer setup appears centered above content,
+   does not flow into the page layout, and sits above the bottom navigation.
+*/
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15,23,42,0.35);
+  padding: calc(var(--spacing-md) + 8px);
+  z-index: 1200;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Modal content (the white card inside the overlay) */
+.modal-overlay .modal-content {
+  background: var(--card-bg);
+  width: 100%;
+  max-width: 640px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(2,6,23,0.18);
+  padding: var(--spacing-md);
+  overflow: auto;
+  max-height: calc(100vh - 120px);
+  position: relative;
+}
+
+/* Header / close button */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 8px;
+}
+.modal-close-btn:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--text-primary);
+}
+
+/* Body and footer spacing */
+.modal-body {
+  padding-top: 6px;
+  padding-bottom: 12px;
+  display: grid;
+  gap: 12px;
+}
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+/* Keep the JS-driven hidden helper in sync for the modal variant */
+.timer-setup-modal.hidden { display: none !important; }
+
+/* Ensure bottom nav sits under overlays (in case other components set z-index) */
+.bottom-nav {
+  z-index: 200;
+}

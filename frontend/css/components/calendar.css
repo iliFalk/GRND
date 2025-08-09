@@ -8,19 +8,20 @@
 /* Header */
 .calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 12px 8px; position: relative; cursor: pointer; }
 .calendar-header .month { grid-column: 2; justify-self: center; font-weight: 700; }
-.calendar-header .calendar-left { grid-column: 1; justify-self: start; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; color: var(--text-secondary); font-size: 14px; }
+.calendar-header .calendar-left { grid-column: 1; justify-self: start; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; color: var(--text-secondary); font-size: 14px; }
 
-.calendar-header .calendar-left-dayname { font-size: 14px; color: var(--text-secondary); }
-.calendar-header .calendar-left-date { font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1; }
-.calendar-header .calendar-right { grid-column: 3; justify-self: end; align-self: center; position: static; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; }
+.calendar-header .calendar-left-dayname { font-size: 14px; color: #000 !important; }
+/* Removed the left-side large date — hide it to simplify header */
+.calendar-header .calendar-left-date { display: none !important; }
+.calendar-header .calendar-right { grid-column: 3; justify-self: end; align-self: center; position: static; display: flex; flex-direction: row; align-items: center; justify-content: flex-end; gap: 8px; }
 
 /* Right column top/bottom stacks to match left column */
 .calendar-header .calendar-right-top,
 .calendar-header .calendar-right-bottom {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-end;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
   justify-content: center;
 }
 
@@ -60,16 +61,18 @@
    Use viewport centering (50vw) so it lines up with the page/app center rather than the calendar box.
    On very small screens fall back to centering inside the calendar. */
 .calendar-header .month {
-  /* Center the month block on the calendar container (which is centered in the page)
-     so "2025 / August" aligns with the app title's vertical center line. */
-  position: absolute;
-  left: 50%; /* center relative to the calendar header (and therefore the app content) */
-  top: 50%;
-  transform: translate(-50%, -50%);
+  /* Keep the month positioned relative to the header so layout flows naturally.
+     Center it inside the header grid column using justify-self: center.
+     Pointer-events remain disabled so it doesn't block header clicks. */
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
   display: grid;
   place-items: center;
   line-height: 1.2;
   pointer-events: none; /* don't block header clicks */
+  justify-self: center;
 }
 
 /* If the viewport is very narrow (mobile), keep month centered inside the calendar */
@@ -85,12 +88,9 @@
 }
 
 /* Ensure center column top and bottom match left/right sizing */
+/* Hide the year in the centered month block — only show the month name */
 .calendar-header .month-year {
-  font-size: 14px !important;
-  color: var(--text-secondary) !important;
-  font-weight: 600 !important;
-  display: block;
-  line-height: 1;
+  display: none !important;
 }
 .calendar-header .month-name {
   font-size: 20px !important;
@@ -224,13 +224,15 @@
 .calendar-header #prev-month svg, .calendar-header #next-month svg { width: 24px; height: 24px; display: block; fill: currentColor; }
 .calendar-header #prev-month *, .calendar-header #next-month * { pointer-events: none; }
 
-/* Today button (header-right) styling - force plain text with no rectangle */
+/* Today button (header-right) styling - match left-dayname size/style but on the right, use black text */
 .calendar-header .calendar-right button,
 .calendar-header #today-btn {
   background: transparent !important;
   border: none !important;
-  color: var(--accent-indigo) !important;
-  font-weight: 600;
+  color: #000 !important; /* make Today black */
+  font-size: 14px;         /* match .calendar-left-dayname */
+  font-weight: 600;        /* match .calendar-left-dayname */
+  line-height: 1;          /* match .calendar-left-dayname */
   cursor: pointer;
   padding: 0;
   margin: 0;
@@ -240,6 +242,8 @@
   -webkit-tap-highlight-color: transparent;
   -webkit-appearance: none;
   appearance: none;
+  display: inline-block;
+  text-align: right;
 }
 
 /* Ensure hover/active/focus states don't add borders or background */

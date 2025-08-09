@@ -57,14 +57,18 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  align-items: stretch;
 }
 
 .exercise-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--bg-color);
-  padding-bottom: var(--spacing-sm);
+  /* Move separator to top when header is placed at the bottom of the card */
+  border-top: 1px solid var(--bg-color);
+  padding-top: var(--spacing-sm);
+  order: 3;
+  margin-top: var(--spacing-md);
 }
 
 .exercise-progress {
@@ -72,15 +76,96 @@
   color: var(--text-secondary);
 }
 
+/* Tally marks for sets (completed = filled). Groups of five show a diagonal cross when complete. */
+.tally {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tally-group {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  padding: 2px 4px;
+  align-items: flex-end;
+  min-height: 18px;
+}
+
+/* Vertical stroke for each tally mark */
+.tally-mark {
+  position: relative;
+  z-index: 0;
+  width: 2px;
+  height: 16px;
+  background: var(--border-color);
+  border-radius: 2px;
+  opacity: 0.25;
+  transition: opacity .12s, background .12s;
+}
+
+/* Filled/complete mark */
+.tally-mark.filled {
+  background: var(--text-primary);
+  opacity: 1;
+}
+
+/* Diagonal cross for a completed group of five
+   Drawn above the four vertical sticks to represent the "5th" tally */
+.tally-group.complete::after {
+  content: '';
+  position: absolute;
+  /* extend slightly beyond the group's edges so the diagonal clearly crosses the fourth stick */
+  left: -8px;
+  right: -8px;
+  top: 6px;
+  height: 3px;
+  background: var(--text-primary);
+  border-radius: 2px;
+  transform-origin: left center;
+  transform: rotate(22deg);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Small textual summary displayed next to the tally marks (e.g. "2 done • 2 remaining") */
+.tally-summary {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* Accessible hidden text for screen readers */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+}
+
 .exercise-details {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  order: 1;
 }
 
 .exercise-target {
   font-size: var(--font-size-md);
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.exercise-target p {
+  margin: 0;
 }
 
 .exercise-instructions {
@@ -93,21 +178,31 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 200px;
+  /* Fixed height with 4:3 ratio (height: 140px) */
+  height: 140px;
+  aspect-ratio: 4 / 3;
+  width: auto;
+  max-width: 100%;
   background: var(--bg-color);
   border-radius: var(--radius-sm);
   overflow: hidden;
+  margin: 0 auto;
+  order: 2;
 }
 
 .exercise-image img {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  display: block;
 }
 
+/* Smaller, centered placeholder styling for the compact 4:3 box */
 .placeholder-image {
   color: var(--text-muted);
-  font-size: var(--font-size-sm);
+  font-size: calc(var(--font-size-sm) - 1px);
+  text-align: center;
+  padding: 10px;
 }
 
 /* Circuit Workout Styles */
@@ -188,4 +283,96 @@
 
 .workout-controls button {
   border-radius: 10px;
+}
+
+/* Center workout title and improve stat cards alignment */
+.workout-info {
+  /* Keep card styling but center internal content */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Title centered and visually separated from stat cards */
+#workout-title {
+  margin: 0;
+  margin-bottom: var(--spacing-md);
+  font-size: 1.6rem;
+  line-height: 1.2;
+  text-align: center;
+  width: 100%;
+}
+
+/* Stats: center the group and allow wrapping on small screens */
+.workout-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-top: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+/* Stat cards: consistent size, centered content */
+.stat-item {
+  text-align: center;
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-xs);
+}
+
+/* Label and value spacing tweaks */
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+/* Move exercise section to top of the workout container and improve spacing */
+.exercise-section {
+  /* Place the exercise card before other sections in the column layout */
+  order: -1;
+  margin-top: 0;
+  width: 100%;
+}
+
+/* Optional: make the exercise card stick to the top while scrolling */
+/* Use CSS variable --exercise-sticky-top to allow easy adjustments */
+@supports (position: sticky) {
+  .exercise-section {
+    position: sticky;
+    top: var(--exercise-sticky-top, 12px); /* distance from top of viewport */
+    z-index: 20;
+    background: var(--card-bg);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  /* Disable sticky on very small screens to avoid layout issues */
+  @media (max-width: 600px) {
+    .exercise-section {
+      position: static;
+      top: auto;
+    }
+  }
+}
+
+/* Reduce gap above the container when exercise is first for tighter layout */
+.workout-container {
+  gap: var(--spacing-sm);
 }

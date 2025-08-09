@@ -32,7 +32,7 @@
   font-size: 48px;
   font-weight: 800;
   color: var(--text-primary);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-family);
 }
 
 /* Split timer values */
@@ -47,7 +47,7 @@
   font-size: 48px;
   font-weight: 800;
   color: var(--accent-green);
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-family);
   line-height: 1;
 }
 
@@ -65,7 +65,7 @@
   font-size: 20px;
   font-weight: 700;
   color: #8B0000;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-family);
   opacity: 0.95;
   line-height: 1;
 }

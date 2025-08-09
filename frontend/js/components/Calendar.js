@@ -210,23 +210,21 @@ export class Calendar {
       leftEl.innerHTML = `<div class="calendar-left-dayname">${dayName}</div><div class="calendar-left-date">${shortDate}</div>`;
     }
 
-    // Align the center month block to the app title's vertical center line so it lines up with "GRND"
+    // Keep the month element positioned inside the calendar header (no absolute JS positioning).
+    // This ensures <div class="month"> remains part of the header layout and respects CSS rules.
     const alignMonthToTitle = () => {
       const monthEl = this.container.querySelector('.calendar-header .month');
       if (!monthEl) return;
-      // Keep month positioned relative and center horizontally using left/right + margin auto
       monthEl.style.position = 'relative';
-      monthEl.style.left = '0';
-      monthEl.style.right = '0';
-      monthEl.style.margin = '0 auto';
+      monthEl.style.left = 'auto';
       monthEl.style.top = 'auto';
       monthEl.style.transform = 'none';
+      monthEl.style.margin = '0';
       monthEl.style.pointerEvents = 'none';
     };
 
-    // Initial align and on resize
+    // Initial call to ensure the month stays styled as part of the header.
     alignMonthToTitle();
-    window.addEventListener('resize', alignMonthToTitle);
 
   }
 

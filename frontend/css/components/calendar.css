@@ -6,7 +6,7 @@
 .calendar { background:#FFFFFF; border:1px solid var(--border-color); border-radius: 12px; padding: 12px; font-size: 14px; }
 
 /* Header */
-.calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 12px 8px; position: relative; cursor: pointer; }
+.calendar-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 12px 8px; position: relative; cursor: pointer; min-height: 64px; }
 .calendar-header .month { grid-column: 2; justify-self: center; font-weight: 700; }
 .calendar-header .calendar-left { grid-column: 1; justify-self: start; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; color: var(--text-secondary); font-size: 14px; }
 
@@ -61,18 +61,22 @@
    Use viewport centering (50vw) so it lines up with the page/app center rather than the calendar box.
    On very small screens fall back to centering inside the calendar. */
 .calendar-header .month {
-  /* Keep the month positioned relative to the header so layout flows naturally.
-     Center it inside the header grid column using justify-self: center.
-     Pointer-events remain disabled so it doesn't block header clicks. */
-  position: relative;
-  left: -55px; /* shifted 5px to the left */
-  top: auto;
-  transform: none;
-  display: grid;
-  place-items: center;
+  /* Keep the month visually inside the header and centered vertically/horizontally.
+     Position absolutely against the .calendar-header (which is already position: relative)
+     so the month sits on the same visual row as the left/right controls. */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
   line-height: 1.2;
   pointer-events: none; /* don't block header clicks */
   justify-self: center;
+  margin: 0;
+  width: auto;
+  white-space: nowrap;
+  z-index: 3; /* ensure month sits above header content */
+  font-weight: 700;
 }
 
 /* If the viewport is very narrow (mobile), keep month centered inside the calendar */

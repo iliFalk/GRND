@@ -119,7 +119,7 @@ export class Calendar {
     
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December'];
-    const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     let calendarHTML = `
       <div class="calendar collapsed">
@@ -127,18 +127,8 @@ export class Calendar {
           <div class="calendar-left" id="calendar-left"></div>
           <div class="month"><span class="month-year">${year}</span><span class="month-name">${monthNames[month]}</span></div>
           <div class="calendar-right">
-            <div class="controls">
-              <button class="btn-secondary calendar-nav" id="prev-month" data-dir="prev" aria-label="Previous month">
-                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                  <polyline points="15 6 9 12 15 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                </svg>
-              </button>
-              <button class="btn-secondary calendar-nav" id="next-month" data-dir="next" aria-label="Next month">
-                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                  <polyline points="9 6 15 12 9 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                </svg>
-              </button>
-            </div>
+            <div class="calendar-right-top"><button id="today-btn">Today</button></div>
+            <div class="calendar-right-bottom"></div>
           </div>
         </div>
         <div class="calendar-weekdays">
@@ -208,54 +198,50 @@ export class Calendar {
       el.style.setProperty('text-shadow', 'none', 'important');
     });
 
-    // Populate left side with today's date (e.g., Thu, Aug 7)
+    // Populate left side with today's date (weekday above short date, e.g., Saturday / Aug 9)
     const leftEl = this.container.querySelector('#calendar-left');
     if (leftEl) {
       const leftDate = new Date();
-      const formatter = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-      leftEl.textContent = formatter.format(leftDate);
+      const dayName = new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(leftDate);
+      const shortDate = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(leftDate);
+      leftEl.innerHTML = `<div class="calendar-left-dayname">${dayName}</div><div class="calendar-left-date">${shortDate}</div>`;
     }
 
-    // Fallback: if SVG icons are not visible, show text chevrons
-    const prev = this.container.querySelector('#prev-month');
-    const next = this.container.querySelector('#next-month');
-    [prev, next].forEach(btn => {
-      if (!btn) return;
-      const svg = btn.querySelector('svg');
-      if (!svg) return;
-      const box = svg.getBoundingClientRect();
-      if (!box.width || !box.height) {
-        btn.classList.add('no-icon');
-      }
-    });
+    // Align the center month block to the app title's vertical center line so it lines up with "GRND"
+    const alignMonthToTitle = () => {
+      const monthEl = this.container.querySelector('.calendar-header .month');
+      const headerEl = this.container.querySelector('.calendar-header');
+      const titleEl = document.querySelector('.app-title');
+      if (!monthEl || !headerEl || !titleEl) return;
+
+      const titleRect = titleEl.getBoundingClientRect();
+      const headerRect = headerEl.getBoundingClientRect();
+
+      // Compute X position of title center relative to the header element
+      const titleCenterX = titleRect.left + titleRect.width / 2;
+      const leftRelativeToHeader = titleCenterX - headerRect.left;
+
+      // Apply absolute positioning to month and place at the computed X (keep vertical centering)
+      monthEl.style.position = 'absolute';
+      monthEl.style.left = `${leftRelativeToHeader}px`;
+      monthEl.style.top = '50%';
+      monthEl.style.transform = 'translate(-50%, -50%)';
+      monthEl.style.pointerEvents = 'none';
+    };
+
+    // Initial align and on resize
+    alignMonthToTitle();
+    window.addEventListener('resize', alignMonthToTitle);
+
   }
 
   addEventListeners() {
-    // Previous month button
-    const prevBtn = this.container.querySelector('#prev-month');
-    if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
-        this.currentDate.setMonth(this.currentDate.getMonth() - 1);
-        this.render();
-      });
-    }
-    
-    // Next month button
-    const nextBtn = this.container.querySelector('#next-month');
-    if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
-        this.currentDate.setMonth(this.currentDate.getMonth() + 1);
-        this.render();
-      });
-    }
-    
-    
     // Allow clicking the header (except controls) to toggle collapse as well
     const headerEl = this.container.querySelector('.calendar-header');
     if (headerEl) {
       headerEl.addEventListener('click', (e) => {
-        // Ignore clicks on nav buttons
-        if (e.target.closest('.calendar-nav')) return;
+        // Ignore clicks on nav buttons and the Today button
+        if (e.target.closest('.calendar-nav') || e.target.closest('#today-btn')) return;
         const calendarEl = this.container.querySelector('.calendar');
         const isCollapsed = calendarEl.classList.toggle('collapsed');
         // Reflect expanded state on the header for accessibility
@@ -289,12 +275,25 @@ export class Calendar {
     const calendarElement = this.container.querySelector('.calendar-grid');
     if (!calendarElement) return;
 
+    // Touch fallback for older browsers
     calendarElement.addEventListener('touchstart', (e) => {
       this.touchStartX = e.changedTouches[0].screenX;
-    }, false);
+    }, { passive: true });
 
     calendarElement.addEventListener('touchend', (e) => {
       this.touchEndX = e.changedTouches[0].screenX;
+      this.handleSwipeGesture();
+    }, { passive: true });
+
+    // Pointer events to support mouse & modern touch in a single handler
+    calendarElement.addEventListener('pointerdown', (e) => {
+      if (e.isPrimary === false) return;
+      this.touchStartX = e.clientX;
+    }, false);
+
+    calendarElement.addEventListener('pointerup', (e) => {
+      if (e.isPrimary === false) return;
+      this.touchEndX = e.clientX;
       this.handleSwipeGesture();
     }, false);
   }

@@ -162,7 +162,6 @@ export class Workout {
         
         <!-- Workout Info -->
         <div class="workout-info">
-          <h2 id="workout-title">Workout</h2>
           <div class="workout-stats">
             <div class="stat-item">
               <span class="stat-label">Volume</span>
@@ -310,23 +309,71 @@ export class Workout {
     
     const currentExercise = this.day.exercises[this.currentExerciseIndex];
     
+    const renderTally = (totalSets, completed) => {
+      // Normalize numeric values
+      const total = Number(totalSets) || 0;
+      const done = Number(completed) || 0;
+
+      // Try to infer exercise-level data when total isn't provided
+      const exercise = this.day?.exercises?.[this.currentExerciseIndex];
+
+      if (!total || total <= 0) {
+        const inferredDone = exercise && Array.isArray(exercise.completed_sets) ? exercise.completed_sets.length : Math.max(0, this.currentSetIndex);
+        const inferredTotal = exercise && Number(exercise.sets) ? Number(exercise.sets) : 0;
+        const inferredRemaining = inferredTotal ? Math.max(0, inferredTotal - inferredDone) : 0;
+
+        // If we know the planned sets, show done • remaining, otherwise just show done
+        if (inferredTotal) {
+          return `<div class="exercise-progress">${inferredDone} done • ${inferredRemaining} remaining</div>`;
+        } else {
+          return `<div class="exercise-progress">${inferredDone} done</div>`;
+        }
+      }
+
+      const completedClamped = Math.min(done, total);
+      const remaining = Math.max(0, total - completedClamped);
+
+      const groups = [];
+      // Iterate groups of 5 sets (visual group = up to 4 vertical sticks + diagonal for the 5th)
+      for (let i = 0; i < total; i += 5) {
+        const marks = [];
+        const groupTotal = Math.min(5, total - i);
+        // visible vertical marks = up to 4 (the 5th is represented by the diagonal when group complete)
+        const visibleMarks = Math.min(4, groupTotal);
+        const filledInGroup = Math.max(0, Math.min(completedClamped - i, visibleMarks));
+
+        for (let m = 0; m < visibleMarks; m++) {
+          const filled = m < filledInGroup ? 'filled' : '';
+          marks.push(`<span class="tally-mark ${filled}" aria-hidden="true"></span>`);
+        }
+
+        // Determine if entire group of 5 is complete (completed >= i + 5) OR if groupTotal < 5 and completed fills them all
+        const groupComplete = (i + 5 <= total) ? (completedClamped >= i + 5) : (completedClamped >= i + groupTotal);
+        const groupClass = groupComplete ? 'tally-group complete' : 'tally-group';
+        groups.push(`<div class="${groupClass}">${marks.join('')}</div>`);
+      }
+
+      // Include a visible textual summary alongside the tally marks for clarity: "X done • Y remaining"
+      return `<div class="exercise-progress tally" aria-label="${completedClamped} of ${total} sets completed"><span class="visually-hidden">${completedClamped} of ${total} sets completed</span>${groups.join('')}<div class="tally-summary" aria-hidden="true">${completedClamped} done • ${remaining} remaining</div></div>`;
+    };
+
     this.exerciseContainer.innerHTML = `
       <div class="current-exercise">
         <div class="exercise-header">
           <h3>${currentExercise.name}</h3>
-          <div class="exercise-progress">
-            Set ${this.currentSetIndex + 1} of ${currentExercise.sets}
-          </div>
+          ${renderTally(currentExercise.sets, (currentExercise.completed_sets || []).length)}
         </div>
         
         <div class="exercise-details">
           <div class="exercise-target">
-            <p>Target: ${currentExercise.reps} reps × ${currentExercise.weight} kg</p>
+            <p>${this.buildTargetText(currentExercise, this.day?.day_type || 'STANDARD')}</p>
           </div>
           
+${currentExercise.instructions ? `
           <div class="exercise-instructions">
-            <p>${currentExercise.instructions || 'No instructions available'}</p>
+            <p>${currentExercise.instructions}</p>
           </div>
+        ` : ''}
         </div>
         
         <div class="exercise-image">
@@ -368,7 +415,7 @@ export class Workout {
             <div class="circuit-exercise-item">
               <h4>${exercise.name}</h4>
               <div class="exercise-target">
-                <p>Target: ${exercise.reps} reps × ${exercise.weight} kg</p>
+                <p>${this.buildTargetText(exercise, 'CIRCUIT')}</p>
               </div>
               <div class="exercise-inputs">
                 <div class="input-group">
@@ -399,6 +446,58 @@ export class Workout {
     this.setupCircuitWorkoutControls();
   }
   
+  buildTargetText(exercise, dayType = 'STANDARD') {
+    // Normalize fields (support legacy and new field names)
+    const sets = exercise.target_sets || exercise.sets || 0;
+    const repsRaw = exercise.target_reps || exercise.reps || 0;
+    const weightRaw = (typeof exercise.weight !== 'undefined') ? exercise.weight : (exercise.bodyweight_load_percentage ? null : 0);
+
+    const reps = (typeof repsRaw === 'string') ? repsRaw : Number(repsRaw);
+    const weight = (typeof weightRaw === 'number') ? Math.round(weightRaw) : weightRaw;
+
+    // Detect AMRAP (flexible)
+    const isAMRAP = (typeof reps === 'string' && String(reps).toUpperCase() === 'AMRAP') || exercise.amrap === true;
+
+    if (dayType === 'CIRCUIT' && isAMRAP) {
+      // For bodyweight exercises, apply bodyweight load percentage if available
+      let bodyweightLabel = 'Bodyweight';
+      if (this.userProfile && this.userProfile.bodyweight) {
+        const bw = this.userProfile.bodyweight;
+        let loadPct = 1.0;
+        if (typeof exercise.getBodyweightLoadPercentage === 'function') {
+          try { loadPct = exercise.getBodyweightLoadPercentage(); } catch (e) { loadPct = exercise.bodyweight_load_percentage || 1.0; }
+        } else {
+          loadPct = exercise.bodyweight_load_percentage || 1.0;
+        }
+        const computed = Math.round(bw * loadPct);
+        bodyweightLabel = `${computed} kg`;
+      }
+      return `AMRAP • Bodyweight ${bodyweightLabel}`;
+    }
+
+    // Build parts for standard display: "Sets {sets} • {reps} reps • {weight} kg"
+    const parts = [];
+
+    if (sets && sets > 0) {
+      parts.push(`Sets ${sets}`);
+    }
+
+    if (reps && String(reps) !== '0') {
+      parts.push(`${reps} reps`);
+    }
+
+    if (typeof weight === 'number' && !isNaN(weight) && weight > 0) {
+      parts.push(`${weight} kg`);
+    }
+
+    // Fallback if nothing available
+    if (parts.length === 0) {
+      return 'Target';
+    }
+
+    return parts.join(' • ');
+  }
+
   setupStandardWorkoutControls() {
     const finishSetBtn = this.controlsContainer.querySelector('#finish-set-btn');
     const skipExerciseBtn = this.controlsContainer.querySelector('#skip-exercise-btn');

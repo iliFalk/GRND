@@ -119,7 +119,17 @@ export class WorkoutTimer {
         
         <div class="timer-controls">
           <button class="btn-primary" id="start-workout-btn">Start Workout</button>
-          <button class="btn-primary btn-toggle hidden" id="play-pause-toggle" aria-label="Pause">⏸</button>
+          <button class="btn-primary btn-toggle hidden" id="play-pause-toggle" aria-label="Pause">
+            <!-- Pause and Play SVGs sized to 48x48 to ensure consistent icon sizing across platforms -->
+            <svg class="icon icon-pause" width="48" height="48" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <!-- Use square bars (no rounding) for a true "||" appearance -->
+              <rect x="6" y="5" width="4" height="14" rx="0" fill="currentColor"/>
+              <rect x="14" y="5" width="4" height="14" rx="0" fill="currentColor"/>
+            </svg>
+            <svg class="icon icon-play" width="48" height="48" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="display: none;">
+              <path d="M7 5v14l12-7z" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
       </div>
     `;
@@ -163,18 +173,25 @@ export class WorkoutTimer {
         // Flip UI playing state and immediately update visuals, then call pause/resume.
         this._isPlaying = !this._isPlaying;
 
-        if (this._isPlaying) {
-          toggleBtn.textContent = '⏸';
-          toggleBtn.setAttribute('aria-label', 'Pause');
-          toggleBtn.classList.remove('btn-secondary');
-          toggleBtn.classList.add('btn-primary');
-          this.resumeWorkout();
-        } else {
-          toggleBtn.textContent = '▶';
-          toggleBtn.setAttribute('aria-label', 'Resume');
-          toggleBtn.classList.remove('btn-primary');
-          toggleBtn.classList.add('btn-secondary');
-          this.pauseWorkout();
+        {
+          const playIcon = toggleBtn.querySelector && toggleBtn.querySelector('.icon-play');
+          const pauseIcon = toggleBtn.querySelector && toggleBtn.querySelector('.icon-pause');
+
+          if (this._isPlaying) {
+            if (pauseIcon) pauseIcon.style.display = '';
+            if (playIcon) playIcon.style.display = 'none';
+            toggleBtn.setAttribute('aria-label', 'Pause');
+            toggleBtn.classList.remove('btn-secondary');
+            toggleBtn.classList.add('btn-primary');
+            this.resumeWorkout();
+          } else {
+            if (pauseIcon) pauseIcon.style.display = 'none';
+            if (playIcon) playIcon.style.display = '';
+            toggleBtn.setAttribute('aria-label', 'Resume');
+            toggleBtn.classList.remove('btn-primary');
+            toggleBtn.classList.add('btn-secondary');
+            this.pauseWorkout();
+          }
         }
 
         // Log result for easier debugging
@@ -591,16 +608,23 @@ export class WorkoutTimer {
       if (toggleBtn) {
         toggleBtn.classList.remove('hidden');
         // Use the UI-controlled _isPlaying flag as the source of truth for the toggle icon.
-        if (this._isPlaying) {
-          toggleBtn.textContent = '⏸';
-          toggleBtn.setAttribute('aria-label', 'Pause');
-          toggleBtn.classList.remove('btn-secondary');
-          toggleBtn.classList.add('btn-primary');
-        } else {
-          toggleBtn.textContent = '▶';
-          toggleBtn.setAttribute('aria-label', 'Resume');
-          toggleBtn.classList.remove('btn-primary');
-          toggleBtn.classList.add('btn-secondary');
+        {
+          const playIcon = toggleBtn.querySelector && toggleBtn.querySelector('.icon-play');
+          const pauseIcon = toggleBtn.querySelector && toggleBtn.querySelector('.icon-pause');
+
+          if (this._isPlaying) {
+            if (pauseIcon) pauseIcon.style.display = '';
+            if (playIcon) playIcon.style.display = 'none';
+            toggleBtn.setAttribute('aria-label', 'Pause');
+            toggleBtn.classList.remove('btn-secondary');
+            toggleBtn.classList.add('btn-primary');
+          } else {
+            if (pauseIcon) pauseIcon.style.display = 'none';
+            if (playIcon) playIcon.style.display = '';
+            toggleBtn.setAttribute('aria-label', 'Resume');
+            toggleBtn.classList.remove('btn-primary');
+            toggleBtn.classList.add('btn-secondary');
+          }
         }
       }
     }

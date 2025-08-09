@@ -22,11 +22,19 @@
   border-radius: 12px;
   box-shadow: 0 12px 30px rgba(2,6,23,0.18);
   padding: var(--spacing-md);
-  /* Allow dropdowns/overlays to escape horizontally while retaining vertical scroll */
-  overflow: visible;
-  overflow-y: auto;
+  overflow: auto;
   max-height: calc(100vh - 120px);
   position: relative;
+
+  /* Prevent transformed ancestors from affecting native select popup positioning.
+     Some browsers position the native select dropdown relative to the nearest
+     transformed ancestor which can cause the popup to render in the wrong place.
+     Explicitly reset transform/backface visibility here so the select's menu
+     appears correctly aligned to the control. */
+  transform: none;
+  -webkit-transform: none;
+  -webkit-backface-visibility: visible;
+  z-index: 1300;
 }
 
 /* Header / close button */
@@ -63,11 +71,10 @@
 /* Form groups inside modals: align label and control in two columns */
 .modal-body .form-group {
   display: grid;
-  grid-template-columns: 1fr minmax(140px, 240px);
+  grid-template-columns: 1fr 160px;
   align-items: center;
   gap: 12px;
   padding: 6px 0;
-  position: relative;
 }
 
 /* Label styling - keep left column aligned */
@@ -81,42 +88,21 @@
 .modal-body .form-group input[type="number"],
 .modal-body .form-group select {
   justify-self: start;
-  width: 160px;
+  width: 110px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(2,6,23,0.08);
+  border: 1px solid rgba(2,6,23,0.06);
   background: var(--card-bg);
   font-size: 16px;
   color: var(--text-primary);
+
+  /* Ensure the native select menu is positioned above the modal and not clipped
+     by other stacking contexts. Keeping the select itself positioned relative
+     ensures the browser can anchor the popup correctly. */
   position: relative;
-  z-index: 2;
-}
-
-/* Style native select to have a consistent arrow and appearance */
-/* Ensure the select dropdown appears above the modal card (z-index) and is not clipped */
-.modal-body .form-group select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
-                    linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 14px) calc(1em + 2px), calc(100% - 9px) calc(1em + 2px);
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
-  padding-right: 36px;
-
-  /* Make sure the native dropdown renders above other modal elements */
-  position: relative;
-  z-index: 9999;
-  background-color: var(--card-bg);
-}
-
-/* Keep focus visible */
-.modal-body .form-group input[type="number"]:focus,
-.modal-body .form-group select:focus {
-  outline: none;
-  box-shadow: 0 4px 10px rgba(32, 129, 226, 0.12);
-  border-color: rgba(32, 129, 226, 0.6);
+  z-index: 1400;
+  -webkit-transform: none;
+  transform: none;
 }
 
 /* Small helper text should flow below the two columns */

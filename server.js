@@ -604,11 +604,36 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`GRND Telegram Mini App backend server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-});
+ // Telegram webhook endpoint for Telegram Bot updates
+ const TELEGRAM_SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN || '';
+
+ app.post('/telegram-webhook', (req, res) => {
+   // If a secret token is configured, verify the incoming request contains it.
+   if (TELEGRAM_SECRET_TOKEN) {
+     const received = req.get('X-Telegram-Bot-Api-Secret-Token') || req.get('x-telegram-bot-api-secret-token');
+     if (received !== TELEGRAM_SECRET_TOKEN) {
+       console.warn('Unauthorized Telegram webhook request - invalid secret token');
+       return res.status(401).send('Unauthorized');
+     }
+   }
+
+   // Acknowledge quickly to Telegram and log the update for further processing
+   try {
+     console.log('Telegram update received:', JSON.stringify(req.body));
+     // TODO: add processing logic here (e.g., route to handlers that respond to messages/commands)
+   } catch (err) {
+     console.error('Error processing Telegram update:', err);
+   }
+
+   // Telegram requires a quick 200 OK response for webhook updates
+   res.status(200).send('OK');
+ });
+
+ // Start server
+ app.listen(PORT, () => {
+   console.log(`GRND Telegram Mini App backend server running on port ${PORT}`);
+   console.log(`Health check: http://localhost:${PORT}/health`);
+ });
 
 // Helper function to get workout sessions file path
 function getWorkoutSessionsPath() {

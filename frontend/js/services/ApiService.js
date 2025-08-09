@@ -343,11 +343,15 @@ export class ApiService {
 
     async getQuickStats() {
         // This would fetch quick stats for the dashboard
-        // For now, we'll return a mock implementation
+        // For now, we'll return a mock implementation.
+        // Include both `monthlyWorkouts` and `monthlyExercises` (legacy) so the UI
+        // is compatible with either field coming from a real API.
         return {
             weeklyVolume: 1200,
             lastWorkout: 'Upper Body Strength',
-            streak: 7
+            streak: 7,
+            monthlyWorkouts: 0,
+            monthlyExercises: 0
         };
     }
 }

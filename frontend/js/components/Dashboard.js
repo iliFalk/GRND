@@ -130,11 +130,6 @@ export class Dashboard {
               <div class="stats-grid">
                   <div class="stat-card">
                       <div class="stat-title">Weekly Volume 
-                        <span class="stat-icon-inline" aria-hidden="true" style="color: var(--accent-green);">
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 17 9 11 13 15 21 7"></polyline>
-                          </svg>
-                        </span>
                         <span class="stat-trend" id="kpi-volume-delta"></span>
                       </div>
                       <div class="stat-big" id="kpi-volume">${this.stats?.weeklyVolume ?? 0} kg</div>
@@ -143,14 +138,6 @@ export class Dashboard {
                   
                   <div class="stat-card">
                       <div class="stat-title">Workout Streak 
-                        <span class="stat-icon-inline" aria-hidden="true" style="color: var(--accent-indigo);">
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                          </svg>
-                        </span>
                       </div>
                       <div class="stat-big" id="kpi-streak-num">${this.stats?.streak ?? 0}</div>
                       <div class="stat-caption">days in a row</div>
@@ -158,26 +145,15 @@ export class Dashboard {
                   
                   <div class="stat-card">
                       <div class="stat-title">Last Workout 
-                        <span class="stat-icon-inline" aria-hidden="true" style="color: #F59E0B;">
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                          </svg>
-                        </span>
                       </div>
                       <div class="stat-big" id="kpi-last-name">${this.stats?.lastWorkout ?? '—'}</div>
                       <div class="stat-caption" id="kpi-last-ago"></div>
                   </div>
                   
                   <div class="stat-card">
-                      <div class="stat-title">Monthly Exercises 
-                        <span class="stat-icon-inline" aria-hidden="true" style="color: var(--accent-green);">
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 12c3-6 6 6 9 0s6 6 9-2"></path>
-                          </svg>
-                        </span>
+                      <div class="stat-title">Monthly Workouts 
                       </div>
-                      <div class="stat-big" id="kpi-monthly-exercises">${this.stats?.monthlyExercises ?? 0}</div>
+                      <div class="stat-big" id="kpi-monthly-workouts">${this.stats?.monthlyWorkouts ?? 0}</div>
                       <div class="stat-caption">completed</div>
                   </div>
               </div>
@@ -212,8 +188,8 @@ export class Dashboard {
         else lastAgoEl.textContent = '';
       }
 
-      const monthlyEl = this.container.querySelector('#kpi-monthly-exercises');
-      if (monthlyEl && this.stats?.monthlyExercises != null) monthlyEl.textContent = `${this.stats.monthlyExercises}`;
+      const monthlyEl = this.container.querySelector('#kpi-monthly-workouts');
+      if (monthlyEl && this.stats?.monthlyWorkouts != null) monthlyEl.textContent = `${this.stats.monthlyWorkouts}`;
 
       // keep progress bar/dots updates if present
       const progressBar = this.container.querySelector('.kpi-progress > span');

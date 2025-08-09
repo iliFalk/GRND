@@ -123,11 +123,21 @@
     overflow: hidden;
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    padding: 18px;
-    text-align: center;
+    padding: 18px 12px;
     background: #fff;
     transition: transform .15s ease, box-shadow .15s ease;
     will-change: auto;
+    box-sizing: border-box;
+
+    /* fixed stat cards (width x height specified) */
+    width: 170px;
+    height: 140px;
+
+    /* center content inside the card */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .stat-card::before { display: none !important; content: none !important; }
@@ -187,8 +197,17 @@
   font-size: clamp(16px, 3.6vw, 20px);
 }
 
-/* KPI grid variants */
-.stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+
+/* KPI grid variants
+   Default to two columns so the pair "Last Workout" and "Monthly Workouts"
+   will appear together on the same row (they are the 3rd and 4th cards).
+   On larger screens we switch back to auto-fit so more cards can sit on one line.
+*/
+.stats-grid { display: grid; grid-template-columns: repeat(2, 170px); justify-content: center; gap: 16px; }
+
+@media (min-width: 900px) {
+  .stats-grid { grid-template-columns: repeat(auto-fit, 170px); }
+}
 .stat-title { display:flex; align-items:center; justify-content: space-between; font-weight: 600; color: var(--text-primary); font-size: 14px; }
 .stat-trend { color: var(--accent-green); font-size: 14px; }
 .stat-big { font-size: 28px; font-weight: 800; color: var(--text-primary); margin-top: 8px; }
@@ -196,8 +215,16 @@
 
 @media (min-width: 640px) { .stat-big { font-size: 32px; } }
 
+/* Reduce vertical spacing for the Last Workout name */
+#kpi-last-name {
+  line-height: 1.05;
+  margin-top: 4px;
+  text-align: center;
+  /* ensure long names wrap without excessive gaps */
+  white-space: normal;
+}
+
 /* Center alignment for stat cards */
-.stat-card { text-align: center; }
 .stat-title { justify-content: center; gap:8px; }
 
 /* Small info card polish */

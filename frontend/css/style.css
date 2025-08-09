@@ -545,6 +545,8 @@ input:checked + .slider:before {
   padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
   margin-bottom: var(--spacing-md);
+  /* Clip internal backdrop so its corners don't show past the rounded container */
+  overflow: hidden;
 }
 
 .timer-display {
@@ -562,9 +564,10 @@ input:checked + .slider:before {
   margin-bottom: var(--spacing-xs);
 }
 
+/* Main timer value block (keeps previous variable names but increases sizes) */
 .timer-value {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
+  font-size: 48px; /* larger overall font for prominent time */
+  font-weight: 800;
   color: var(--text-primary);
   font-family: 'Courier New', monospace;
 }
@@ -577,20 +580,34 @@ input:checked + .slider:before {
   gap: 6px;
 }
 
+/* Elapsed time — primary, much larger */
 .timer-elapsed {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
+  font-size: 48px; /* main elapsed time size */
+  font-weight: 800;
   color: var(--accent-green);
   font-family: 'Courier New', monospace;
+  line-height: 1;
 }
 
-/* Slightly smaller remaining time displayed below in dark red */
-.timer-remaining {
-  font-size: var(--font-size-md);
+/* Remaining label (small muted) shown above the remaining value */
+.timer-remaining::before {
+  content: "Remaining time";
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
   font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* Remaining time value slightly smaller than elapsed */
+.timer-remaining {
+  font-size: 20px; /* remaining time size */
+  font-weight: 700;
   color: #8B0000; /* dark red */
   font-family: 'Courier New', monospace;
   opacity: 0.95;
+  line-height: 1;
 }
 
 /* Utility classes applied by the timer component when values update */
@@ -605,6 +622,38 @@ input:checked + .slider:before {
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
   padding: 0 8px;
+  /* Reserve vertical space so the backdrop aligns nicely */
+  min-height: 88px; /* increased to accommodate larger icons */
+}
+
+/* Backdrop rectangle behind the centered control (full width to avoid edge artifacts).
+   No border or shadow so no gray outline should appear around the button. */
+.timer-controls::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  /* Slight horizontal inset so container padding still visible */
+  width: calc(100% + 24px);
+  max-width: none;
+  height: 72px; /* match the larger button height */
+  background: var(--card-bg);
+  border-radius: 14px;
+
+  /* Remove visible outline — no border and no shadow so there's no gray outline around the button */
+  box-shadow: none;
+  border: none;
+
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Ensure the visible controls sit above the backdrop */
+.workout-timer-container .btn-toggle,
+.workout-timer-container #start-workout-btn {
+  position: relative;
+  z-index: 3;
 }
 
 .timer-controls button {
@@ -616,17 +665,20 @@ input:checked + .slider:before {
 .btn-toggle {
   width: 100%;
   max-width: 420px; /* limits how wide it grows on large screens */
-  height: 56px;
+  height: 72px; /* increase height to fit 48px icon comfortably */
   padding: 0 18px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center; /* center icon horizontally */
   gap: 12px;
-  font-size: 20px;
-  border-radius: 12px;
-  box-shadow: 0 8px 18px rgba(2,6,23,0.06);
+  font-size: 48px; /* icon size requested (48px) */
+  line-height: 1;
+  border-radius: 14px;
+  background: transparent; /* actual visual button color is managed by btn-primary / btn-secondary classes */
   transition: background-color 0.18s ease, color 0.18s ease, transform 0.08s ease;
   user-select: none;
+  box-shadow: 0 8px 18px rgba(2,6,23,0.06);
+  text-align: center; /* ensure icon centered if content is text glyph */
 }
 
 /* Make glyph/icon larger inside the toggle when present */
@@ -643,17 +695,52 @@ input:checked + .slider:before {
   transform: translateY(1px);
 }
 
+/* Keep icon visually centered and no extra label space (we rely on glyphs only) */
+.workout-timer-container .btn-toggle {
+  padding: 0;
+}
+
 /* Variant styling: primary (running/pause) vs secondary (resume/play) are handled
-   by switching btn-primary / btn-secondary classes from the component logic. */
+   by switching btn-primary / btn-secondary classes from the component logic.
+   Make sure contrast remains good with large glyphs. */
+.btn-toggle.btn-primary {
+  background: var(--accent-indigo);
+  color: #fff;
+}
+.btn-toggle.btn-secondary {
+  background: rgba(0,0,0,0.06);
+  color: var(--accent-indigo);
+}
 
 /* Layout rules to ensure Start is centered, Resume on the left and Pause on the right (scoped to timer) */
 .workout-timer-container #start-workout-btn {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 2;
+  z-index: 3;
   /* keep visual prominence */
   box-shadow: 0 6px 12px rgba(79,70,229,0.08);
+
+  /* Make the Start button match the workout layout and be green */
+  background: var(--accent-green) !important;
+  color: #fff !important;
+  border: none !important;
+
+  /* Make the Start button span the same width as the backdrop to avoid visible edges */
+  width: calc(100% - 32px);
+  max-width: none;
+  height: 72px; /* match larger controls */
+  padding: 0 18px;
+  font-size: 20px;
+  font-weight: 700;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workout-timer-container #start-workout-btn:hover {
+  filter: brightness(0.96);
 }
 
 .workout-timer-container #resume-workout-btn {
@@ -857,363 +944,330 @@ input:checked + .slider:before {
   border-radius: 10px;
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-overlay.hidden {
-  display: none;
-}
-
-.modal-content {
-  background: var(--card-bg);
-  border-radius: var(--radius-lg);
-  width: 90%;
-  /* Slightly wider modal for the timer setup to allow better alignment */
-  max-width: 640px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
+/* Segmented control utility (rounded) */
+.segmented {
+  display: inline-flex;
+  background: #F3F4F6;
   border: 1px solid var(--border-color);
-  padding: 0; /* header/body/footer provide padding */
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--bg-color);
-}
-
-.modal-header h2 {
-  margin: 0;
-}
-
-.modal-close-btn {
-  background: none;
-  border: none;
-  font-size: var(--font-size-xl);
-  cursor: pointer;
+.segmented button {
+  background: transparent;
+  border: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
   color: var(--text-secondary);
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
-.modal-close-btn:hover {
+.segmented button[aria-pressed="true"] {
+  background: #FFFFFF;
   color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(15,23,42,0.06);
 }
 
-/* Modal body — improved layout for timer setup form */
-.modal-body {
-  padding: var(--spacing-md);
+/* List & table polish for plan lists/history with rounded look */
+.table-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-/* Timer setup specific form alignment and typography */
-.timer-setup-modal .modal-header h2 {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-  letter-spacing: 0;
-}
-
-/* Form groups laid out in three columns: label / input / hint */
-.timer-setup-modal .modal-body .form-group {
-  display: grid;
-  grid-template-columns: 220px 140px 1fr;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px dashed rgba(0,0,0,0.04);
-}
-
-/* Label styles */
-.timer-setup-modal .modal-body .form-group label {
-  font-size: var(--font-size-md);
-  color: var(--text-primary);
-  font-weight: 600;
-  justify-self: start;
-}
-
-/* Inputs centered in their column, compact and consistent
-   — ensure numeric values are visually centered in the rounded "cell",
-   and are easy to adjust with the mouse wheel. */
-.timer-setup-modal .modal-body .form-group input[type="number"],
-.timer-setup-modal .modal-body .form-group select {
+.table-card table {
   width: 100%;
-  max-width: 140px;
-  /* Make all controls a fixed height so the numeric value sits perfectly centered */
-  height: 56px;
-  padding: 0 14px; /* horizontal padding only */
-  line-height: 56px; /* vertically center the number text */
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-card th, .table-card td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table-card tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Ensure app cards remain rounded */
+.card, .plan-card, .workout-card, .list-card, .kpi-card, .modal-content {
   border-radius: 12px;
-  border: 1px solid var(--border-color);
-  text-align: center;
-  font-size: 20px; /* larger, visually prominent number */
-  background: #fff;
-  color: var(--text-primary);
-  justify-self: center;
-  box-sizing: border-box;
-  -webkit-appearance: none; /* remove platform appearance that can offset alignment */
-  appearance: none;
 }
 
-/* Hide native number input spinner controls (kept wheel support via JS) */
-.timer-setup-modal .modal-body .form-group input[type="number"]::-webkit-outer-spin-button,
-.timer-setup-modal .modal-body .form-group input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+/* Stronger rounding for large containers */
+#app {
+  border-radius: 16px;
 }
 
-/* Ensure selects visually match inputs and text is centered */
-.timer-setup-modal .modal-body .form-group select {
-  /* Match the numeric inputs' height so the selected value is vertically centered */
-  height: 56px;
-  line-height: 56px;
-  /* Use symmetric horizontal padding so the selected value appears centered.
-     Keep a bit of room on the right for the arrow (background-image). */
-  padding: 0 14px;
+/* Focus card alignment */
+.focus-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 16px 18px; }
+.focus-card h2 { font-size: 22px; margin-bottom: 8px; color: var(--text-primary); }
+
+/* Indigo underline for Today’s Focus */
+.focus-card h2 {
+  color: var(--accent-indigo);
+  position: relative;
+  padding-bottom: 6px;
+}
+.focus-card h2::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 160px;
+  height: 3px;
+  background: var(--accent-indigo);
+  border-radius: 999px;
+}
+
+/* Variant for green */
+.focus-card.focus-accent-green h2 { color: var(--accent-green); }
+.focus-card.focus-accent-green h2::after { background: var(--accent-green); }
+
+/* Centered and larger Start button for dashboard focus card */
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn {
+  background: var(--accent-green);
+  color: #fff;
+  border: none;
+  padding: 14px 22px;
   border-radius: 12px;
-  font-size: 20px;
-  box-sizing: border-box;
-
-  /* Use text-align and text-align-last to horizontally center the selected value
-     across browsers. Avoid relying on flex on <select> since support is inconsistent. */
-  display: block;
-  text-align: center;
-  -webkit-text-align-last: center; /* WebKit/Blink */
-  text-align-last: center;         /* Firefox */
-
-  -webkit-appearance: none;
-  appearance: none;
-
-  background-color: #fff;
-  background-repeat: no-repeat;
-  /* preserve native arrow space visually by placing a transparent image area on the right */
-  background-position: right 12px center;
-  background-size: 18px;
+  display: inline-block;
+  margin: 14px auto 4px;
+  font-weight: 700;
+  font-size: 16px;
 }
 
-/* Remove chevron/arrow from the select in the timer modal (keep value centered) */
-.timer-setup-modal .modal-body .form-group select {
-  /* Remove any background arrow / image */
-  background-image: none !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
-  background-color: #fff !important;
-
-  /* Force native appearance off across engines */
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  appearance: none !important;
-
-  /* Keep symmetric padding so the selected value stays centered */
-  padding: 0 14px !important;
-  text-align: center !important;
+/* Make Start button larger (dashboard focus card) */
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn {
+  padding: 18px 28px;
+  font-size: 18px;
+  border-radius: 14px;
+}
+@media (min-width: 480px) {
+  .focus-card #start-workout-dashboard-btn,
+  .focus-card .primary-btn,
+  .focus-card #start-workout-btn { padding: 20px 36px; font-size: 20px; }
 }
 
-/* Hide IE/Edge default dropdown arrow */
-.timer-setup-modal .modal-body .form-group select::-ms-expand {
-  display: none !important;
+.focus-card { text-align: center; }
+.performance { text-align: left; }
+
+/* Performance box */
+.performance { background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin: 12px 0; }
+.performance h4 { font-size: 14px; margin: 0 0 8px; color: var(--text-primary); }
+.performance ul { margin: 0; padding-left: 18px; }
+.performance li { margin: 4px 0; font-size: 14px; color: var(--text-primary); }
+
+/* Start button normalization (dashboard focus card) */
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn { background: var(--accent-green); color: #fff; border: none; padding: 10px 14px; border-radius: 10px; display: inline-block; margin-top: 8px; font-weight: 600; }
+
+/* KPI visual to match reference */
+.stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.stat-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; background: #fff; }
+.stat-title { display:flex; align-items:center; justify-content: space-between; font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.stat-trend { color: var(--accent-green); font-size: 14px; }
+.stat-big { font-size: 28px; font-weight: 800; color: var(--text-primary); margin-top: 8px; }
+.stat-caption { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+@media (min-width: 640px) { .stat-big { font-size: 32px; } }
+
+/* Inline icons inside stat titles */
+.stat-icon-inline { display: inline-flex; vertical-align: middle; margin-left: 6px; }
+.stat-title svg { display: block; }
+
+/* Remove top header strip and align content */
+.stat-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; background: #fff; display: flex; flex-direction: column; gap: 6px; }
+.stat-title { margin: 0; padding: 0; font-weight: 600; color: var(--text-primary); font-size: 14px; display:flex; align-items:center; gap:8px; }
+.stat-icon-inline { margin-left: 0; }
+.stat-big { margin-top: 4px; line-height: 1.1; }
+.stat-caption { margin-top: 2px; }
+
+/* Ensure grid gaps consistent */
+.stats-grid { gap: 14px; }
+
+/* Ensure no top strip for stat cards */
+.stat-card::before { display: none !important; content: none !important; }
+
+/* Center-align title and content */
+.stat-card { text-align: center; }
+.stat-title { justify-content: center; }
+
+/* Small info card used on dashboard */
+.info-card { background:#F8FAFC; border:1px solid var(--border-color); border-radius:16px; padding:14px; }
+
+/* Collapsible info-card */
+.info-card { cursor: pointer; }
+.info-card .info-body { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
+.info-card.expanded .info-body { max-height: 400px; }
+.info-card .info-header { display:flex; align-items:center; justify-content: space-between; }
+.info-card .chev { transition: transform .2s ease; }
+.info-card.expanded .chev { transform: rotate(180deg); }
+.info-card h4 { margin:0 0 8px; font-size:16px; color:var(--text-primary); }
+.info-card ul { margin:0; padding-left:20px; }
+.info-card li { margin:6px 0; font-size:14px; color:var(--text-primary); }
+
+/* Last Performance summary + details */
+.info-card .summary { display:flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 6px; color: var(--text-secondary); font-size: 14px; }
+.info-card .summary .dot { width:4px; height:4px; background:#CBD5E1; border-radius:999px; display:inline-block; margin: 0 2px; }
+.info-card .details-list { margin: 8px 0 0; padding-left: 18px; }
+.info-card .details-list li { margin: 4px 0; color: var(--text-primary); }
+
+/* Responsive app container and typography scaling */
+#app { max-width: 600px; width: 100%; margin: 0 auto; }
+
+.app-title { font-size: clamp(18px, 2.8vw, var(--font-size-xl)); }
+.focus-card h2 { font-size: clamp(18px, 3.6vw, 22px); }
+.focus-card h3 { font-size: clamp(16px, 3.2vw, 18px); }
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn { font-size: clamp(16px, 3.6vw, 20px); padding: clamp(12px, 3vw, 20px) clamp(16px, 5vw, 36px); }
+
+/* Respect safe areas on devices with notches */
+.app-header { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+.bottom-nav { padding-bottom: calc(var(--safe-area-bottom)); }
+
+/* Ensure no horizontal overflow */
+body, html { width: 100%; overflow-x: hidden; }
+
+/* Header labels visible on mobile with smaller size */
+.brand-side { font-size: clamp(10px, 3.2vw, 14px); }
+@media (max-width: 420px) {
+  .brand-side { display: inline; }
 }
 
-/* Hide WebKit inner decoration (extra safety) */
-.timer-setup-modal .modal-body .form-group select::-webkit-inner-spin-button,
-.timer-setup-modal .modal-body .form-group select::-webkit-outer-spin-button {
-  -webkit-appearance: none !important;
-  display: none !important;
-}
+/* Calendar controls visibility for SVG icons */
+.calendar-header .controls { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.calendar-header .controls .btn-secondary { color: var(--accent-indigo) !important; text-indent: 0; }
 
-/* Some browsers draw a system arrow that cannot be removed via CSS for accessibility.
-   As a fallback, place an inset transparent overlay to visually cover the arrow area if needed. */
-.timer-setup-modal .modal-body .form-group select {
-  /* Ensure the right side has space for native controls but visually centered content */
-  padding-right: 14px !important;
-  padding-left: 14px !important;
-}
+/* Force visibility of calendar header SVG arrows */
+.calendar-header .controls button { line-height: 0; }
+.calendar-header #prev-month, .calendar-header #next-month { color: var(--accent-indigo) !important; }
+.calendar-header #prev-month svg, .calendar-header #next-month svg { width: 22px; height: 22px; display: block; fill: currentColor; }
+.calendar-header #prev-month *, .calendar-header #next-month * { pointer-events: none; }
 
-/* Center option text in the dropdown as well */
-.timer-setup-modal .modal-body .form-group select option {
-  text-align: center;
-}
+/* Calendar header nav buttons (from scratch) */
+.calendar-header .controls { display: flex; gap: 8px; margin-left: auto; }
+.calendar-nav { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--accent-indigo) !important; line-height: 0; }
+.calendar-nav svg { display: block; width: 22px; height: 22px; }
+.calendar-nav svg polyline { stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-/* Slightly smaller select on very small screens */
-@media (max-width: 520px) {
-  .timer-setup-modal .modal-body .form-group select {
-    height: 44px;
-    line-height: 44px;
-    font-size: var(--font-size-md);
-    padding: 0 12px;
-    text-align: center;
-    -webkit-text-align-last: center;
-    text-align-last: center;
-    background-position: right 10px center;
-  }
-}
+/* Fallback chevrons if SVGs fail */
+.calendar-nav { position: relative; }
+.calendar-nav.no-icon::before { content: '›'; position: absolute; font-size: 22px; line-height: 1; color: currentColor; }
+.calendar-nav.no-icon[data-dir="prev"]::before { content: '‹'; }
+.calendar-nav.no-icon[data-dir="next"]::before { content: '›'; }
 
-/* Center option text in the dropdown as well */
-.timer-setup-modal .modal-body .form-group select option {
-  text-align: center;
-}
+/* Calendar Grid: smaller, crisper cells for compact calendar view
+   Variables introduced to ease future tweaks */
 
-/* Slightly smaller select on very small screens */
-@media (max-width: 520px) {
-  .timer-setup-modal .modal-body .form-group select {
-    height: 44px;
-    line-height: 44px;
-    font-size: var(--font-size-md);
-    padding: 0 12px;
+/* --- Calendar Component Styles --- */
+
+/*
+  Calendar cell styles for proper display.
+  The calendar component will set the `--workout-color` CSS variable inline on each `.calendar-cell`
+  to indicate the workout status color. If not set, it will fall back to a default neutral color.
+  The primary classes used by the calendar component are:
+  - `.calendar-cell`: The base class for each day cell in the calendar.
+  - `.calendar-day-number`: The element displaying the day number.
+  - `.calendar-status`: The element displaying the workout status ("Done"/"Missed").
+  - `.calendar-cell--no-workout`: A modifier for days without any workout.
+  - `.calendar-status--completed`: A modifier for a "Done" status.
+  - `.calendar-status--missed`: A modifier for a "Missed" status.
+*/
+
+.calendar-cell {
+    aspect-ratio: 1/1;
+    /*
+      --workout-color is expected to be set inline by the calendar component.
+      Fallback to a light gray for cells without a specific workout color.
+    */
+    --workout-color-fallback: #f1f5f9; /* A light neutral gray */
+    background-color: var(--workout-color, var(--workout-color-fallback));
+    
+    /* Default cell styling for proper calendar layout */
+    min-height: 44px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    padding: 6px 4px;
+    border: 1px solid var(--border-color); /* Visible borders for clear separation */
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure text is legible against the background color */
+.calendar-day-number {
+    color: #0f172a; /* Dark slate-900, good for light backgrounds */
+    font-weight: 700;
+    font-size: 16px;
     text-align: center;
-    -webkit-text-align-last: center;
-    text-align-last: center;
-  }
+    line-height: 1.2;
+    z-index: 1;
 }
 
-/* Responsive: slightly smaller controls on narrow screens */
-@media (max-width: 520px) {
-  .timer-setup-modal .modal-body .form-group input[type="number"],
-  .timer-setup-modal .modal-body .form-group select {
-    height: 44px;
-    line-height: 44px;
-    font-size: var(--font-size-md);
-    max-width: 100%;
-    padding: 0 12px;
-    text-align: center;
-  }
+.calendar-status {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-top: 4px;
+    z-index: 1;
+    /* Default status color, can be overridden by specific status classes */
+    color: #475569; /* slate-600 */
+    text-shadow: none;
+    -webkit-text-fill-color: currentColor;
 }
 
-/* Helper text on the right — smaller and muted */
-.timer-setup-modal .modal-body .form-group small {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  justify-self: start;
-  margin-left: 6px;
+/* Status-specific styles */
+.calendar-status--completed {
+    color: #0b5ed7; /* blue */
 }
 
-/* Remove extra bottom border from last form-group */
-.timer-setup-modal .modal-body .form-group:last-child {
-  border-bottom: none;
+.calendar-status--missed {
+    color: #dc2626; /* red-600 */
 }
 
-/* Tighter spacing for header / close button */
-.timer-setup-modal .modal-header {
-  padding: calc(var(--spacing-md) - 4px) calc(var(--spacing-md) - 2px);
+/* Ensure status labels on colored cells use the blue color and override any inherited/inline styles */
+.calendar-cell .calendar-status.calendar-status--completed,
+.calendar-cell .calendar-status.calendar-status--done {
+    color: #0b5ed7 !important;
+    -webkit-text-fill-color: #0b5ed7 !important;
+    -webkit-text-stroke: 0 !important;
+    text-stroke: 0 !important;
+    text-shadow: none !important;
 }
 
-/* Make the close button slightly larger and visually lighter */
-.timer-setup-modal .modal-close-btn {
-  font-size: 20px;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  color: var(--text-secondary);
+/* Modifier for days without workouts */
+.calendar-cell--no-workout {
+    --workout-color: var(--workout-color-fallback); /* Ensure it uses the fallback */
+    border-color: var(--border-color); /* Show border for neutral cells */
 }
 
-/* Footer button sizing and spacing */
-.timer-setup-modal .modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  padding: calc(var(--spacing-md) - 4px);
-  border-top: 1px solid var(--bg-color);
+/* Status-specific styles */
+.calendar-status--done {
+    color: #0b5ed7; /* blue */
 }
 
-/* Responsive collapse: stack fields on small screens */
-@media (max-width: 520px) {
-  .timer-setup-modal .modal-body .form-group {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    align-items: start;
-  }
-
-  .timer-setup-modal .modal-body .form-group label {
-    font-size: var(--font-size-md);
-  }
-
-  .timer-setup-modal .modal-body .form-group input[type="number"],
-  .timer-setup-modal .modal-body .form-group select {
-    max-width: 100%;
-    text-align: left;
-  }
-
-  .timer-setup-modal .modal-body .form-group small {
-    margin-left: 0;
-  }
+.calendar-status--missed {
+    color: #991b1b; /* dark red, red-800 */
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  border-top: 1px solid var(--bg-color);
-}
-
-/* Plan Editor Styles */
-.plan-editor-overlay {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background-color: rgba(0, 0, 0, 0.8) !important;
-    z-index: 9999 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 20px !important;
-}
-
-.plan-editor-modal {
-    background: var(--card-bg) !important;
-    border-radius: var(--radius-lg) !important;
-    max-width: 600px !important;
-    width: 100% !important;
-    max-height: 90vh !important;
-    overflow: hidden !important;
-    box-shadow: var(--shadow-lg) !important;
-    position: relative !important;
-    border: 1px solid var(--border-color) !important;
-}
-
-/* Ensure plan editor view is visible when active */
-#plan-editor-view.active {
-    display: block !important;
-    position: relative !important;
-    z-index: 9998 !important;
-}
-
-/* Fix for view switching */
-.app-content {
-    position: relative !important;
-    min-height: calc(100vh - var(--header-height) - var(--nav-height)) !important;
-}
-
-/* Button fixes */
-.btn-primary {
-    background-color: var(--accent-color) !important;
-    color: white !important;
-    border: none !important;
-    padding: 12px 24px !important;
-    border-radius: var(--radius-sm) !important;
-    cursor: pointer !important;
-    font-size: var(--font-size-md) !important;
+/* Hover effect for cells (optional, but good for interactivity) */
+.calendar-cell:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+    z-index: 10; /* Ensure it pops above other cells */
     font-weight: 500 !important;
     transition: background-color 0.2s ease !important;
 }

@@ -24,6 +24,9 @@ export class Calendar {
     this.workoutSessions = [];
     this.touchStartX = 0;
     this.touchEndX = 0;
+    // Track collapsed state so render() doesn't reset it when updating the month/today.
+    const dsCollapsed = container.dataset.calendarCollapsed;
+    this.isCollapsed = dsCollapsed === undefined ? true : (dsCollapsed === 'true');
     this.init();
   }
 
@@ -122,8 +125,8 @@ export class Calendar {
     const weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     let calendarHTML = `
-      <div class="calendar collapsed">
-        <div class="calendar-header" aria-expanded="false">
+      <div class="calendar ${this.isCollapsed ? 'collapsed' : ''}">
+        <div class="calendar-header" aria-expanded="${String(!this.isCollapsed)}">
           <div class="calendar-left" id="calendar-left"></div>
           <div class="month"><span class="month-year">${year}</span><span class="month-name">${monthNames[month]}</span></div>
           <div class="calendar-right">
@@ -210,22 +213,14 @@ export class Calendar {
     // Align the center month block to the app title's vertical center line so it lines up with "GRND"
     const alignMonthToTitle = () => {
       const monthEl = this.container.querySelector('.calendar-header .month');
-      const headerEl = this.container.querySelector('.calendar-header');
-      const titleEl = document.querySelector('.app-title');
-      if (!monthEl || !headerEl || !titleEl) return;
-
-      const titleRect = titleEl.getBoundingClientRect();
-      const headerRect = headerEl.getBoundingClientRect();
-
-      // Compute X position of title center relative to the header element
-      const titleCenterX = titleRect.left + titleRect.width / 2;
-      const leftRelativeToHeader = titleCenterX - headerRect.left;
-
-      // Apply absolute positioning to month and place at the computed X (keep vertical centering)
-      monthEl.style.position = 'absolute';
-      monthEl.style.left = `${leftRelativeToHeader}px`;
-      monthEl.style.top = '50%';
-      monthEl.style.transform = 'translate(-50%, -50%)';
+      if (!monthEl) return;
+      // Keep month positioned relative and center horizontally using left/right + margin auto
+      monthEl.style.position = 'relative';
+      monthEl.style.left = '0';
+      monthEl.style.right = '0';
+      monthEl.style.margin = '0 auto';
+      monthEl.style.top = 'auto';
+      monthEl.style.transform = 'none';
       monthEl.style.pointerEvents = 'none';
     };
 
@@ -240,12 +235,27 @@ export class Calendar {
     const headerEl = this.container.querySelector('.calendar-header');
     if (headerEl) {
       headerEl.addEventListener('click', (e) => {
-        // Ignore clicks on nav buttons and the Today button
-        if (e.target.closest('.calendar-nav') || e.target.closest('#today-btn')) return;
+        // Keep the calendar open while interacting with it.
+        // Ignore clicks that originate from interactive elements so they don't affect state.
+        const ignoreSelector = 'button, a, .calendar-nav, .controls, #prev-month, #next-month, #today-btn, [role="button"]';
+        if (e.target.closest(ignoreSelector)) return;
+
         const calendarEl = this.container.querySelector('.calendar');
-        const isCollapsed = calendarEl.classList.toggle('collapsed');
-        // Reflect expanded state on the header for accessibility
-        headerEl.setAttribute('aria-expanded', String(!isCollapsed));
+        if (!calendarEl) return;
+
+        // Toggle collapsed state when clicking the header background.
+        // - If collapsed -> expand
+        // - If expanded -> collapse
+        this.isCollapsed = calendarEl.classList.contains('collapsed') ? false : true;
+        this.container.dataset.calendarCollapsed = String(this.isCollapsed);
+
+        if (this.isCollapsed) {
+          calendarEl.classList.add('collapsed');
+          headerEl.setAttribute('aria-expanded', 'false');
+        } else {
+          calendarEl.classList.remove('collapsed');
+          headerEl.setAttribute('aria-expanded', 'true');
+        }
       });
     }
     
@@ -253,11 +263,49 @@ export class Calendar {
     const todayBtn = this.container.querySelector('#today-btn');
     if (todayBtn) {
       todayBtn.addEventListener('click', () => {
+        // Keep calendar expanded when jumping to today
         this.currentDate = new Date();
+        this.isCollapsed = false;
+        this.container.dataset.calendarCollapsed = String(this.isCollapsed);
         this.render();
       });
     }
-    
+
+    // Handle month navigation controls (prev/next) and any calendar-nav buttons.
+    // If the user navigates months via buttons/controls, keep the calendar expanded.
+    const rightCol = this.container.querySelector('.calendar-right');
+    if (rightCol) {
+      rightCol.addEventListener('click', (e) => {
+        const nav = e.target.closest('.calendar-nav, #prev-month, #next-month');
+        if (!nav) return;
+
+        // Keep calendar expanded when navigating months
+        this.isCollapsed = false;
+        this.container.dataset.calendarCollapsed = String(this.isCollapsed);
+
+        // If the nav element has a data-dir attribute or an id, handle month change here
+        const dir = nav.getAttribute('data-dir') || nav.id;
+        if (dir === 'prev-month' || nav.dataset.dir === 'prev') {
+          this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+          this.render();
+        } else if (dir === 'next-month' || nav.dataset.dir === 'next') {
+          this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+          this.render();
+        }
+      });
+    }
+
+    // Delegate clicks inside the calendar to keep it open when interacting with interactive elements.
+    // This prevents other click handlers from collapsing the calendar when the user is navigating inside it.
+    this.container.addEventListener('click', (e) => {
+      const interactiveSelector = '.calendar-nav, #prev-month, #next-month, #today-btn, button, a, [role="button"]';
+      if (e.target.closest(interactiveSelector)) {
+        // Ensure internal state shows expanded
+        this.isCollapsed = false;
+        this.container.dataset.calendarCollapsed = String(this.isCollapsed);
+      }
+    });
+
     // Day click events with selection toggle
     const dayElements = this.container.querySelectorAll('.calendar-cell:not(.dimmed)');
     dayElements.forEach(dayElement => {
@@ -310,6 +358,9 @@ export class Calendar {
         // Swipe right - previous month
         this.currentDate.setMonth(this.currentDate.getMonth() - 1);
       }
+      // Keep calendar expanded when navigating months via swipe/pointer
+      this.isCollapsed = false;
+      this.container.dataset.calendarCollapsed = String(this.isCollapsed);
       this.render();
     }
   }

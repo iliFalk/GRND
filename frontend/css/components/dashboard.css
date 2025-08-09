@@ -1,0 +1,204 @@
+/* dashboard.css
+   Dashboard-specific styles: hero, KPI cards, stat cards, lists, focus card, info card
+*/
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background-color: #F0F2F5;
+  min-height: 100vh;
+}
+
+.dashboard-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 18px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFF 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+.dashboard-hero h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.dashboard-hero .cta {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* KPI grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpi-card {
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Section title */
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 12px;
+}
+
+.section-title h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.section-title .hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Simple list card used on the dashboard */
+.list-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 6px;
+  background: #fff;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.list-row + .list-row {
+  margin-top: 4px;
+}
+
+.list-row:hover {
+  background: #F8FAFC;
+}
+
+.row-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.row-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.row-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Stat card variants used in the dashboard */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    background: #fff;
+    transition: transform .15s ease, box-shadow .15s ease;
+    will-change: auto;
+}
+
+.stat-card::before { display: none !important; content: none !important; }
+
+.stat-glyph { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: #F1F5F9; color: var(--text-secondary); margin: 6px auto 8px; font-size: 16px; }
+.stat-glyph.weight::before { content: "🏋️"; }
+.stat-glyph.list::before { content: "☰"; font-size: 14px; }
+
+.streak-dots { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 10px; }
+.streak-dot { width: 8px; height: 8px; border-radius: 50%; background: #E5E7EB; position: relative; overflow: hidden; }
+.streak-dot.filled { background: var(--accent-indigo); }
+.streak-dot.half::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 50%; background: var(--accent-indigo); }
+
+/* Small info-card used on dashboard */
+.info-card { background:#F8FAFC; border:1px solid var(--border-color); border-radius:16px; padding:14px; cursor: pointer; }
+.info-card .info-body { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
+.info-card.expanded .info-body { max-height: 400px; }
+.info-card .info-header { display:flex; align-items:center; justify-content: space-between; }
+.info-card .chev { transition: transform .2s ease; }
+.info-card.expanded .chev { transform: rotate(180deg); }
+.info-card h4 { margin:0 0 8px; font-size:16px; color:var(--text-primary); }
+.info-card ul { margin:0; padding-left:20px; }
+.info-card li { margin:6px 0; font-size:14px; color:var(--text-primary); }
+.info-card .summary { display:flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 6px; color: var(--text-secondary); font-size: 14px; }
+.info-card .summary .dot { width:4px; height:4px; background:#CBD5E1; border-radius:999px; display:inline-block; margin: 0 2px; }
+.info-card .details-list { margin: 8px 0 0; padding-left: 18px; }
+.info-card .details-list li { margin: 4px 0; color: var(--text-primary); }
+
+/* Focus card (large dashboard CTA) */
+.focus-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 16px 18px; text-align: center; }
+.focus-card h2 { font-size: clamp(18px, 3.6vw, 22px); margin-bottom: 8px; color: var(--accent-indigo); position: relative; padding-bottom: 6px; }
+.focus-card h2::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 160px;
+  height: 3px;
+  background: var(--accent-indigo);
+  border-radius: 999px;
+}
+.focus-card.focus-accent-green h2 { color: var(--accent-green); }
+.focus-card.focus-accent-green h2::after { background: var(--accent-green); }
+
+.focus-card #start-workout-dashboard-btn,
+.focus-card .primary-btn,
+.focus-card #start-workout-btn {
+  background: var(--accent-green);
+  color: #fff;
+  border: none;
+  padding: 18px 28px;
+  border-radius: 14px;
+  display: inline-block;
+  margin: 14px auto 4px;
+  font-weight: 700;
+  font-size: clamp(16px, 3.6vw, 20px);
+}
+
+/* KPI grid variants */
+.stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.stat-title { display:flex; align-items:center; justify-content: space-between; font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.stat-trend { color: var(--accent-green); font-size: 14px; }
+.stat-big { font-size: 28px; font-weight: 800; color: var(--text-primary); margin-top: 8px; }
+.stat-caption { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+@media (min-width: 640px) { .stat-big { font-size: 32px; } }
+
+/* Center alignment for stat cards */
+.stat-card { text-align: center; }
+.stat-title { justify-content: center; gap:8px; }
+
+/* Small info card polish */
+.info-card .info-header { gap: 8px; align-items:center; }

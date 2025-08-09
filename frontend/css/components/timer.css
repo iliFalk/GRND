@@ -1,0 +1,229 @@
+/* timer.css
+   Workout timer & controls styles
+*/
+
+.workout-timer-container {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-md);
+  /* Clip internal backdrop so its corners don't show past the rounded container */
+  overflow: hidden;
+}
+
+.timer-display {
+  text-align: center;
+  padding: var(--spacing-md);
+}
+
+.timer-display.hidden {
+  display: none;
+}
+
+.timer-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Main timer value block */
+.timer-value {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: 'Courier New', monospace;
+}
+
+/* Split timer values */
+.timer-values {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-elapsed {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--accent-green);
+  font-family: 'Courier New', monospace;
+  line-height: 1;
+}
+
+.timer-remaining::before {
+  content: "Remaining time";
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.timer-remaining {
+  font-size: 20px;
+  font-weight: 700;
+  color: #8B0000;
+  font-family: 'Courier New', monospace;
+  opacity: 0.95;
+  line-height: 1;
+}
+
+/* Utility classes applied by the timer component when values update */
+.timer-elapsed-active { color: var(--accent-green) !important; }
+.timer-remaining-active { color: #8B0000 !important; font-weight: 700 !important; }
+
+.timer-controls {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding: 0 8px;
+  min-height: 88px;
+}
+
+.timer-controls::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% + 24px);
+  max-width: none;
+  height: 72px;
+  background: var(--card-bg);
+  border-radius: 14px;
+  box-shadow: none;
+  border: none;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Ensure the visible controls sit above the backdrop */
+.workout-timer-container .btn-toggle,
+.workout-timer-container #start-workout-btn {
+  position: relative;
+  z-index: 3;
+}
+
+.timer-controls button {
+  min-width: 100px;
+  border-radius: 10px;
+}
+
+/* Wide centered play/pause toggle used in the workout view */
+.btn-toggle {
+  width: 100%;
+  max-width: 420px;
+  height: 72px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 48px;
+  line-height: 1;
+  border-radius: 14px;
+  background: transparent;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.08s ease;
+  user-select: none;
+  box-shadow: 0 8px 18px rgba(2,6,23,0.06);
+  text-align: center;
+}
+
+/* Remove pseudo-element that added invisible space before the icon */
+.btn-toggle::before {
+  content: none;
+  display: none;
+}
+
+/* Icon sizing + centering for play/pause SVGs */
+.btn-toggle .icon {
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto;
+  flex: 0 0 48px;
+  vertical-align: middle;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.btn-toggle .icon svg,
+.btn-toggle .icon path {
+  width: 48px;
+  height: 48px;
+  fill: currentColor !important;
+  stroke: none;
+  display: block;
+}
+
+.btn-toggle .icon rect {
+  fill: currentColor !important;
+  stroke: none;
+  display: block;
+}
+
+.btn-toggle:active {
+  transform: translateY(1px);
+}
+
+.workout-timer-container .btn-toggle {
+  padding: 0;
+}
+
+.btn-toggle.btn-primary {
+  background: var(--accent-indigo);
+  color: #fff;
+}
+.btn-toggle.btn-secondary {
+  background: rgba(0,0,0,0.06);
+  color: var(--accent-indigo);
+}
+
+.workout-timer-container #start-workout-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  box-shadow: 0 6px 12px rgba(79,70,229,0.08);
+  background: var(--accent-green) !important;
+  color: #fff !important;
+  border: none !important;
+  width: calc(100% - 32px);
+  max-width: none;
+  height: 72px;
+  padding: 0 18px;
+  font-size: 20px;
+  font-weight: 700;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workout-timer-container #start-workout-btn:hover {
+  filter: brightness(0.96);
+}
+
+.workout-timer-container #resume-workout-btn {
+  order: 1;
+  margin-right: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.workout-timer-container #pause-workout-btn {
+  order: 3;
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Slight responsive tweak */
+@media (min-width: 480px) {
+  .btn-toggle { max-width: 520px; }
+}

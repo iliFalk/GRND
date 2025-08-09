@@ -1,0 +1,191 @@
+/* workout.css
+   Workout view, exercise sections, circuit styles and controls
+*/
+
+.workout-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.workout-info {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.workout-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-top: var(--spacing-md);
+  gap: 12px;
+}
+
+.stat-item {
+  text-align: center;
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-value {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Exercise Section Styles */
+.exercise-section {
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.current-exercise {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--bg-color);
+  padding-bottom: var(--spacing-sm);
+}
+
+.exercise-progress {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.exercise-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.exercise-target {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+}
+
+.exercise-instructions {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.exercise-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  background: var(--bg-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.exercise-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.placeholder-image {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* Circuit Workout Styles */
+.circuit-workout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.circuit-header {
+  text-align: center;
+  border-bottom: 1px solid var(--bg-color);
+  padding-bottom: var(--spacing-sm);
+}
+
+.circuit-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.circuit-exercise-item {
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: #FFFFFF;
+  padding: var(--spacing-md);
+}
+
+.circuit-exercise-item h4 {
+  margin-bottom: var(--spacing-xs);
+}
+
+.exercise-inputs {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+.input-group label {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.input-group input {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: var(--font-size-md);
+  background: #fff;
+  color: var(--text-primary);
+  width: 100%;
+}
+
+/* Controls Section Styles */
+.controls-section {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: var(--spacing-sm);
+}
+
+.workout-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.workout-controls button {
+  border-radius: 10px;
+}

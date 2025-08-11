@@ -38,10 +38,14 @@ export class Week {
 
     toJSON() {
         return {
-            id: this.id,
-            weekNumber: this.weekNumber,
+            // README-compliant fields
+            week_number: this.weekNumber,
             name: this.name,
-            days: this.days.map(day => day.toJSON())
+            days: this.days.map(day => day.toJSON()),
+
+            // Legacy fields for backward compatibility
+            id: this.id,
+            weekNumber: this.weekNumber
         };
     }
 

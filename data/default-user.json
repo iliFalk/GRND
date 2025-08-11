@@ -1,0 +1,21 @@
+{
+  "plan_id": "plan-ui-test-2",
+  "plan_name": "UI Test Plan",
+  "start_date": "2025-11-08T19:37:00.000Z",
+  "weeks": [
+    {
+      "week_number": 1,
+      "name": "Week 1",
+      "days": [
+        {
+          "day_id": "day-1",
+          "day_name": "Day 1",
+          "day_type": "STANDARD",
+          "exercises": []
+        }
+      ]
+    }
+  ],
+  "userId": "default-user",
+  "updatedAt": "2025-08-11T17:37:42.602Z"
+}

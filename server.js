@@ -561,6 +561,27 @@ app.get('/api/training-plans', async (req, res) => {
   }
 });
 
+// DELETE /api/training-plans/:planId - delete a training plan (mock implementation)
+app.delete('/api/training-plans/:planId', async (req, res) => {
+  try {
+    const { planId } = req.params;
+
+    // In a real implementation this would remove the plan from a database.
+    // Since the current implementation returns static sample plans, just
+    // acknowledge the delete request with a success response.
+
+    console.log(`Received request to delete training plan: ${planId}`);
+
+    res.json({
+      success: true,
+      message: `Training plan ${planId} deleted (mock).`
+    });
+  } catch (error) {
+    console.error('Error deleting training plan:', error);
+    res.status(500).json({ error: 'Failed to delete training plan' });
+  }
+});
+
 // Day endpoint
 app.get('/api/days/:dayId', (req, res) => {
   try {

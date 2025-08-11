@@ -5,6 +5,7 @@
 
 import { TrainingPlan } from '../models/TrainingPlan.js';
 import { Week } from '../models/Week.js';
+import { Day } from '../models/Day.js';
 import { Workout } from '../models/Workout.js';
 
 export class PlanEditor {
@@ -61,6 +62,24 @@ export class PlanEditor {
         this.setSaving(true, null);
 
         try {
+            // Ensure there is at least one valid week/day because backend validation
+            // requires weeks array with at least one week, and each week must have
+            // at least one day with valid identifiers.
+            const weeks = (this.plan.weeks && this.plan.weeks.length > 0) ? this.plan.weeks : [
+                new Week({
+                    weekNumber: 1,
+                    name: 'Week 1',
+                    days: [
+                        {
+                            day_id: `day-${Date.now()}`,
+                            day_name: 'Day 1',
+                            day_type: 'STANDARD',
+                            exercises: []
+                        }
+                    ]
+                })
+            ];
+
             // Create plan data structure according to README requirements
             const planData = {
                 plan_id: this.plan.plan_id || this.plan.id || `plan-${Date.now()}`,
@@ -69,31 +88,42 @@ export class PlanEditor {
                 description: formData.description,
                 plan_type: formData.plan_type,
                 start_date: formData.start_date || new Date().toISOString(),
-                weeks: this.plan.weeks || [], // Start with empty weeks as requested
+                weeks: weeks,
                 durationWeeks: formData.durationWeeks,
                 createdAt: this.plan.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
-            let savedPlan;
+            // Send to backend. The backend returns a success object (not the full plan),
+            // so on the client we treat planData as the canonical representation for now.
             if (this.plan.id) {
-                // Update existing plan
-                savedPlan = await this.apiService.updateTrainingPlan(this.plan.id, planData);
+                await this.apiService.updateTrainingPlan(this.plan.id, planData);
+                // Update local plan instance from planData
+                this.plan = new TrainingPlan(planData);
+                this.showSuccessMessage('Plan updated successfully.');
             } else {
-                // Create new plan
-                savedPlan = await this.apiService.createTrainingPlan(planData);
-                
-                // Update the plan object with the saved data
-                this.plan = new TrainingPlan(savedPlan);
-                
-                // Show success message
+                await this.apiService.createTrainingPlan(planData);
+                // Treat the planData as the saved plan on the client
+                this.plan = new TrainingPlan(planData);
+                // Show success message for create
                 this.showSuccessMessage('Plan created successfully! You can now add weeks and exercises.');
             }
 
             this.setSaving(false, null);
-            
-            // Stay in editor as requested - just re-render with the updated plan
-            this.render();
+
+            // After creating/updating, open the Day Editor for the first day so user can add exercises
+            const firstWeek = this.plan.weeks && this.plan.weeks.length > 0 ? this.plan.weeks[0] : null;
+            const firstDay = firstWeek && firstWeek.days && firstWeek.days.length > 0 ? firstWeek.days[0] : null;
+
+            // If a first day exists, navigate to DayEditor for immediate editing.
+            if (firstDay && this.navigationService && typeof this.navigationService.navigateTo === 'function') {
+                // Use the DayEditor route which expects (day, week, plan)
+                this.navigationService.navigateTo('day-editor', { day: firstDay, week: firstWeek, plan: this.plan });
+                // No explicit render required as navigation will initialize DayEditor view
+            } else {
+                // Otherwise, stay in the plan editor and re-render so user can add weeks
+                this.render();
+            }
 
         } catch (error) {
             console.error('Failed to save plan:', error);
@@ -149,6 +179,41 @@ export class PlanEditor {
         } catch (error) {
             console.error('Failed to duplicate plan:', error);
             this.setSaving(false, 'Failed to duplicate plan. Please try again.');
+        }
+    }
+
+    async handleDeletePlan() {
+        if (!this.plan) return;
+        const planId = this.plan.id || this.plan.plan_id;
+        if (!planId) return;
+
+        if (!confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
+            return;
+        }
+
+        this.setSaving(true, null);
+
+        try {
+            await this.apiService.deleteTrainingPlan(planId);
+            this.setSaving(false, null);
+
+            // Show a quick success message
+            this.showSuccessMessage('Plan deleted successfully.');
+
+            // Navigate back to plan list
+            if (this.navigationService && typeof this.navigationService.navigateTo === 'function') {
+                // Slight delay so user sees success message
+                setTimeout(() => {
+                    this.navigationService.navigateTo('plan-list');
+                }, 600);
+            }
+        } catch (error) {
+            console.error('Failed to delete plan:', error);
+            let errorMsg = 'Failed to delete plan. Please try again.';
+            if (error && error.message) {
+                errorMsg += `\n${error.message}`;
+            }
+            this.setSaving(false, errorMsg);
         }
     }
 
@@ -294,6 +359,15 @@ export class PlanEditor {
                         <h2>${plan.id ? 'Edit Training Plan' : 'Create New Training Plan'}</h2>
                         <div class="header-actions">
                             ${plan.id ? `
+                                <button class="btn-danger delete-btn" title="Delete Plan">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18"></path>
+                                        <path d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"></path>
+                                        <path d="M10 11v6"></path>
+                                        <path d="M14 11v6"></path>
+                                    </svg>
+                                    Delete
+                                </button>
                                 <button class="btn-secondary duplicate-btn" title="Duplicate Plan">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -370,6 +444,7 @@ export class PlanEditor {
                     </div>
 
                     <div class="plan-editor-footer">
+                        <button type="button" class="btn-secondary add-week-btn">Add Week</button>
                         <button type="button" class="btn-secondary cancel-btn">Cancel</button>
                         <button type="button" class="btn-primary save-btn" ${this.isSaving ? 'disabled' : ''}>
                             ${this.isSaving ? 'Saving...' : (plan.id ? 'Update Plan' : 'Create Plan')}
@@ -395,10 +470,15 @@ export class PlanEditor {
         const saveBtn = this.container.querySelector('.save-btn');
         saveBtn.addEventListener('click', () => this.handleSave());
 
-        // Duplicate button (only for existing plans)
+        // Duplicate and delete buttons (only for existing plans)
         const duplicateBtn = this.container.querySelector('.duplicate-btn');
         if (duplicateBtn) {
             duplicateBtn.addEventListener('click', () => this.handleDuplicatePlan());
+        }
+
+        const deleteBtn = this.container.querySelector('.delete-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => this.handleDeletePlan());
         }
 
         // Add week button

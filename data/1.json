@@ -1,0 +1,37 @@
+{
+  "plan_id": "plan-1754933891696",
+  "plan_name": "swd",
+  "name": "swd",
+  "description": "efe",
+  "plan_type": "STANDARD",
+  "start_date": "2025-08-11",
+  "weeks": [
+    {
+      "week_number": 1,
+      "name": "Week 1",
+      "days": [
+        {
+          "day_id": "day-1754933891696",
+          "day_name": "Day 1",
+          "day_type": "STANDARD",
+          "exercises": [],
+          "circuit_config": {
+            "target_rounds": 3,
+            "circuit_exercises": []
+          },
+          "id": "day-1754933891696",
+          "name": "Day 1",
+          "dayNumber": 1,
+          "isCompleted": false,
+          "completedAt": null
+        }
+      ],
+      "id": null,
+      "weekNumber": 1
+    }
+  ],
+  "durationWeeks": 4,
+  "createdAt": "2025-08-11T17:38:06.987Z",
+  "updatedAt": "2025-08-11T17:38:11.700Z",
+  "userId": "1"
+}

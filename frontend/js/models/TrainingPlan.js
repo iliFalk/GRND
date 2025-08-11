@@ -65,16 +65,17 @@ this.default_workout_color = data.default_workout_color || data.defaultColor || 
             plan_name: this.plan_name,
             plan_type: this.plan_type,
             description: this.description,
-            start_date: this.start_date,
+            // Ensure dates are serialized as ISO strings for backend validation
+            start_date: this.start_date instanceof Date ? this.start_date.toISOString() : this.start_date,
             weeks: this.weeks.map(week => week.toJSON()),
             default_workout_color: this.default_workout_color,
-
+    
             // Legacy fields for backward compatibility
             id: this.plan_id,
             name: this.plan_name,
             durationWeeks: this.durationWeeks,
-            createdAt: this.createdAt,
-            updatedAt: this.updatedAt
+            createdAt: this.createdAt instanceof Date ? this.createdAt.toISOString() : this.createdAt,
+            updatedAt: this.updatedAt instanceof Date ? this.updatedAt.toISOString() : this.updatedAt
         };
     }
 

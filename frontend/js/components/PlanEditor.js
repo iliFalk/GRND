@@ -80,7 +80,7 @@ export class PlanEditor {
                 })
             ];
 
-            // Create plan data structure according to README requirements
+            // Create plan data structure according to README requirements (client-side shape)
             const planData = {
                 plan_id: this.plan.plan_id || this.plan.id || `plan-${Date.now()}`,
                 plan_name: formData.plan_name,
@@ -94,18 +94,27 @@ export class PlanEditor {
                 updatedAt: new Date().toISOString()
             };
 
-            // Send to backend. The backend returns a success object (not the full plan),
-            // so on the client we treat planData as the canonical representation for now.
-            if (this.plan.id) {
-                await this.apiService.updateTrainingPlan(this.plan.id, planData);
-                // Update local plan instance from planData
-                this.plan = new TrainingPlan(planData);
+            // Server-facing payload for POST /api/training-plans
+            const serverPayload = {
+                name: formData.plan_name,
+                description: formData.description,
+                startDate: formData.start_date || new Date().toISOString(),
+                durationWeeks: formData.durationWeeks
+            };
+
+            // Send to backend. Use the new /training-plans endpoint for creation and
+            // consume the returned created plan (which includes generated weeks/days).
+            if (this.plan && this.plan.id) {
+                // Update flow - attempt to call the update endpoint. If the server does not
+                // implement PUT yet, this will surface an error which will be handled by catch.
+                const updated = await this.apiService.updateTrainingPlan(this.plan.id, serverPayload);
+                // If API returned an updated plan object, use it; otherwise fall back to client planData
+                this.plan = new TrainingPlan(updated && typeof updated === 'object' ? updated : planData);
                 this.showSuccessMessage('Plan updated successfully.');
             } else {
-                await this.apiService.createTrainingPlan(planData);
-                // Treat the planData as the saved plan on the client
-                this.plan = new TrainingPlan(planData);
-                // Show success message for create
+                const createdPlan = await this.apiService.createTrainingPlan(serverPayload);
+                // API returns the created plan with weeks/days; update local plan model from that.
+                this.plan = new TrainingPlan(createdPlan);
                 this.showSuccessMessage('Plan created successfully! You can now add weeks and exercises.');
             }
 
@@ -289,17 +298,59 @@ export class PlanEditor {
         };
     }
 
-    validateForm(data) {
+    /**
+     * Validate form data without producing side effects.
+     * Returns an object { valid: boolean, errors: { field: message } }
+     */
+    validateFormData(data) {
+        const errors = {};
+
         if (!data.plan_name || !data.plan_name.trim()) {
-            this.setError('Plan name is required');
-            return false;
+            errors.plan_name = 'Plan name is required';
         }
-        
+
         if (!data.plan_type || (data.plan_type !== 'STANDARD' && data.plan_type !== 'CIRCUIT')) {
-            this.setError('Plan type is required');
+            errors.plan_type = 'Plan type is required';
+        }
+
+        // durationWeeks must be integer between 1 and 52
+        const duration = parseInt(data.durationWeeks, 10);
+        if (!Number.isInteger(duration) || duration < 1 || duration > 52) {
+            errors.durationWeeks = 'Duration must be an integer between 1 and 52';
+        }
+
+        // If start_date is provided, it must not be in the past
+        if (data.start_date) {
+            const start = new Date(data.start_date);
+            if (isNaN(start.getTime())) {
+                errors.start_date = 'Start date is invalid';
+            } else {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                start.setHours(0, 0, 0, 0);
+                if (start < today) {
+                    errors.start_date = 'Start date cannot be in the past';
+                }
+            }
+        }
+
+        return {
+            valid: Object.keys(errors).length === 0,
+            errors
+        };
+    }
+
+    validateForm(data) {
+        // Backwards-compatible wrapper used by handleSave that sets visible error
+        const result = this.validateFormData(data);
+        if (!result.valid) {
+            // Show first error message
+            const firstKey = Object.keys(result.errors)[0];
+            this.setError(result.errors[firstKey]);
             return false;
         }
-        
+        // Clear any previous error
+        this.setError(null);
         return true;
     }
 

@@ -561,6 +561,99 @@ app.get('/api/training-plans', async (req, res) => {
   }
 });
 
+// POST /api/training-plans - create a new training plan and auto-generate weeks/days skeleton
+app.post('/api/training-plans', async (req, res) => {
+  try {
+    const payload = req.body;
+
+    if (!payload || typeof payload !== 'object') {
+      return res.status(400).json({ error: 'Invalid plan payload' });
+    }
+
+    const { name, description, startDate, durationWeeks } = payload;
+
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      return res.status(400).json({ error: 'Plan name is required' });
+    }
+
+    if (!startDate || isNaN(Date.parse(startDate))) {
+      return res.status(400).json({ error: 'Valid startDate is required' });
+    }
+
+    const start = new Date(startDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (start < today) {
+      return res.status(400).json({ error: 'startDate cannot be in the past' });
+    }
+
+    if (!Number.isInteger(durationWeeks) || durationWeeks < 1) {
+      return res.status(400).json({ error: 'durationWeeks must be an integer >= 1' });
+    }
+
+    // Generate IDs (simple timestamp-based ids to avoid adding a UUID dependency)
+    const planId = `plan-${Date.now()}`;
+
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    const weeks = [];
+    for (let w = 1; w <= durationWeeks; w++) {
+      const weekId = `${planId}-w${w}`;
+      const days = [];
+      for (let d = 0; d < 7; d++) {
+        const dayId = `${weekId}-d${d + 1}`;
+        days.push({
+          id: dayId,
+          weekId,
+          dayOfWeek: daysOfWeek[d],
+          dayType: 'Rest',
+          blocks: []
+        });
+      }
+
+      weeks.push({
+        id: weekId,
+        planId,
+        weekNumber: w,
+        days
+      });
+    }
+
+    const newPlan = {
+      id: planId,
+      name: name.trim(),
+      description: description || '',
+      startDate: start.toISOString(),
+      durationWeeks,
+      weeks,
+      createdAt: new Date().toISOString()
+    };
+
+    // Persist to data/training-plans.json (array)
+    const plansPath = path.join(__dirname, 'data', 'training-plans.json');
+    let plans = [];
+    try {
+      const existing = await fs.readFile(plansPath, 'utf8');
+      plans = JSON.parse(existing);
+      if (!Array.isArray(plans)) plans = [];
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+      // file doesn't exist -- we'll create it
+      plans = [];
+    }
+
+    plans.push(newPlan);
+
+    await fs.mkdir(path.dirname(plansPath), { recursive: true });
+    await fs.writeFile(plansPath, JSON.stringify(plans, null, 2));
+
+    res.status(201).json(newPlan);
+  } catch (error) {
+    console.error('Error creating training plan:', error);
+    res.status(500).json({ error: 'Failed to create training plan' });
+  }
+});
+
 // DELETE /api/training-plans/:planId - delete a training plan (mock implementation)
 app.delete('/api/training-plans/:planId', async (req, res) => {
   try {

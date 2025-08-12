@@ -101,37 +101,21 @@ export class ApiService {
     }
 
     async createTrainingPlan(planData) {
-        // Get current user ID from Telegram or storage
-        let userId = 'default-user'; // Fallback
-        
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-            userId = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
-        } else if (window.grndApp && window.grndApp.getCurrentUser) {
-            const user = window.grndApp.getCurrentUser();
-            userId = user ? user.id.toString() : userId;
-        }
-
-        // Use the README-compliant endpoint
-        return this.request(`/workout-data/${userId}`, {
+        // New endpoint: create training plan and return the created plan object.
+        // Keep payload compatible with server POST /api/training-plans
+        return this.request('/training-plans', {
             method: 'POST',
             body: JSON.stringify(planData)
         });
     }
 
     async updateTrainingPlan(planId, planData) {
-        // Get current user ID from Telegram or storage
-        let userId = 'default-user'; // Fallback
-        
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-            userId = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
-        } else if (window.grndApp && window.grndApp.getCurrentUser) {
-            const user = window.grndApp.getCurrentUser();
-            userId = user ? user.id.toString() : userId;
+        // Update an existing training plan via PUT /api/training-plans/:planId
+        if (!planId) {
+            throw new Error('planId is required to update a training plan');
         }
-
-        // Use the README-compliant endpoint
-        return this.request(`/workout-data/${userId}`, {
-            method: 'POST',
+        return this.request(`/training-plans/${encodeURIComponent(planId)}`, {
+            method: 'PUT',
             body: JSON.stringify(planData)
         });
     }

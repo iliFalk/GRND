@@ -124,13 +124,6 @@ export class PlanList {
             <div class="plan-list-container">
                 <div class="plan-list-header">
                     <h2>Training Plans</h2>
-                    <button class="btn-primary create-plan-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Create New Plan
-                    </button>
                 </div>
 
                 ${this.error ? `
@@ -139,12 +132,7 @@ export class PlanList {
                     </div>
                 ` : ''}
 
-                ${this.isLoading ? `
-                    <div class="loading-container">
-                        <div class="spinner"></div>
-                        <p>Loading plans...</p>
-                    </div>
-                ` : this.plans.length === 0 ? `
+                ${this.isLoading ? `` : this.plans.length === 0 ? `
                     <div class="empty-state">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                             <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"></path>

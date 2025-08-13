@@ -1,6 +1,10 @@
 /**
  * ExerciseEditor Component
  * Full-screen modal for editing exercise details with image upload
+ *
+ * Updated to support adding/editing exercises inside a WorkoutBlock.
+ * When opened from the DayEditor with a blockId, new exercises will be
+ * added to the Day's WorkoutBlock via Day.addExerciseToBlock(..., blockId).
  */
 
 import { Exercise } from '../models/Exercise.js';
@@ -14,6 +18,7 @@ export class ExerciseEditor {
         this.day = null;
         this.week = null;
         this.plan = null;
+        this.blockId = null; // new: optional block context
         this.isLoading = false;
         this.isSaving = false;
         this.isUploading = false;
@@ -26,11 +31,20 @@ export class ExerciseEditor {
         this.render();
     }
 
-    setExercise(exercise, day, week, plan) {
+    /**
+     * Set the exercise context.
+     * @param {Object|null} exercise - existing exercise data or null for new
+     * @param {Object} day - Day object (instance of Day)
+     * @param {Object} week - Week object
+     * @param {Object} plan - TrainingPlan object
+     * @param {String|null} blockId - optional block id to attach exercise to
+     */
+    setExercise(exercise, day, week, plan, blockId = null) {
         this.exercise = exercise ? new Exercise(exercise) : new Exercise();
         this.day = day;
         this.week = week;
         this.plan = plan;
+        this.blockId = blockId;
         this.render();
     }
 
@@ -48,10 +62,39 @@ export class ExerciseEditor {
             // Update exercise with form data
             Object.assign(this.exercise, formData);
 
-            // Add to day if new exercise
-            if (!this.exercise.id) {
+            // Add to day/block if new exercise
+            if (!this.exercise.id && this.day) {
+                // generate id if not present
                 this.exercise.id = Date.now().toString();
-                this.day.exercises.push(this.exercise);
+
+                if (this.blockId && typeof this.day.addExerciseToBlock === 'function') {
+                    // Add to the specified block
+                    this.day.addExerciseToBlock(this.exercise.toJSON ? this.exercise.toJSON() : this.exercise, this.blockId);
+                } else if (typeof this.day.addExerciseToBlock === 'function' && this.day.workoutBlocks && this.day.workoutBlocks.length > 0) {
+                    // If blocks exist but no blockId specified, add to first block
+                    this.day.addExerciseToBlock(this.exercise.toJSON ? this.exercise.toJSON() : this.exercise);
+                } else {
+                    // Legacy: push to day.exercises array for backward compatibility
+                    this.day.exercises.push(this.exercise);
+                }
+            } else if (this.exercise.id && this.day) {
+                // Update existing exercise inside blocks if applicable
+                let updated = false;
+                if (this.day.workoutBlocks && Array.isArray(this.day.workoutBlocks)) {
+                    for (const block of this.day.workoutBlocks) {
+                        const found = block.exercises.findIndex(e => e.id === this.exercise.id || e.exercise_id === this.exercise.id);
+                        if (found !== -1) {
+                            block.exercises[found] = this.exercise;
+                            updated = true;
+                            break;
+                        }
+                    }
+                }
+                if (!updated) {
+                    // fallback to legacy array
+                    const idx = this.day.exercises.findIndex(e => e.id === this.exercise.id);
+                    if (idx !== -1) this.day.exercises[idx] = this.exercise;
+                }
             }
 
             // Navigate back to day editor
@@ -123,19 +166,22 @@ export class ExerciseEditor {
             data.sets = parseInt(form.querySelector('#exercise-sets').value) || 0;
             data.reps = parseInt(form.querySelector('#exercise-reps').value) || 0;
             data.restTime = parseInt(form.querySelector('#exercise-rest').value) || 60;
+        } else {
+            // cardio / timed
+            data.duration = parseInt(form.querySelector('#exercise-duration') ? form.querySelector('#exercise-duration').value : 0) || (this.exercise.duration || 0);
         }
 
-        // Circuit-specific fields
-        if (this.day && this.day.day_type === 'CIRCUIT') {
-            data.circuitOrder = parseInt(form.querySelector('#circuit-order').value) || 0;
-            data.circuitRounds = parseInt(form.querySelector('#circuit-rounds').value) || 1;
-        }
+        // Circuit-specific fields (if present in form)
+        const circuitOrderEl = form.querySelector('#circuit-order');
+        const circuitRoundsEl = form.querySelector('#circuit-rounds');
+        if (circuitOrderEl) data.circuitOrder = parseInt(circuitOrderEl.value) || 0;
+        if (circuitRoundsEl) data.circuitRounds = parseInt(circuitRoundsEl.value) || 1;
 
         return data;
     }
 
     validateForm(data) {
-        if (!data.name.trim()) {
+        if (!data.name || !data.name.trim()) {
             this.setError('Exercise name is required');
             return false;
         }
@@ -206,7 +252,6 @@ export class ExerciseEditor {
                     </div>
                 </div>
             </div>
-            ${this.renderVolumeCalculation()}
         `;
     }
 
@@ -277,7 +322,7 @@ export class ExerciseEditor {
     }
 
     renderCircuitFields() {
-        if (!this.day || this.day.type !== 'Circuit') return '';
+        if (!this.day || this.day.day_type !== 'CIRCUIT') return '';
         
         return `
             <div class="circuit-fields">
@@ -341,7 +386,7 @@ export class ExerciseEditor {
 
                             <div class="form-group">
                                 <label for="exercise-muscle-groups">Muscle Groups</label>
-                                <input type="text" id="exercise-muscle-groups" value="${this.exercise.muscleGroups.join(', ') || ''}" 
+                                <input type="text" id="exercise-muscle-groups" value="${(this.exercise.muscleGroups || []).join(', ') || ''}" 
                                        placeholder="e.g., Chest, Triceps, Shoulders">
                             </div>
 
@@ -396,27 +441,31 @@ export class ExerciseEditor {
 
         // Exercise type change
         const exerciseTypeSelect = this.container.querySelector('#exercise-type');
-        exerciseTypeSelect.addEventListener('change', () => this.render());
+        if (exerciseTypeSelect) {
+            exerciseTypeSelect.addEventListener('change', () => this.render());
+        }
 
         // Image upload
         const uploadBtn = this.container.querySelector('.upload-btn');
         const fileInput = this.container.querySelector('#image-upload');
 
-        uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                this.handleImageUpload(file);
-            }
-        });
+        if (uploadBtn && fileInput) {
+            uploadBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    this.handleImageUpload(file);
+                }
+            });
+        }
 
         // Image search
         const searchBtn = this.container.querySelector('.search-btn');
-        searchBtn.addEventListener('click', () => this.handleImageSearch());
+        if (searchBtn) searchBtn.addEventListener('click', () => this.handleImageSearch());
 
         // Image URL change
         const imageUrlInput = this.container.querySelector('#image-url');
-        imageUrlInput.addEventListener('change', (e) => {
+        if (imageUrlInput) imageUrlInput.addEventListener('change', (e) => {
             this.handleImageUrlChange(e.target.value);
         });
 
@@ -431,10 +480,12 @@ export class ExerciseEditor {
 
         // Close on overlay click
         const overlay = this.container.querySelector('.exercise-editor-overlay');
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                this.handleCancel();
-            }
-        });
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    this.handleCancel();
+                }
+            });
+        }
     }
 }

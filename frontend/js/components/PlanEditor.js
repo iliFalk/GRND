@@ -62,23 +62,57 @@ export class PlanEditor {
         this.setSaving(true, null);
 
         try {
-            // Ensure there is at least one valid week/day because backend validation
-            // requires weeks array with at least one week, and each week must have
-            // at least one day with valid identifiers.
-            const weeks = (this.plan.weeks && this.plan.weeks.length > 0) ? this.plan.weeks : [
-                new Week({
-                    weekNumber: 1,
-                    name: 'Week 1',
-                    days: [
-                        {
-                            day_id: `day-${Date.now()}`,
-                            day_name: 'Day 1',
-                            day_type: 'STANDARD',
-                            exercises: []
-                        }
-                    ]
-                })
-            ];
+            // Build a canonical weeks/days skeleton according to durationWeeks
+            const duration = Number.isInteger(formData.durationWeeks) ? formData.durationWeeks : 4;
+            const existingWeeks = (this.plan && this.plan.weeks && this.plan.weeks.length > 0) ? this.plan.weeks : [];
+
+            // If reducing duration, confirm destructive deletion of out-of-range weeks
+            if (this.plan && this.plan.weeks && this.plan.weeks.length > duration) {
+                const from = duration + 1;
+                const to = this.plan.weeks.length;
+                if (!confirm(`Changing the duration to ${duration} weeks will permanently delete Week ${from} to Week ${to} and all of their workouts. Are you sure you want to continue?`)) {
+                    // user cancelled - stop save
+                    this.setSaving(false, null);
+                    return;
+                }
+                // Truncate existingWeeks to the new duration
+                existingWeeks.length = duration;
+            }
+
+            // Generate or normalize weeks array to match requested duration
+            const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const weeksSkeleton = [];
+
+            // Use existing weeks where possible (preserve user data), otherwise create new weeks
+            for (let i = 0; i < duration; i++) {
+                const weekNumber = i + 1;
+                let week = existingWeeks[i];
+                if (week) {
+                    // Ensure week.weekNumber is accurate
+                    week.weekNumber = weekNumber;
+                    week.name = week.name || `Week ${weekNumber}`;
+                    weeksSkeleton.push(week);
+                    continue;
+                }
+
+                // Create new week with 7 default days (Rest)
+                const newDays = daysOfWeek.map((dow, idx) => ({
+                    day_id: `day-${weekNumber}-${idx + 1}-${Date.now()}`,
+                    week_id: `week-${Date.now()}-${weekNumber}`,
+                    day_name: dow,
+                    day_of_week: dow,
+                    day_type: 'Rest',
+                    workoutBlocks: []
+                }));
+
+                const newWeek = new Week({
+                    weekNumber,
+                    name: `Week ${weekNumber}`,
+                    days: newDays
+                });
+
+                weeksSkeleton.push(newWeek);
+            }
 
             // Create plan data structure according to README requirements (client-side shape)
             const planData = {
@@ -88,18 +122,18 @@ export class PlanEditor {
                 description: formData.description,
                 plan_type: formData.plan_type,
                 start_date: formData.start_date || new Date().toISOString(),
-                weeks: weeks,
-                durationWeeks: formData.durationWeeks,
+                weeks: weeksSkeleton,
+                durationWeeks: duration,
                 createdAt: this.plan.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
-            // Server-facing payload for POST /api/training-plans
+            // Server-facing payload for POST /api/training-plans (minimal fields)
             const serverPayload = {
                 name: formData.plan_name,
                 description: formData.description,
                 startDate: formData.start_date || new Date().toISOString(),
-                durationWeeks: formData.durationWeeks
+                durationWeeks: duration
             };
 
             // Send to backend. Use the new /training-plans endpoint for creation and

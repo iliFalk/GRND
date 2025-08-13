@@ -64,21 +64,25 @@ export class DayEditor {
         });
     }
 
-    handleAddExercise() {
+    handleAddExercise(blockId = null) {
+        // Navigate to ExerciseEditor and pass the blockId so the editor can attach the exercise to the correct block
         this.navigationService.navigateTo('exercise-editor', {
             exercise: null,
             day: this.day,
             week: this.week,
-            plan: this.plan
+            plan: this.plan,
+            blockId
         });
     }
 
-    handleEditExercise(exercise) {
+    handleEditExercise(exercise, blockId = null) {
+        // Pass blockId so ExerciseEditor can update the correct block if needed
         this.navigationService.navigateTo('exercise-editor', {
             exercise,
             day: this.day,
             week: this.week,
-            plan: this.plan
+            plan: this.plan,
+            blockId
         });
     }
 
@@ -194,20 +198,24 @@ export class DayEditor {
     }
 
     renderExercise(exercise, index) {
+        const repsText = exercise.reps ? `${exercise.reps} reps` : '';
+        const setsText = exercise.sets ? `${exercise.sets} sets` : '';
+        const weightText = exercise.weight ? ` • ${exercise.weight}` : '';
+        const durationText = exercise.duration ? ` • ${exercise.duration}s` : '';
         return `
-            <div class="exercise-item">
+            <div class="exercise-item" data-exercise-id="${exercise.id || exercise.exercise_id || ''}">
                 <div class="exercise-info">
-                    <h4>${exercise.name}</h4>
-                    <p>${exercise.type} • ${exercise.sets} sets × ${exercise.reps} reps</p>
+                    <h4>${exercise.name || exercise.exerciseName || 'Exercise'}</h4>
+                    <p>${setsText} ${repsText}${weightText}${durationText}</p>
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn-icon edit-exercise-btn" data-exercise-index="${index}" title="Edit">
+                    <button class="btn-icon edit-exercise-btn" data-exercise-id="${exercise.id || exercise.exercise_id || ''}" title="Edit">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
-                    <button class="btn-icon remove-exercise-btn" data-exercise-index="${index}" title="Remove">
+                    <button class="btn-icon remove-exercise-btn" data-exercise-id="${exercise.id || exercise.exercise_id || ''}" title="Remove">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -232,58 +240,66 @@ export class DayEditor {
         `;
     }
 
-    renderStandardExercises() {
-        return `
-            <div class="exercises-section">
-                <div class="exercises-header">
-                    <h4>Exercises</h4>
-                    <button type="button" class="btn-secondary add-exercise-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Add Exercise
-                    </button>
+    renderBlocks() {
+        // Render workout blocks (each block contains exercises)
+        if (!this.day || !Array.isArray(this.day.workoutBlocks)) {
+            return `
+                <div class="empty-exercises">
+                    <p>No workout blocks added for this day.</p>
                 </div>
-                <div class="exercises-list">
-                    ${this.day.exercises.map((exercise, index) => this.renderExercise(exercise, index)).join('')}
-                    ${this.day.exercises.length === 0 ? `
-                        <div class="empty-exercises">
-                            <p>No exercises added yet</p>
+            `;
+        }
+
+        return this.day.workoutBlocks.map((block, bIndex) => {
+            const headerInfo = block.block_type === 'Circuit'
+                ? `${block.rounds || block.rounds === 0 ? block.rounds : 3} rounds`
+                : block.block_type === 'AMRAP'
+                    ? `${block.target_time || 10} min AMRAP`
+                    : 'Standard block';
+
+            return `
+                <div class="workout-block" data-block-id="${block.block_id}">
+                    <div class="block-header">
+                        <div class="block-title">
+                            <strong>${block.block_type}</strong>
+                            <span class="block-info">${headerInfo} • ${block.exercisesCount} exercise${block.exercisesCount !== 1 ? 's' : ''}</span>
                         </div>
-                    ` : ''}
+                        <div class="block-actions">
+                            <button class="btn-icon edit-block-btn" data-block-id="${block.block_id}" title="Edit Block">Edit</button>
+                            <button class="btn-icon remove-block-btn" data-block-id="${block.block_id}" title="Remove Block">Remove</button>
+                            <button class="btn-secondary add-exercise-to-block-btn" data-block-id="${block.block_id}">
+                                Add Exercise
+                            </button>
+                        </div>
+                    </div>
+                    <div class="block-exercises">
+                        ${block.exercises.map((ex, exIdx) => this.renderExercise(ex, exIdx)).join('')}
+                        ${block.exercises.length === 0 ? `<div class="empty-exercises"><p>No exercises yet</p></div>` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        }).join('');
     }
 
-    renderCircuitExercises() {
+    // Keep circuit configuration rendering but rely on blocks for actual exercises
+    renderCircuitConfiguration() {
         return `
-            ${this.renderCircuitConfiguration()}
-            <div class="exercises-section">
-                <div class="exercises-header">
-                    <h4>Circuit Exercises</h4>
-                    <button type="button" class="btn-secondary add-exercise-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Add Exercise
-                    </button>
-                </div>
-                <div class="exercises-list">
-                    ${this.day.exercises.map((exercise, index) => this.renderExercise(exercise, index)).join('')}
-                    ${this.day.exercises.length === 0 ? `
-                        <div class="empty-exercises">
-                            <p>No exercises added to circuit yet</p>
-                        </div>
-                    ` : ''}
+            <div class="circuit-config">
+                <h4>Circuit Configuration</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="circuit-rounds">Target Rounds</label>
+                        <input type="number" id="circuit-rounds" value="${this.day.circuit_config?.target_rounds || 3}" min="1" max="10">
+                    </div>
                 </div>
             </div>
         `;
     }
 
     render() {
+        if (!this.day) {
+            this.day = new Day();
+        }
         this.container.innerHTML = `
             <div class="day-editor-overlay">
                 <div class="day-editor-modal">
@@ -351,9 +367,10 @@ export class DayEditor {
                                 <textarea id="day-notes" rows="3" placeholder="Any additional notes for this day...">${this.day.notes || ''}</textarea>
                             </div>
 
-                            ${this.day.restDay ? '' : 
-                                (this.day.type === 'Circuit' ? this.renderCircuitExercises() : this.renderStandardExercises())
-                            }
+                            ${this.day.restDay ? '' : this.renderBlocks()}
+                            ${!this.day.restDay ? `<div class="block-controls">
+                                <button type="button" class="btn-secondary add-block-btn">Add Block</button>
+                            </div>` : ''}
                         </form>
                     </div>
 
@@ -393,30 +410,79 @@ export class DayEditor {
         const restDayCheckbox = this.container.querySelector('#rest-day');
         restDayCheckbox.addEventListener('change', () => this.render());
 
-        // Add exercise button
-        const addExerciseBtn = this.container.querySelector('.add-exercise-btn');
-        if (addExerciseBtn) {
-            addExerciseBtn.addEventListener('click', () => this.handleAddExercise());
-        }
+        // Add exercise to block buttons
+        const addToBlockBtns = this.container.querySelectorAll('.add-exercise-to-block-btn');
+        addToBlockBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const blockId = e.target.closest('.add-exercise-to-block-btn').dataset.blockId;
+                this.handleAddExercise(blockId);
+            });
+        });
 
-        // Edit exercise buttons
+        // Edit exercise buttons (block-aware)
         const editExerciseBtns = this.container.querySelectorAll('.edit-exercise-btn');
         editExerciseBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const index = parseInt(e.target.closest('.edit-exercise-btn').dataset.exerciseIndex);
-                const exercise = this.day.exercises[index];
-                this.handleEditExercise(exercise);
+                const exerciseId = e.target.closest('.edit-exercise-btn').dataset.exerciseId;
+                // find exercise and block containing it
+                let foundEx = null;
+                let foundBlockId = null;
+                this.day.workoutBlocks.forEach(block => {
+                    const ex = block.exercises.find(x => (x.id === exerciseId || x.exercise_id === exerciseId));
+                    if (ex) {
+                        foundEx = ex;
+                        foundBlockId = block.block_id;
+                    }
+                });
+                if (foundEx) {
+                    this.handleEditExercise(foundEx, foundBlockId);
+                }
             });
         });
 
-        // Remove exercise buttons
+        // Remove exercise buttons (block-aware)
         const removeExerciseBtns = this.container.querySelectorAll('.remove-exercise-btn');
         removeExerciseBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const index = parseInt(e.target.closest('.remove-exercise-btn').dataset.exerciseIndex);
-                this.handleRemoveExercise(index);
+                const exerciseId = e.target.closest('.remove-exercise-btn').dataset.exerciseId;
+                if (confirm('Are you sure you want to remove this exercise?')) {
+                    this.day.removeExercise(exerciseId);
+                    this.render();
+                }
             });
         });
+
+        // Block-level actions: edit block, remove block, add block
+        const editBlockBtns = this.container.querySelectorAll('.edit-block-btn');
+        editBlockBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const blockId = e.target.closest('.edit-block-btn').dataset.blockId;
+                const block = this.day.workoutBlocks.find(b => b.block_id === blockId);
+                // For now, editing a block opens a prompt to change block type/params (simple inline editor)
+                const newType = prompt('Enter block type (Standard, Circuit, AMRAP):', block.block_type);
+                if (newType) {
+                    block.block_type = newType;
+                    // circuit/AMRAP params can be edited in a fuller UI later
+                    this.render();
+                }
+            });
+        });
+
+        const removeBlockBtns = this.container.querySelectorAll('.remove-block-btn');
+        removeBlockBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const blockId = e.target.closest('.remove-block-btn').dataset.blockId;
+                if (confirm('Remove this block and all contained exercises?')) {
+                    this.day.removeBlock(blockId);
+                    this.render();
+                }
+            });
+        });
+
+        const addBlockBtn = this.container.querySelector('.add-block-btn');
+        if (addBlockBtn) {
+            addBlockBtn.addEventListener('click', () => this.handleAddBlock());
+        }
 
         // Close on overlay click
         const overlay = this.container.querySelector('.day-editor-overlay');

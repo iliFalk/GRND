@@ -561,9 +561,10 @@ app.get('/api/training-plans', async (req, res) => {
   }
 });
 
-// POST /api/training-plans - create a new training plan and auto-generate weeks/days skeleton
-app.post('/api/training-plans', async (req, res) => {
-  try {
+ // POST /api/training-plans - create a new training plan and auto-generate weeks/days skeleton
+ app.post('/api/training-plans', async (req, res) => {
+   try {
+     console.log(new Date().toISOString(), '- Entered POST /api/training-plans handler');
     const payload = req.body;
 
     if (!payload || typeof payload !== 'object') {
@@ -654,7 +655,61 @@ app.post('/api/training-plans', async (req, res) => {
   }
 });
 
-// DELETE /api/training-plans/:planId - delete a training plan (mock implementation)
+ // PUT /api/training-plans/:planId - update an existing training plan
+app.put('/api/training-plans/:planId', async (req, res) => {
+  try {
+    const { planId } = req.params;
+    const payload = req.body;
+
+    if (!payload || typeof payload !== 'object') {
+      return res.status(400).json({ error: 'Invalid plan payload' });
+    }
+
+    const plansPath = path.join(__dirname, 'data', 'training-plans.json');
+    let plans = [];
+    try {
+      const existing = await fs.readFile(plansPath, 'utf8');
+      plans = JSON.parse(existing);
+      if (!Array.isArray(plans)) plans = [];
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        return res.status(404).json({ error: 'No plans found' });
+      }
+      throw err;
+    }
+
+    const idx = plans.findIndex(p => p.id === planId);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Training plan not found' });
+    }
+
+    // Merge payload into existing plan but preserve immutable fields
+    const existingPlan = plans[idx];
+    const updatedPlan = {
+      ...existingPlan,
+      ...payload,
+      id: existingPlan.id,
+      createdAt: existingPlan.createdAt || existingPlan.createdAt,
+      updatedAt: new Date().toISOString()
+    };
+
+    // If weeks/days were provided as part of payload, ensure format is preserved
+    if (payload.weeks && Array.isArray(payload.weeks)) {
+      updatedPlan.weeks = payload.weeks;
+    }
+
+    plans[idx] = updatedPlan;
+
+    await fs.writeFile(plansPath, JSON.stringify(plans, null, 2));
+
+    res.json(updatedPlan);
+  } catch (error) {
+    console.error('Error updating training plan:', error);
+    res.status(500).json({ error: 'Failed to update training plan' });
+  }
+});
+
+ // DELETE /api/training-plans/:planId - delete a training plan (mock implementation)
 app.delete('/api/training-plans/:planId', async (req, res) => {
   try {
     const { planId } = req.params;

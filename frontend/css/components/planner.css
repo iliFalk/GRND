@@ -83,3 +83,39 @@
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: var(--font-size-sm);
 }
+
+/* Floating action button for Create Plan */
+.create-plan-fab {
+    position: fixed;
+    right: 20px;
+    bottom: 100px; /* nudged down a bit so it sits slightly lower above the bottom header/navigation */
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    z-index: 1000;
+    cursor: pointer;
+    border: none;
+}
+
+/* Use same colors as btn-primary, or override as needed */
+.create-plan-fab.btn-primary {
+    background: var(--primary-color, #1e90ff);
+    color: #fff;
+}
+
+.create-plan-fab svg {
+    stroke: currentColor;
+}
+
+/* Adjust placement on larger viewports where bottom nav may be absent */
+@media (min-width: 768px) {
+    .create-plan-fab {
+        right: 32px;
+        bottom: 60px;
+    }
+}

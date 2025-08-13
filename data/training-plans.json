@@ -1,0 +1,1172 @@
+[
+  {
+    "id": "plan-1755023412380",
+    "name": "Test Plan",
+    "description": "From curl",
+    "startDate": "2025-08-13T18:30:12.000Z",
+    "durationWeeks": 4,
+    "weeks": [
+      {
+        "id": "plan-1755023412380-w1",
+        "planId": "plan-1755023412380",
+        "weekNumber": 1,
+        "days": [
+          {
+            "id": "plan-1755023412380-w1-d1",
+            "weekId": "plan-1755023412380-w1",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w1-d2",
+            "weekId": "plan-1755023412380-w1",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w1-d3",
+            "weekId": "plan-1755023412380-w1",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w1-d4",
+            "weekId": "plan-1755023412380-w1",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w1-d5",
+            "weekId": "plan-1755023412380-w1",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w1-d6",
+            "weekId": "plan-1755023412380-w1",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w1-d7",
+            "weekId": "plan-1755023412380-w1",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023412380-w2",
+        "planId": "plan-1755023412380",
+        "weekNumber": 2,
+        "days": [
+          {
+            "id": "plan-1755023412380-w2-d1",
+            "weekId": "plan-1755023412380-w2",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w2-d2",
+            "weekId": "plan-1755023412380-w2",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w2-d3",
+            "weekId": "plan-1755023412380-w2",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w2-d4",
+            "weekId": "plan-1755023412380-w2",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w2-d5",
+            "weekId": "plan-1755023412380-w2",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w2-d6",
+            "weekId": "plan-1755023412380-w2",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w2-d7",
+            "weekId": "plan-1755023412380-w2",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023412380-w3",
+        "planId": "plan-1755023412380",
+        "weekNumber": 3,
+        "days": [
+          {
+            "id": "plan-1755023412380-w3-d1",
+            "weekId": "plan-1755023412380-w3",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w3-d2",
+            "weekId": "plan-1755023412380-w3",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w3-d3",
+            "weekId": "plan-1755023412380-w3",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w3-d4",
+            "weekId": "plan-1755023412380-w3",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w3-d5",
+            "weekId": "plan-1755023412380-w3",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w3-d6",
+            "weekId": "plan-1755023412380-w3",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w3-d7",
+            "weekId": "plan-1755023412380-w3",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023412380-w4",
+        "planId": "plan-1755023412380",
+        "weekNumber": 4,
+        "days": [
+          {
+            "id": "plan-1755023412380-w4-d1",
+            "weekId": "plan-1755023412380-w4",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w4-d2",
+            "weekId": "plan-1755023412380-w4",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w4-d3",
+            "weekId": "plan-1755023412380-w4",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w4-d4",
+            "weekId": "plan-1755023412380-w4",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w4-d5",
+            "weekId": "plan-1755023412380-w4",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w4-d6",
+            "weekId": "plan-1755023412380-w4",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023412380-w4-d7",
+            "weekId": "plan-1755023412380-w4",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-08-12T18:30:12.380Z"
+  },
+  {
+    "id": "plan-1755023494361",
+    "name": "q",
+    "description": "q",
+    "startDate": "2025-08-12T00:00:00.000Z",
+    "durationWeeks": 4,
+    "weeks": [
+      {
+        "id": "plan-1755023494361-w1",
+        "planId": "plan-1755023494361",
+        "weekNumber": 1,
+        "days": [
+          {
+            "id": "plan-1755023494361-w1-d1",
+            "weekId": "plan-1755023494361-w1",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w1-d2",
+            "weekId": "plan-1755023494361-w1",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w1-d3",
+            "weekId": "plan-1755023494361-w1",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w1-d4",
+            "weekId": "plan-1755023494361-w1",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w1-d5",
+            "weekId": "plan-1755023494361-w1",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w1-d6",
+            "weekId": "plan-1755023494361-w1",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w1-d7",
+            "weekId": "plan-1755023494361-w1",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023494361-w2",
+        "planId": "plan-1755023494361",
+        "weekNumber": 2,
+        "days": [
+          {
+            "id": "plan-1755023494361-w2-d1",
+            "weekId": "plan-1755023494361-w2",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w2-d2",
+            "weekId": "plan-1755023494361-w2",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w2-d3",
+            "weekId": "plan-1755023494361-w2",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w2-d4",
+            "weekId": "plan-1755023494361-w2",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w2-d5",
+            "weekId": "plan-1755023494361-w2",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w2-d6",
+            "weekId": "plan-1755023494361-w2",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w2-d7",
+            "weekId": "plan-1755023494361-w2",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023494361-w3",
+        "planId": "plan-1755023494361",
+        "weekNumber": 3,
+        "days": [
+          {
+            "id": "plan-1755023494361-w3-d1",
+            "weekId": "plan-1755023494361-w3",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w3-d2",
+            "weekId": "plan-1755023494361-w3",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w3-d3",
+            "weekId": "plan-1755023494361-w3",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w3-d4",
+            "weekId": "plan-1755023494361-w3",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w3-d5",
+            "weekId": "plan-1755023494361-w3",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w3-d6",
+            "weekId": "plan-1755023494361-w3",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w3-d7",
+            "weekId": "plan-1755023494361-w3",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023494361-w4",
+        "planId": "plan-1755023494361",
+        "weekNumber": 4,
+        "days": [
+          {
+            "id": "plan-1755023494361-w4-d1",
+            "weekId": "plan-1755023494361-w4",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w4-d2",
+            "weekId": "plan-1755023494361-w4",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w4-d3",
+            "weekId": "plan-1755023494361-w4",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w4-d4",
+            "weekId": "plan-1755023494361-w4",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w4-d5",
+            "weekId": "plan-1755023494361-w4",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w4-d6",
+            "weekId": "plan-1755023494361-w4",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023494361-w4-d7",
+            "weekId": "plan-1755023494361-w4",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-08-12T18:31:34.361Z"
+  },
+  {
+    "id": "plan-1755023527578",
+    "name": "w",
+    "description": "w",
+    "startDate": "2025-08-12T00:00:00.000Z",
+    "durationWeeks": 4,
+    "weeks": [
+      {
+        "id": "plan-1755023527578-w1",
+        "planId": "plan-1755023527578",
+        "weekNumber": 1,
+        "days": [
+          {
+            "id": "plan-1755023527578-w1-d1",
+            "weekId": "plan-1755023527578-w1",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w1-d2",
+            "weekId": "plan-1755023527578-w1",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w1-d3",
+            "weekId": "plan-1755023527578-w1",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w1-d4",
+            "weekId": "plan-1755023527578-w1",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w1-d5",
+            "weekId": "plan-1755023527578-w1",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w1-d6",
+            "weekId": "plan-1755023527578-w1",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w1-d7",
+            "weekId": "plan-1755023527578-w1",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023527578-w2",
+        "planId": "plan-1755023527578",
+        "weekNumber": 2,
+        "days": [
+          {
+            "id": "plan-1755023527578-w2-d1",
+            "weekId": "plan-1755023527578-w2",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w2-d2",
+            "weekId": "plan-1755023527578-w2",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w2-d3",
+            "weekId": "plan-1755023527578-w2",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w2-d4",
+            "weekId": "plan-1755023527578-w2",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w2-d5",
+            "weekId": "plan-1755023527578-w2",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w2-d6",
+            "weekId": "plan-1755023527578-w2",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w2-d7",
+            "weekId": "plan-1755023527578-w2",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023527578-w3",
+        "planId": "plan-1755023527578",
+        "weekNumber": 3,
+        "days": [
+          {
+            "id": "plan-1755023527578-w3-d1",
+            "weekId": "plan-1755023527578-w3",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w3-d2",
+            "weekId": "plan-1755023527578-w3",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w3-d3",
+            "weekId": "plan-1755023527578-w3",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w3-d4",
+            "weekId": "plan-1755023527578-w3",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w3-d5",
+            "weekId": "plan-1755023527578-w3",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w3-d6",
+            "weekId": "plan-1755023527578-w3",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w3-d7",
+            "weekId": "plan-1755023527578-w3",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023527578-w4",
+        "planId": "plan-1755023527578",
+        "weekNumber": 4,
+        "days": [
+          {
+            "id": "plan-1755023527578-w4-d1",
+            "weekId": "plan-1755023527578-w4",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w4-d2",
+            "weekId": "plan-1755023527578-w4",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w4-d3",
+            "weekId": "plan-1755023527578-w4",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w4-d4",
+            "weekId": "plan-1755023527578-w4",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w4-d5",
+            "weekId": "plan-1755023527578-w4",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w4-d6",
+            "weekId": "plan-1755023527578-w4",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023527578-w4-d7",
+            "weekId": "plan-1755023527578-w4",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-08-12T18:32:07.579Z"
+  },
+  {
+    "id": "plan-1755023607664",
+    "name": "sx",
+    "description": "sx",
+    "startDate": "2025-08-12T00:00:00.000Z",
+    "durationWeeks": 4,
+    "weeks": [
+      {
+        "id": "plan-1755023607664-w1",
+        "planId": "plan-1755023607664",
+        "weekNumber": 1,
+        "days": [
+          {
+            "id": "plan-1755023607664-w1-d1",
+            "weekId": "plan-1755023607664-w1",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w1-d2",
+            "weekId": "plan-1755023607664-w1",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w1-d3",
+            "weekId": "plan-1755023607664-w1",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w1-d4",
+            "weekId": "plan-1755023607664-w1",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w1-d5",
+            "weekId": "plan-1755023607664-w1",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w1-d6",
+            "weekId": "plan-1755023607664-w1",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w1-d7",
+            "weekId": "plan-1755023607664-w1",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023607664-w2",
+        "planId": "plan-1755023607664",
+        "weekNumber": 2,
+        "days": [
+          {
+            "id": "plan-1755023607664-w2-d1",
+            "weekId": "plan-1755023607664-w2",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w2-d2",
+            "weekId": "plan-1755023607664-w2",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w2-d3",
+            "weekId": "plan-1755023607664-w2",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w2-d4",
+            "weekId": "plan-1755023607664-w2",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w2-d5",
+            "weekId": "plan-1755023607664-w2",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w2-d6",
+            "weekId": "plan-1755023607664-w2",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w2-d7",
+            "weekId": "plan-1755023607664-w2",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023607664-w3",
+        "planId": "plan-1755023607664",
+        "weekNumber": 3,
+        "days": [
+          {
+            "id": "plan-1755023607664-w3-d1",
+            "weekId": "plan-1755023607664-w3",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w3-d2",
+            "weekId": "plan-1755023607664-w3",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w3-d3",
+            "weekId": "plan-1755023607664-w3",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w3-d4",
+            "weekId": "plan-1755023607664-w3",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w3-d5",
+            "weekId": "plan-1755023607664-w3",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w3-d6",
+            "weekId": "plan-1755023607664-w3",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w3-d7",
+            "weekId": "plan-1755023607664-w3",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023607664-w4",
+        "planId": "plan-1755023607664",
+        "weekNumber": 4,
+        "days": [
+          {
+            "id": "plan-1755023607664-w4-d1",
+            "weekId": "plan-1755023607664-w4",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w4-d2",
+            "weekId": "plan-1755023607664-w4",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w4-d3",
+            "weekId": "plan-1755023607664-w4",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w4-d4",
+            "weekId": "plan-1755023607664-w4",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w4-d5",
+            "weekId": "plan-1755023607664-w4",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w4-d6",
+            "weekId": "plan-1755023607664-w4",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023607664-w4-d7",
+            "weekId": "plan-1755023607664-w4",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-08-12T18:33:27.664Z"
+  },
+  {
+    "id": "plan-1755023645675",
+    "name": "1",
+    "description": "1",
+    "startDate": "2025-08-12T00:00:00.000Z",
+    "durationWeeks": 4,
+    "weeks": [
+      {
+        "id": "plan-1755023645675-w1",
+        "planId": "plan-1755023645675",
+        "weekNumber": 1,
+        "days": [
+          {
+            "id": "plan-1755023645675-w1-d1",
+            "weekId": "plan-1755023645675-w1",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w1-d2",
+            "weekId": "plan-1755023645675-w1",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w1-d3",
+            "weekId": "plan-1755023645675-w1",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w1-d4",
+            "weekId": "plan-1755023645675-w1",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w1-d5",
+            "weekId": "plan-1755023645675-w1",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w1-d6",
+            "weekId": "plan-1755023645675-w1",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w1-d7",
+            "weekId": "plan-1755023645675-w1",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023645675-w2",
+        "planId": "plan-1755023645675",
+        "weekNumber": 2,
+        "days": [
+          {
+            "id": "plan-1755023645675-w2-d1",
+            "weekId": "plan-1755023645675-w2",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w2-d2",
+            "weekId": "plan-1755023645675-w2",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w2-d3",
+            "weekId": "plan-1755023645675-w2",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w2-d4",
+            "weekId": "plan-1755023645675-w2",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w2-d5",
+            "weekId": "plan-1755023645675-w2",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w2-d6",
+            "weekId": "plan-1755023645675-w2",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w2-d7",
+            "weekId": "plan-1755023645675-w2",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023645675-w3",
+        "planId": "plan-1755023645675",
+        "weekNumber": 3,
+        "days": [
+          {
+            "id": "plan-1755023645675-w3-d1",
+            "weekId": "plan-1755023645675-w3",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w3-d2",
+            "weekId": "plan-1755023645675-w3",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w3-d3",
+            "weekId": "plan-1755023645675-w3",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w3-d4",
+            "weekId": "plan-1755023645675-w3",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w3-d5",
+            "weekId": "plan-1755023645675-w3",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w3-d6",
+            "weekId": "plan-1755023645675-w3",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w3-d7",
+            "weekId": "plan-1755023645675-w3",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      },
+      {
+        "id": "plan-1755023645675-w4",
+        "planId": "plan-1755023645675",
+        "weekNumber": 4,
+        "days": [
+          {
+            "id": "plan-1755023645675-w4-d1",
+            "weekId": "plan-1755023645675-w4",
+            "dayOfWeek": "Monday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w4-d2",
+            "weekId": "plan-1755023645675-w4",
+            "dayOfWeek": "Tuesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w4-d3",
+            "weekId": "plan-1755023645675-w4",
+            "dayOfWeek": "Wednesday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w4-d4",
+            "weekId": "plan-1755023645675-w4",
+            "dayOfWeek": "Thursday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w4-d5",
+            "weekId": "plan-1755023645675-w4",
+            "dayOfWeek": "Friday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w4-d6",
+            "weekId": "plan-1755023645675-w4",
+            "dayOfWeek": "Saturday",
+            "dayType": "Rest",
+            "blocks": []
+          },
+          {
+            "id": "plan-1755023645675-w4-d7",
+            "weekId": "plan-1755023645675-w4",
+            "dayOfWeek": "Sunday",
+            "dayType": "Rest",
+            "blocks": []
+          }
+        ]
+      }
+    ],
+    "createdAt": "2025-08-12T18:34:05.675Z"
+  }
+]

@@ -49,6 +49,60 @@ this.default_workout_color = data.default_workout_color || data.defaultColor || 
         return currentWeek.days[dayIndex] || null;
     }
 
+    /**
+     * Returns the plan end date (Date object) computed from start_date + durationWeeks
+     */
+    getPlanEndDate() {
+        const start = new Date(this.start_date);
+        const days = (this.durationWeeks || this.weeks.length) * 7;
+        const end = new Date(start);
+        end.setDate(start.getDate() + days);
+        return end;
+    }
+
+    /**
+     * Returns true when the user is currently in the final week of the plan.
+     */
+    isLastWeek() {
+        return this.currentWeek === (this.durationWeeks || this.weeks.length);
+    }
+
+    /**
+     * Returns true when today is the final training day (a Workout day) in the final week.
+     */
+    isLastTraining() {
+        const lastWeekNumber = this.durationWeeks || this.weeks.length;
+        const lastWeek = this.getWeek(lastWeekNumber);
+        if (!lastWeek) return false;
+
+        // Find last day index in the week that contains a workout (blocks or exercises)
+        let lastWorkoutIndex = -1;
+        for (let i = lastWeek.days.length - 1; i >= 0; i--) {
+            const day = lastWeek.days[i];
+            const hasWorkoutBlocks = Array.isArray(day.workoutBlocks) && day.workoutBlocks.length > 0;
+            const hasExercises = Array.isArray(day.exercises) && day.exercises.length > 0;
+            if (hasWorkoutBlocks || hasExercises) {
+                lastWorkoutIndex = i;
+                break;
+            }
+        }
+        if (lastWorkoutIndex === -1) return false;
+
+        const today = new Date().getDay();
+        const todayIndex = today === 0 ? 6 : today - 1;
+        const currentWeekNumber = this.currentWeek;
+        return (currentWeekNumber === lastWeekNumber) && (todayIndex === lastWorkoutIndex);
+    }
+
+    /**
+     * Returns true if the plan's end date has passed.
+     */
+    isPlanDone() {
+        const now = new Date();
+        const end = this.getPlanEndDate();
+        return now > end;
+    }
+
     applyDefaultColorToNewWorkout(workout) {
         if (!workout) return null;
         // If the workout doesn't have a color, apply the plan's default color if available

@@ -104,6 +104,22 @@ export class GRNDApp {
                 });
             });
 
+            // Attach create plan button (if present)
+            const createPlanBtn = document.querySelector('.create-plan-btn');
+            if (createPlanBtn) {
+                createPlanBtn.addEventListener('click', (e) => {
+                    try {
+                        if (this.navigation && this.navigation.navigateTo) {
+                            this.navigation.navigateTo('plan-editor');
+                        } else {
+                            console.error('Navigation service not available for create button');
+                        }
+                    } catch (err) {
+                        console.error('Create plan button click error:', err);
+                    }
+                });
+            }
+
             // Setup back button for Telegram
             if (this.telegram) {
                 this.telegram.onEvent('backButtonClicked', () => {

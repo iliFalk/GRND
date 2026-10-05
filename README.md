@@ -1,7 +1,11 @@
 # GRND
-Following Project Requirements Document (PRD) is the official blueprint. It details the project's purpose, features, data structures, user flows, and visual style. It answers what to build and why.
 
----
+Telegram Mini App for workout plans and a training timer.
+
+- **What is this:** an app with backend and frontend, plus its specification in this README.
+- **What it does:** builds routines, runs a user-controlled timer and tracks volume for weighted and bodyweight exercises.
+- **Why:** plan a workout and run it in one place, inside Telegram.
+- **How to use:** the PRD below is the blueprint. `BACKEND.md` documents the server.
 
 ## **Project Requirements Document (PRD)**
 

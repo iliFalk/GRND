@@ -3,10 +3,8 @@
 Telegram Mini App for workout plans and a training timer.
 
 ```text
-backend/          the server: routes, plan storage, volume calculation
-frontend/         the Mini App: planner, timer, dashboard, calendar
-data/             plans, profiles and sessions as JSON
-server.js         the entry point, started by npm start
+server.js     the entry point, started by npm start
+data/         plans, profiles and sessions as JSON
 ```
 
 - **What it is:** a Telegram Mini App with a small server and a browser front end.

@@ -18,6 +18,48 @@ A plan step is: pick an exercise, then give its sets, reps and weight.
 - **Proved by:** a plan saved with a chosen exercise carries its id; the report of that session lands in
   the right groups; a hand-built plan with an unknown name is refused.
 
+## 1a. Workout modes
+
+### The circuit mode stays, and gets finished
+
+`CIRCUIT` already runs: each round takes reps and weight per exercise, log round writes the round into
+`completed_sets` with a `round` field, the rest timer starts and the next round follows. Three things are
+open, all verified in the code:
+
+- **The dialog's cancel button does nothing** (`handleLogRoundCancel` has an empty body), so a user who
+  changes their mind loses the round without a word. Cancel must either keep the inputs and close, or
+  write the round as zero and say so.
+- **Skipping a round is silent** (`handleSkipRound` only advances the index). A skipped round must be
+  recorded as skipped, so history and the weekly volume do not read as if it never existed.
+- **History does not show rounds.** A finished circuit is a flat list of sets; the `round` field is
+  ignored by the readers. The circuit needs its round number visible, at least as a group header.
+
+The round index survives a reload: it is part of the session state the app persists.
+
+### A new mode: reps on the fly
+
+Ilja's flow (2026-11-18): start the mode, choose one exercise and its weight, then add repetitions as they
+happen — `+1` and `+3` buttons — with a pause and a stop.
+
+What is decided:
+
+| Question | Decision |
+|---|---|
+| Reps are added with | two buttons, `+1` and `+3` |
+| Pause | blocks only the addition of reps; the timer keeps running |
+| Weight | one weight for the whole exercise, chosen when the exercise is picked |
+| The exercise | a chosen entry of `data/exercise-catalogue.json`, never typed |
+
+What is still open, and must be decided before this mode is built:
+
+1. **What `stop` does.** Close the exercise and let him pick the next one, end the whole session and save,
+   or ask which of the two. Ilja: "надо ещё подумать полный флоу".
+2. **How a batch of reps becomes sets.** The weekly volume counts sets, and this mode has no set
+   boundary. A batch is one set; a batch is a set per `n` reps; or the mode asks "set done" before the
+   counter resets. Without this answer the work of this mode would not reach the report.
+3. **Does a pause also stop the rest timer** when the rest timer is what is running, or only the rep
+   counter. The answer above covers the working timer; rest is a second case.
+
 ## 2. The React UI
 
 The vanilla frontend (`frontend/js/**`, 6 782 lines of components) is replaced by a React app in `web/`.

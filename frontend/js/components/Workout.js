@@ -819,20 +819,81 @@ ${currentExercise.instructions ? `
     this.workoutTimer.setState(state);
   }
   
-  async saveWorkoutSession() {
-    if (!this.workoutSession) return;
-    
+  /**
+   * Persist the current session locally and on the server.
+   *
+   * Saves are queued, so the several saves one completion triggers (status,
+   * totals, timer state) cannot race: the first one creates the row with a POST
+   * and stores the returned id, every later save updates that same row.
+   */
+  saveWorkoutSession() {
+    if (!this.workoutSession) return Promise.resolve();
+
+    this.sessionSaveQueue = (this.sessionSaveQueue || Promise.resolve())
+      .then(() => this.persistWorkoutSession())
+      .catch((error) => {
+        console.error('Failed to save workout session:', error);
+      });
+
+    return this.sessionSaveQueue;
+  }
+
+  async persistWorkoutSession() {
+    const session = this.workoutSession;
+    if (!session) return;
+
+    // Save to storage
+    await this.storage.setItem('currentWorkoutSession', session.toJSON());
+
+    // Session already exists on the server: update it instead of creating a second row
+    if (session.id) {
+      await this.api.updateWorkoutSession(session.id, session.toJSON());
+      return;
+    }
+
+    const userId = await this.resolveUserId(session);
+    if (!userId) {
+      // The server rejects a session without a userId, so do not post one
+      console.error('Cannot save workout session: no user id available');
+      return;
+    }
+
+    const payload = session.toJSON();
+    payload.id = undefined;
+    payload.session_id = undefined;
+    payload.userId = userId;
+
+    const answer = await this.api.createWorkoutSessionLog(payload);
+    const createdId = answer && answer.session && answer.session.id !== undefined && answer.session.id !== null
+      ? answer.session.id
+      : (answer ? answer.id : null);
+
+    if (createdId !== undefined && createdId !== null) {
+      session.id = createdId; // keeps session_id in sync (see WorkoutSession)
+      await this.storage.setItem('currentWorkoutSession', session.toJSON());
+    }
+  }
+
+  /**
+   * The model keeps a userId, but a session opened from the server or created
+   * without a profile may not have one. Read the stored user the same way
+   * GRNDApp saves it.
+   */
+  async resolveUserId(session = this.workoutSession) {
     try {
-      // Save to storage
-      await this.storage.setItem('currentWorkoutSession', this.workoutSession.toJSON());
-      
-      // Save to API if session has an ID
-      if (this.workoutSession.id) {
-        await this.api.updateWorkoutSession(this.workoutSession.id, this.workoutSession.toJSON());
+      const user = await this.storage.getItem('user');
+      if (user && user.id !== undefined && user.id !== null && String(user.id).trim() !== '') {
+        return String(user.id);
       }
     } catch (error) {
-      console.error('Failed to save workout session:', error);
+      console.error('Failed to read stored user:', error);
     }
+
+    if (session && session.userId !== undefined && session.userId !== null && String(session.userId).trim() !== '') {
+      return String(session.userId);
+    }
+
+    return null;
   }
   
   showError(message) {

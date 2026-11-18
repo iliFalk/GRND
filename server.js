@@ -18,6 +18,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('frontend'));
 
+// The React app, built by `npm run build` into frontend/dist. It lives beside the old frontend until
+// the port is finished: /next/ is the new one, / is the one the bot opens today.
+const nextAppDir = path.join(__dirname, 'frontend', 'dist');
+app.use('/next', express.static(nextAppDir));
+app.use('/next', (req, res, next) => {
+  if (req.method !== 'GET') return next();
+  res.sendFile(path.join(nextAppDir, 'index.html'), (error) => {
+    if (error) next(error);
+  });
+});
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {

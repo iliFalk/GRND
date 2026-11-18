@@ -841,8 +841,11 @@ function validateWorkoutSession(session) {
     throw new Error('userId is required and must be a non-empty string');
   }
 
-  if (!session.date || !(session.date instanceof Date) || isNaN(session.date.getTime())) {
-    throw new Error('date is required and must be a valid Date');
+  // A request body carries the date as a string; the app's own model carries a Date.
+  // Demanding a Date instance rejected every POST from the browser, so no session was ever recorded.
+  const parsedDate = session.date instanceof Date ? session.date : new Date(session.date);
+  if (!session.date || Number.isNaN(parsedDate.getTime())) {
+    throw new Error('date is required and must be a valid date');
   }
 
   if (!Array.isArray(session.completedExercises)) {
@@ -854,8 +857,10 @@ function validateWorkoutSession(session) {
       throw new Error('Each exercise in completedExercises must be an object');
     }
 
-    if (!exercise.exerciseId || typeof exercise.exerciseId !== 'string' || exercise.exerciseId.trim() === '') {
-      throw new Error('Each exercise must have a non-empty exerciseId string');
+    // The plan editor and the workout model identify an exercise by name; the app has no catalogue id.
+    const identifier = exercise.exerciseId || exercise.name || exercise.exercise_name;
+    if (!identifier || typeof identifier !== 'string' || identifier.trim() === '') {
+      throw new Error('Each exercise must carry an exerciseId or a name');
     }
 
     if (!Array.isArray(exercise.sets)) {

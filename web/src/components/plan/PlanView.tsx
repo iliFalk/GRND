@@ -1,13 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   resolveCatalogueEntryByName,
   useExerciseCatalogue,
   type CatalogueEntry
 } from '../../lib/catalogue';
-import type { PlanBlock, PlanDay, PlanExercise, PlanWeek, TrainingPlan } from '../../lib/plans';
+import {
+  DAY_TYPES,
+  addBlock,
+  addExercise,
+  dayTypeLabel,
+  isDayType,
+  removeExercise,
+  saveTrainingPlan,
+  setDayType,
+  updateBlock,
+  updateExercise,
+  updatePlanDay,
+  type ExercisePatch,
+  type PlanBlock,
+  type PlanDay,
+  type PlanExercise,
+  type PlanWeek,
+  type TrainingPlan
+} from '../../lib/plans';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { ExercisePicker } from './ExercisePicker';
 
 interface PlanViewProps {
   plans?: TrainingPlan[];
@@ -15,6 +34,12 @@ interface PlanViewProps {
   error?: Error;
   onRetry: () => void;
 }
+
+/** One day of one week, rebuilt from what the user typed. */
+type DayEdit = (weekIndex: number, dayIndex: number, update: (day: PlanDay) => PlanDay) => void;
+
+const fieldClass =
+  'w-14 rounded-control border border-border bg-background px-2 py-1 text-sm text-foreground tabular-nums placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -25,19 +50,11 @@ function clampIndex(index: number, length: number): number {
   return Math.min(Math.max(index, 0), length - 1);
 }
 
-function hasExercises(week: PlanWeek): boolean {
-  return week.days.some((day) => day.blocks.some((block) => block.exercises.length > 0));
-}
-
 function firstDayWithExercises(week: PlanWeek): number {
   const index = week.days.findIndex((day) =>
     day.blocks.some((block) => block.exercises.length > 0)
   );
   return index === -1 ? 0 : index;
-}
-
-function planHasExercises(plan: TrainingPlan): boolean {
-  return plan.weeks.some(hasExercises);
 }
 
 function weightLabel(exercise: PlanExercise): string {
@@ -54,6 +71,11 @@ function blockDetail(block: PlanBlock): string {
   if (block.rounds !== undefined) parts.push(`${formatNumber(block.rounds)} rounds`);
   if (block.targetTime !== undefined) parts.push(`${formatNumber(block.targetTime)} min`);
   return parts.join(' · ');
+}
+
+function numberFromInput(raw: string, fallback: number): number {
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 /**
@@ -80,22 +102,90 @@ function LegacyChip({
   );
 }
 
+function NumberField({
+  label,
+  ariaLabel,
+  value,
+  onChange
+}: {
+  label: string;
+  ariaLabel: string;
+  value: number | string;
+  onChange: (raw: string) => void;
+}) {
+  return (
+    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+      <span>{label}</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        className={fieldClass}
+        aria-label={ariaLabel}
+        value={value}
+        placeholder="—"
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
 function ExerciseRow({
   exercise,
-  catalogue
+  catalogue,
+  onUpdate,
+  onRemove
 }: {
   exercise: PlanExercise;
   catalogue?: CatalogueEntry[];
+  onUpdate: (patch: ExercisePatch) => void;
+  onRemove: () => void;
 }) {
   return (
-    <li className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
-      <div className="flex min-w-0 items-center gap-1.5">
-        <span className="truncate text-sm font-medium">{exercise.name}</span>
-        {exercise.exerciseId ? null : <LegacyChip exercise={exercise} catalogue={catalogue} />}
+    <li className="space-y-1.5 py-2 first:pt-0 last:pb-0">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-medium">{exercise.name}</span>
+          {exercise.exerciseId ? null : <LegacyChip exercise={exercise} catalogue={catalogue} />}
+        </div>
+        <div className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+          <span className="font-semibold text-foreground">{`${formatNumber(exercise.sets)} × ${formatNumber(exercise.reps)}`}</span>
+          <span className="ml-1">{weightLabel(exercise)}</span>
+        </div>
       </div>
-      <div className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-        <span className="font-semibold text-foreground">{`${formatNumber(exercise.sets)} × ${formatNumber(exercise.reps)}`}</span>
-        <span className="ml-1">{weightLabel(exercise)}</span>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <NumberField
+          label="sets"
+          ariaLabel={`Sets for ${exercise.name}`}
+          value={exercise.sets}
+          onChange={(raw) => onUpdate({ sets: numberFromInput(raw, exercise.sets) })}
+        />
+        <NumberField
+          label="reps"
+          ariaLabel={`Reps for ${exercise.name}`}
+          value={exercise.reps}
+          onChange={(raw) => onUpdate({ reps: numberFromInput(raw, exercise.reps) })}
+        />
+        <NumberField
+          label="kg"
+          ariaLabel={`Weight for ${exercise.name}`}
+          value={exercise.weight ?? ''}
+          onChange={(raw) =>
+            onUpdate({
+              weight: raw.trim() === '' ? undefined : numberFromInput(raw, exercise.weight ?? 0)
+            })
+          }
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="ml-auto"
+          aria-label={`Remove ${exercise.name}`}
+          onClick={onRemove}
+        >
+          Remove
+        </Button>
       </div>
     </li>
   );
@@ -104,12 +194,19 @@ function ExerciseRow({
 function BlockCard({
   block,
   index,
-  catalogue
+  catalogue,
+  onAddExercise,
+  onUpdateExercise,
+  onRemoveExercise
 }: {
   block: PlanBlock;
   index: number;
   catalogue?: CatalogueEntry[];
+  onAddExercise: (entry: CatalogueEntry) => void;
+  onUpdateExercise: (exerciseIndex: number, patch: ExercisePatch) => void;
+  onRemoveExercise: (exerciseIndex: number) => void;
 }) {
+  const [picking, setPicking] = useState(false);
   const detail = blockDetail(block);
 
   return (
@@ -120,7 +217,7 @@ function BlockCard({
           <span className="shrink-0 text-xs text-muted-foreground">{detail}</span>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         {block.exercises.length === 0 ? (
           <p className="text-xs text-muted-foreground">No exercises in this block.</p>
         ) : (
@@ -130,9 +227,39 @@ function BlockCard({
                 key={`${exercise.id}-${exerciseIndex}`}
                 exercise={exercise}
                 catalogue={catalogue}
+                onUpdate={(patch) => onUpdateExercise(exerciseIndex, patch)}
+                onRemove={() => onRemoveExercise(exerciseIndex)}
               />
             ))}
           </ul>
+        )}
+
+        {picking ? (
+          <div className="space-y-2">
+            {catalogue ? (
+              <ExercisePicker
+                entries={catalogue}
+                selectedId={null}
+                onSelect={(exerciseId) => {
+                  const entry = catalogue.find((candidate) => candidate.id === exerciseId);
+                  if (!entry) return;
+                  onAddExercise(entry);
+                  setPicking(false);
+                }}
+              />
+            ) : (
+              <p className="rounded-card border border-border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
+                The exercise catalogue is still loading.
+              </p>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => setPicking(false)}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => setPicking(true)}>
+            Add exercise
+          </Button>
         )}
       </CardContent>
     </Card>
@@ -141,10 +268,14 @@ function BlockCard({
 
 function WeekBody({
   week,
-  catalogue
+  weekIndex,
+  catalogue,
+  onEditDay
 }: {
   week: PlanWeek;
+  weekIndex: number;
   catalogue?: CatalogueEntry[];
+  onEditDay: DayEdit;
 }) {
   const [dayIndex, setDayIndex] = useState<number | null>(null);
 
@@ -161,6 +292,8 @@ function WeekBody({
   const activeDayIndex =
     dayIndex === null ? firstDayWithExercises(week) : clampIndex(dayIndex, week.days.length);
   const day: PlanDay = week.days[activeDayIndex];
+  const editBlock = (blockIndex: number, update: (block: PlanBlock) => PlanBlock) =>
+    onEditDay(weekIndex, activeDayIndex, (current) => updateBlock(current, blockIndex, update));
 
   return (
     <div className="space-y-3">
@@ -181,10 +314,32 @@ function WeekBody({
         })}
       </div>
 
-      <div>
-        <h3 className="text-base font-semibold">{day.name}</h3>
-        {day.dayType === '' ? null : (
-          <p className="text-xs text-muted-foreground">{day.dayType}</p>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-base font-semibold">{day.name}</h3>
+          <div role="group" aria-label="Day type" className="flex flex-wrap gap-1.5">
+            {DAY_TYPES.map((type) => {
+              const isActive = day.dayType === type;
+              return (
+                <Button
+                  key={type}
+                  size="sm"
+                  variant={isActive ? 'default' : 'outline'}
+                  aria-pressed={isActive}
+                  onClick={() =>
+                    onEditDay(weekIndex, activeDayIndex, (current) => setDayType(current, type))
+                  }
+                >
+                  {dayTypeLabel(type)}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+        {isDayType(day.dayType) ? null : (
+          <p className="text-xs text-muted-foreground">
+            {day.dayType === '' ? 'No day type set' : `Stored day type: ${day.dayType}`}
+          </p>
         )}
       </div>
 
@@ -202,20 +357,37 @@ function WeekBody({
               block={block}
               index={index}
               catalogue={catalogue}
+              onAddExercise={(entry) => editBlock(index, (current) => addExercise(current, entry))}
+              onUpdateExercise={(exerciseIndex, patch) =>
+                editBlock(index, (current) => updateExercise(current, exerciseIndex, patch))
+              }
+              onRemoveExercise={(exerciseIndex) =>
+                editBlock(index, (current) => removeExercise(current, exerciseIndex))
+              }
             />
           ))}
         </div>
       )}
+
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => onEditDay(weekIndex, activeDayIndex, addBlock)}
+      >
+        Add block
+      </Button>
     </div>
   );
 }
 
 function PlanBody({
   plan,
-  catalogue
+  catalogue,
+  onEditDay
 }: {
   plan: TrainingPlan;
   catalogue?: CatalogueEntry[];
+  onEditDay: DayEdit;
 }) {
   const [weekIndex, setWeekIndex] = useState(0);
 
@@ -263,7 +435,13 @@ function PlanBody({
         </Button>
       </div>
 
-      <WeekBody key={week.id} week={week} catalogue={catalogue} />
+      <WeekBody
+        key={week.id}
+        week={week}
+        weekIndex={activeWeekIndex}
+        catalogue={catalogue}
+        onEditDay={onEditDay}
+      />
     </div>
   );
 }
@@ -271,6 +449,58 @@ function PlanBody({
 export function PlanView({ plans, loading, error, onRetry }: PlanViewProps) {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const { data: catalogue } = useExerciseCatalogue();
+  const activePlan =
+    plans && plans.length > 0
+      ? plans.find((plan) => plan.id === selectedPlanId) ?? plans[0]
+      : undefined;
+
+  const [draft, setDraft] = useState<TrainingPlan | undefined>(activePlan);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+
+  // The list can arrive after the first render (or after a save rewrote the cache). Keep a draft for
+  // the plan that is shown; switching plans is handled where the user switches it.
+  useEffect(() => {
+    setDraft((current) =>
+      current && activePlan && current.id === activePlan.id ? current : activePlan
+    );
+  }, [activePlan]);
+
+  const editDay: DayEdit = (weekIndex, dayIndex, update) => {
+    if (!draft) return;
+    const next = updatePlanDay(draft, weekIndex, dayIndex, update);
+    if (next === draft) return;
+    setDraft(next);
+    setDirty(true);
+    setJustSaved(false);
+  };
+
+  const selectPlan = (plan: TrainingPlan) => {
+    setSelectedPlanId(plan.id);
+    setDraft(plan);
+    setDirty(false);
+    setSaveError(null);
+    setJustSaved(false);
+  };
+
+  const handleSave = async () => {
+    if (!draft || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const saved = await saveTrainingPlan(draft);
+      setDraft(saved);
+      setDirty(false);
+      setJustSaved(true);
+    } catch (cause) {
+      // The edits stay on screen; only the reason is added.
+      setSaveError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (error) {
     return (
@@ -296,7 +526,7 @@ export function PlanView({ plans, loading, error, onRetry }: PlanViewProps) {
     );
   }
 
-  if (plans.length === 0) {
+  if (!activePlan) {
     return (
       <Card>
         <CardContent className="py-10 text-center">
@@ -309,52 +539,70 @@ export function PlanView({ plans, loading, error, onRetry }: PlanViewProps) {
     );
   }
 
-  const activePlan = plans.find((plan) => plan.id === selectedPlanId) ?? plans[0];
-  const emptyPlan = !planHasExercises(activePlan);
+  const plan = draft && draft.id === activePlan.id ? draft : activePlan;
+  const status = dirty ? 'Unsaved changes' : justSaved ? 'Saved' : null;
 
   return (
     <section aria-labelledby="plan-title" className="space-y-4">
-      <div>
-        <h2 id="plan-title" className="text-lg font-semibold">
-          {activePlan.name}
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {activePlan.description ?? 'Read-only plan'}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="plan-title" className="text-lg font-semibold">
+            {plan.name}
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {plan.description ?? 'No description yet'}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Button
+            size="sm"
+            disabled={!dirty || saving}
+            onClick={() => {
+              void handleSave();
+            }}
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
+          {status ? (
+            <span className="text-xs text-muted-foreground" aria-live="polite">
+              {status}
+            </span>
+          ) : null}
+        </div>
       </div>
+
+      {saveError ? (
+        <p role="alert" className="text-xs text-danger">
+          Save failed: {saveError}
+        </p>
+      ) : null}
 
       <div className="space-y-1.5">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plans</p>
         <div role="group" aria-label="Training plan" className="flex flex-wrap gap-2">
-          {plans.map((plan) => {
-            const isActive = plan.id === activePlan.id;
+          {plans.map((candidate) => {
+            const isActive = candidate.id === activePlan.id;
             return (
               <Button
-                key={plan.id}
+                key={candidate.id}
                 size="sm"
                 variant={isActive ? 'default' : 'outline'}
                 aria-pressed={isActive}
-                onClick={() => setSelectedPlanId(plan.id)}
+                onClick={() => selectPlan(candidate)}
               >
-                {plan.name}
+                {candidate.name}
               </Button>
             );
           })}
         </div>
       </div>
 
-      {emptyPlan ? (
-        <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-sm font-medium">This plan has no exercises yet.</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Reading only: an exercise is chosen from the catalogue in a later step.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <PlanBody key={activePlan.id} plan={activePlan} catalogue={catalogue} />
-      )}
+      <PlanBody
+        key={plan.id}
+        plan={plan}
+        catalogue={catalogue}
+        onEditDay={editDay}
+      />
     </section>
   );
 }

@@ -19,7 +19,6 @@ export class WorkoutSession {
         this.color = data.color || null;
 
         // Legacy fields for backward compatibility
-        this.id = this.session_id;
         this.userId = data.userId || null;
         this.planId = data.planId || null;
         this.weekId = data.weekId || null;
@@ -71,6 +70,19 @@ export class WorkoutSession {
         // Location and device info
         this.location = data.location || null;
         this.device = data.device || null;
+    }
+
+    /**
+     * The server assigns the id when a session is first saved. `id` and
+     * `session_id` are the same value, so setting either one keeps both in sync
+     * and `toJSON()` cannot report an id of null for a stored session.
+     */
+    get id() {
+        return this.session_id;
+    }
+
+    set id(value) {
+        this.session_id = value === undefined || value === null || value === '' ? null : value;
     }
 
     get isCompleted() {

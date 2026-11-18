@@ -1,0 +1,46 @@
+{
+  "owner": "Ilja",
+  "note": "What is actually at home. A suggestion may use only these, plus bodyweight. Edit freely; the engine reads this file.",
+  "items": [
+    {
+      "id": "kettlebell",
+      "label": "Гири 10/16/20 кг",
+      "available": true
+    },
+    {
+      "id": "rings",
+      "label": "Кольца",
+      "available": true
+    },
+    {
+      "id": "pull-up-bar",
+      "label": "Турник",
+      "available": true
+    },
+    {
+      "id": "pull-band",
+      "label": "Эспандеры",
+      "available": true
+    },
+    {
+      "id": "backpack",
+      "label": "Рюкзак 13 кг",
+      "available": true
+    },
+    {
+      "id": "bodyweight",
+      "label": "Своё тело",
+      "available": true
+    },
+    {
+      "id": "barbell",
+      "label": "Штанга",
+      "available": false
+    },
+    {
+      "id": "dumbbell",
+      "label": "Гантели",
+      "available": false
+    }
+  ]
+}

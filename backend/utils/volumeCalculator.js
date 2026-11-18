@@ -61,11 +61,21 @@ class VolumeCalculator {
           
           totalVolume += set.weight * set.reps;
         }
-      } else if (exercise.exercise_type === 'BODYWEIGHT' && userBodyweight) {
-        // Bodyweight exercise: Set Volume = user_bodyweight × bodyweight_load_percentage × reps_completed
+      } else if (exercise.exercise_type === 'BODYWEIGHT' && !userBodyweight) {
+        // A silent zero reads as "no work". Without the bodyweight the volume cannot exist.
+        throw new Error('user bodyweight is required for a bodyweight exercise');
+      } else if (exercise.exercise_type === 'BODYWEIGHT') {
+        // Bodyweight exercise: a load ADDED to the body counts with it.
+        //   volume = (user_bodyweight × percentage + added_weight) × reps
+        // A chin-up on rings at 80 kg with a 13 kg backpack is 93 kg per rep, not 80.
+        // The factor comes from the exercise, else from the table by name, else 1.
+        // Reading only the explicit field made a direct call count the whole bodyweight for Push-ups.
+        const name = exercise.exercise_name || exercise.name || '';
+        const table = VolumeCalculator.getDefaultBodyweightLoadPercentages();
         const loadPercentage = exercise.bodyweight_load_percentage !== undefined
           ? exercise.bodyweight_load_percentage
-          : 1;
+          : (table[name] !== undefined ? table[name] : 1);
+        const added = typeof set.weight === 'number' && !isNaN(set.weight) && set.weight > 0 ? set.weight : 0;
         if (set.reps !== undefined) {
           // Validate reps
           if (typeof set.reps !== 'number' || isNaN(set.reps)) {
@@ -75,7 +85,7 @@ class VolumeCalculator {
             throw new Error('Reps cannot be negative');
           }
           
-          totalVolume += userBodyweight * loadPercentage * set.reps;
+          totalVolume += (userBodyweight * loadPercentage + added) * set.reps;
         }
       }
     });

@@ -38,44 +38,39 @@ The round index survives a reload: it is part of the session state the app persi
 
 ### A new mode: reps on the fly
 
-Ilja's flow (2026-11-18): start the mode, choose one exercise and its weight, then add repetitions as they
-happen — `+1` and `+3` buttons — with a pause and a stop.
+Ilja's flow, decided 2026-11-18 in full:
 
-What is decided:
+1. Start the workout, pick **one exercise from the catalogue** and **one weight** for it.
+2. Count repetitions with **+1** and **+3**.
+3. Press **pause**: the set closes with the repetitions counted, and a **rest timer starts counting**.
+4. Tap the timer: the rest stops and the **next set begins** with a zeroed counter.
+5. **There is no stop button.** The workout ends with **"закончить тренировку"**, which saves the
+   session.
 
-| Question | Decision |
-|---|---|
-| Reps are added with | two buttons, `+1` and `+3` |
-| Pause | blocks only the addition of reps; the timer keeps running |
-| Weight | one weight for the whole exercise, chosen when the exercise is picked |
-| The exercise | a chosen entry of `data/exercise-catalogue.json`, never typed |
+Consequences, written down so the code matches:
 
-What is still open, and must be decided before this mode is built:
+- The set boundary is the pause. A set is the span between the start of counting and the pause; nothing
+  guesses a boundary from a rep count.
+- A weight is chosen once per exercise and does not change between sets.
+- **A warm-up is not recorded at all** — not in history, not in the volume.
+- The rest timer counts up, and the next set starts on a tap, so the mode never guesses when rest ended.
 
-1. **What `stop` does.** Close the exercise and let him pick the next one, end the whole session and save,
-   or ask which of the two. Ilja: "надо ещё подумать полный флоу".
-2. **How a batch of reps becomes sets.** The weekly volume counts sets, and this mode has no set
-   boundary. A batch is one set; a batch is a set per `n` reps; or the mode asks "set done" before the
-   counter resets. Without this answer the work of this mode would not reach the report.
-3. **Does a pause also stop the rest timer** when the rest timer is what is running, or only the rep
-   counter. The answer above covers the working timer; rest is a second case.
+### How a set counts in a circuit
 
-## 1b. The plan editor never saved — found 2026-11-18
+**Decision:** a circuit round writes one set **to every exercise of the schema** — three exercises times
+four rounds is twelve sets, four per muscle group per exercise. Circuit work therefore reads as real
+volume, which is what Ilja expects from a schema.
 
-Two defects, both verified:
+### Weighted bodyweight work
 
-- `GET /api/training-plans` answered two hard-coded sample plans ("Beginner Strength", "Advanced
-  Muscle") instead of reading `data/training-plans.json`. The screen therefore showed plans nobody had.
-  Fixed: the route reads the file.
-- `PlanEditor` sent only `{name, description, startDate, durationWeeks}` on save, and
-  `DayEditor.handleSave` sent nothing at all — it assigned the day into memory and navigated back. Days,
-  blocks and exercises were never written, so all six plans on disk are skeletons of 28 Rest days with
-  no exercise.
+**Decision:** load above bodyweight counts.
 
-The React screen now edits and saves: an exercise is added from the catalogue with `exerciseId`, `name`
-as a snapshot, `sets`, `reps` and `weight`, and `Save` sends the whole plan with `weeks` to
-`PUT /api/training-plans/:planId`. **Proved by:** a plan edited on the phone, then read back from
-`data/training-plans.json` with its exercises.
+```
+volume = (user_bodyweight × bodyweight_load_percentage + added_weight) × reps
+```
+
+A chin-up on rings at 80 kg of bodyweight with a 13 kg backpack counts 93 kg per rep, not 80. The
+`weight` field of a bodyweight set means the load **added** to the body, never the body itself.
 
 ## 2. The React UI
 

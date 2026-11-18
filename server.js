@@ -410,6 +410,17 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
   }
 });
 
+// The fixed list a plan picks from. An exercise is chosen by id, never typed.
+app.get('/api/exercise-catalogue', async (req, res) => {
+  try {
+    const raw = await fs.readFile(path.join(__dirname, 'data', 'exercise-catalogue.json'), 'utf8');
+    res.json(JSON.parse(raw));
+  } catch (error) {
+    console.error('Error reading the exercise catalogue:', error);
+    res.status(500).json({ error: 'Failed to read the exercise catalogue' });
+  }
+});
+
 // What to add this week: the short groups with exercises his own equipment can cover.
 app.get('/api/suggestions/:userId', async (req, res) => {
   try {

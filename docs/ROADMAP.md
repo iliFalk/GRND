@@ -60,6 +60,23 @@ What is still open, and must be decided before this mode is built:
 3. **Does a pause also stop the rest timer** when the rest timer is what is running, or only the rep
    counter. The answer above covers the working timer; rest is a second case.
 
+## 1b. The plan editor never saved — found 2026-11-18
+
+Two defects, both verified:
+
+- `GET /api/training-plans` answered two hard-coded sample plans ("Beginner Strength", "Advanced
+  Muscle") instead of reading `data/training-plans.json`. The screen therefore showed plans nobody had.
+  Fixed: the route reads the file.
+- `PlanEditor` sent only `{name, description, startDate, durationWeeks}` on save, and
+  `DayEditor.handleSave` sent nothing at all — it assigned the day into memory and navigated back. Days,
+  blocks and exercises were never written, so all six plans on disk are skeletons of 28 Rest days with
+  no exercise.
+
+The React screen now edits and saves: an exercise is added from the catalogue with `exerciseId`, `name`
+as a snapshot, `sets`, `reps` and `weight`, and `Save` sends the whole plan with `weeks` to
+`PUT /api/training-plans/:planId`. **Proved by:** a plan edited on the phone, then read back from
+`data/training-plans.json` with its exercises.
+
 ## 2. The React UI
 
 The vanilla frontend (`frontend/js/**`, 6 782 lines of components) is replaced by a React app in `web/`.

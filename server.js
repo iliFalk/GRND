@@ -606,29 +606,14 @@ app.get('/api/unsplash-key', (req, res) => {
 // Training Plans endpoint
 app.get('/api/training-plans', async (req, res) => {
   try {
-    // In a real implementation, this would query a database
-    // For now, we'll return a sample training plan structure
-    const samplePlans = [
-      {
-        id: 'plan-1',
-        name: 'Beginner Strength',
-        description: 'A 4-week program for beginners focusing on basic strength exercises',
-        durationWeeks: 4,
-        difficulty: 'Beginner',
-        imageUrl: '/uploads/beginner-strength.jpg'
-      },
-      {
-        id: 'plan-2',
-        name: 'Advanced Muscle',
-        description: 'An 8-week program for advanced lifters focusing on muscle growth',
-        durationWeeks: 8,
-        difficulty: 'Advanced',
-        imageUrl: '/uploads/advanced-muscle.jpg'
-      }
-    ];
-
-    res.json(samplePlans);
+    // The plans the user built are the file. A hard-coded sample used to be answered here, so the
+    // screen showed two plans nobody had, with no days and no exercises, while the real ones sat on disk.
+    const raw = await fs.readFile(path.join(__dirname, 'data', 'training-plans.json'), 'utf8');
+    const parsed = JSON.parse(raw);
+    const plans = Array.isArray(parsed) ? parsed : (parsed.plans || []);
+    res.json(plans);
   } catch (error) {
+    if (error.code === 'ENOENT') return res.json([]);
     console.error('Error retrieving training plans:', error);
     res.status(500).json({ error: 'Failed to retrieve training plans' });
   }

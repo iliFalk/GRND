@@ -4,7 +4,9 @@
  */
 
 export class ApiService {
-    constructor(baseUrl = 'http://localhost:3000/api') {
+    constructor(baseUrl = (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)
+        ? `${location.origin}/api`
+        : 'http://localhost:3000/api')) {
         this.baseUrl = baseUrl;
         this.token = null;
     }

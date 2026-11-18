@@ -32,13 +32,18 @@ export class Dashboard {
       }
   }
 
-  /** Which user the report belongs to: the Telegram user when there is one, else the demo profile. */
-  currentUserId() {
-      const fromTelegram = this.telegramUserId;
-      const stored = (() => {
-          try { return JSON.parse(localStorage.getItem('grnd_user') || 'null')?.id; } catch (error) { return null; }
-      })();
-      return String(fromTelegram || stored || 'default-user');
+  /**
+   * Which user the report belongs to. GRNDApp saves the Telegram user under the storage key `user`, so the
+   * dashboard reads the same key instead of inventing an id of its own.
+   */
+  async currentUserId() {
+      try {
+          const stored = await this.storage.getItem('user');
+          if (stored && stored.id != null) return String(stored.id);
+      } catch (error) {
+          console.warn('muscle volume: no stored user', error);
+      }
+      return 'default-user';
   }
 
   /**
@@ -49,7 +54,7 @@ export class Dashboard {
       const host = this.container.querySelector('#muscle-volume');
       if (!host) return;
       try {
-          const report = await this.api.getMuscleVolume(this.currentUserId());
+          const report = await this.api.getMuscleVolume(await this.currentUserId());
           host.innerHTML = this.muscleVolumeHTML(report);
           host.hidden = false;
       } catch (error) {

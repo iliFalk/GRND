@@ -72,6 +72,39 @@ volume = (user_bodyweight × bodyweight_load_percentage + added_weight) × reps
 A chin-up on rings at 80 kg of bodyweight with a 13 kg backpack counts 93 kg per rep, not 80. The
 `weight` field of a bodyweight set means the load **added** to the body, never the body itself.
 
+## 1c. Progression — the rules Ilja decided
+
+The app **suggests**, Ilja decides. It never rewrites a plan on its own.
+
+### Strength and conditioning count apart
+
+- **Strength sets** (a `STANDARD` day, rest between sets) go into the 10–20 band per muscle group.
+- **Circuit work** (`CIRCUIT`) is endurance work and does **not** go into that band: sets with rest are
+  the evidence base for hypertrophy, a circuit is metabolic. Counting both would read a week as full
+  while the strength work never happened.
+- Both appear in one weekly report: the strength rows against their band, and one circuit row with its
+  **rounds and time under load**. No tonnage for a circuit, no band.
+
+### A rep range, for the heavy basics only
+
+A plan step for a heavy basic exercise carries `reps_min` and `reps_max`; every other exercise keeps its
+single target. The list of heavy basics is being defined by Ilja from the catalogue.
+
+### When the app suggests more weight
+
+- All target sets reached, and every set at the **top** of the range, with the **same weight**, in **two
+  sessions in a row** → suggest the next weight up and a return to the bottom of the range.
+- The increment is the next item he actually owns (a 10 kg bell to a 16 kg bell), never a made-up 2.5 kg.
+- The streak **resets** when more than a week passes between sessions, or when the last session used a
+  different weight.
+- Below the bottom of the range twice in a row → suggest taking weight off.
+- For every other exercise: a recommendation only, drawn from the same volume and rep comparison.
+
+### Where it shows
+
+In the **day card of the plan**: what to lift next time. The report after a session shows what happened,
+not what to do.
+
 ## 2. The React UI
 
 The vanilla frontend (`frontend/js/**`, 6 782 lines of components) is replaced by a React app in `web/`.

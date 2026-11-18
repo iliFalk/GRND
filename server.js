@@ -5,6 +5,7 @@ const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
 const VolumeCalculator = require('./backend/utils/volumeCalculator');
+const MuscleVolume = require('./backend/utils/muscleVolume');
 require('dotenv').config();
 
 const app = express();
@@ -376,6 +377,27 @@ function validateUserId(req, res, next) {
 // API Endpoints for User Profile Management
 
 // GET /api/user-profile/:userId - retrieve user profile
+// Weekly working sets per muscle group, against the band in data/weekly-targets.json.
+// A kilogram total says nothing about whether a group got enough work; this answers that question.
+app.get('/api/muscle-volume/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const week = req.query.week || undefined;
+    let sessions = [];
+    try {
+      const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
+      sessions = JSON.parse(data).sessions || [];
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    const report = MuscleVolume.weeklyReport(sessions, { userId, week });
+    res.json(report);
+  } catch (error) {
+    console.error('Error building the weekly muscle report:', error);
+    res.status(500).json({ error: 'Failed to build the weekly muscle report' });
+  }
+});
+
 app.get('/api/user-profile/:userId', async (req, res) => {
   try {
     const { userId } = req.params;

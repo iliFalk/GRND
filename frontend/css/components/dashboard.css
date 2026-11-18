@@ -233,3 +233,26 @@
 
 /* Small info card polish */
 .info-card .info-header { gap: 8px; align-items:center; }
+
+/* Weekly sets per muscle group — the training question the kilogram total cannot answer. */
+.muscle-volume {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, .08));
+}
+.muscle-volume h4 { margin: 0 0 .75rem; font-size: .95rem; opacity: .8; }
+.mv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.mv-row { display: grid; grid-template-columns: 7rem 1fr 2.5rem 4.5rem; align-items: center; gap: .5rem; font-size: .85rem; }
+.mv-group { text-transform: capitalize; }
+.mv-bar { height: .5rem; border-radius: 999px; background: rgba(127, 127, 127, .18); overflow: hidden; }
+.mv-bar > span { display: block; height: 100%; border-radius: 999px; background: #7a8b99; }
+.mv-sets { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+.mv-band { opacity: .6; font-size: .75rem; }
+.mv-below .mv-bar > span { background: #d9534f; }
+.mv-in .mv-bar > span { background: #3aa76d; }
+.mv-above .mv-bar > span { background: #d9a441; }
+.mv-high .mv-bar > span { background: #b45309; }
+.mv-empty, .mv-note { margin: .5rem 0 0; font-size: .8rem; opacity: .7; }
+.mv-source { margin: .75rem 0 0; font-size: .7rem; opacity: .55; line-height: 1.35; }

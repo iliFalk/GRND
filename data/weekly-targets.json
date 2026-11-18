@@ -1,0 +1,71 @@
+{
+  "source": "Schoenfeld, Ogborn & Krieger 2017 (dose-response, weekly sets per muscle group). 10 sets per week is the low end that still grows a muscle; 10-20 is the productive band; above 20 the return per set falls and recovery starts to pay for it. Four sets per week maintains, it does not build.",
+  "default": {
+    "min": 10,
+    "target_low": 10,
+    "target_high": 20,
+    "max": 25
+  },
+  "groups": {
+    "calves": {
+      "min": 8,
+      "target_low": 8,
+      "target_high": 16,
+      "max": 20
+    },
+    "core": {
+      "min": 6,
+      "target_low": 6,
+      "target_high": 16,
+      "max": 20
+    },
+    "biceps": {
+      "min": 8,
+      "target_low": 8,
+      "target_high": 16,
+      "max": 20
+    },
+    "triceps": {
+      "min": 8,
+      "target_low": 8,
+      "target_high": 16,
+      "max": 20
+    },
+    "shoulders": {
+      "min": 8,
+      "target_low": 10,
+      "target_high": 20,
+      "max": 24
+    },
+    "chest": {
+      "min": 10,
+      "target_low": 10,
+      "target_high": 20,
+      "max": 25
+    },
+    "back": {
+      "min": 10,
+      "target_low": 10,
+      "target_high": 20,
+      "max": 25
+    },
+    "quads": {
+      "min": 10,
+      "target_low": 10,
+      "target_high": 20,
+      "max": 25
+    },
+    "hamstrings": {
+      "min": 8,
+      "target_low": 8,
+      "target_high": 16,
+      "max": 20
+    },
+    "glutes": {
+      "min": 8,
+      "target_low": 8,
+      "target_high": 16,
+      "max": 20
+    }
+  }
+}

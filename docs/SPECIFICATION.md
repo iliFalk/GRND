@@ -46,6 +46,36 @@ The user plans a routine and then runs a workout with a real-time, user-controll
 3.  **If 'BODYWEIGHT':** `Set Volume = user_bodyweight × bodyweight_load_percentage × reps_completed`.
 4.  `total_volume_kg` is the sum of all set volumes for the session.
 
+#### 4.1.1. Weekly Sets per Muscle Group
+
+Kilograms say how heavy the week was. They do not say whether a muscle group got enough work, and that
+is the question a trainee asks. The app therefore counts working sets per muscle group per week and
+compares every group with an evidence-based band.
+
+Counting rule:
+
+- A set counts **1.0** for each primary muscle group of its exercise.
+- A set counts **0.5** for each secondary muscle group.
+- A completed set and a completed round of a circuit both count as one set.
+- An exercise the taxonomy does not know is reported as unmapped and is counted in no group.
+
+The bands live in `data/weekly-targets.json` and name their source: 10 sets per week is the low end that
+still grows a muscle, 10 to 20 is the productive band, above 20 the return per set falls. Four sets per
+week maintains a muscle; it does not build it.
+
+The mapping from exercise to muscle groups lives in `data/exercise-taxonomy.json`. An explicit entry
+wins; a keyword fallback places a new variant; anything left is reported, never guessed.
+
+The report is available at `GET /api/muscle-volume/:userId?week=YYYY-MM-DD` and answers:
+
+```text
+week_start, week_end, sessions, groups[{group, sets, primary_sets, secondary_sets, target, status}],
+unmapped[{name, sets}]
+```
+
+`status` is `below` under the low end, `in` inside the productive band, `above` past the top of it and
+`high` past the maximum.
+
 #### 4.2. Data Persistence Logic
 1.  **Load:** At app start, the app sends a `GET` request to `/api/workout-data/:userId`.
     The server returns the user's JSON file.

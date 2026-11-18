@@ -44,7 +44,7 @@
       "secondary": [
         "biceps"
       ],
-      "equipment": "bodyweight"
+      "equipment": "pull-up-bar"
     },
     "Bodyweight Rows": {
       "primary": [
@@ -264,9 +264,30 @@
       ],
       "secondary": [],
       "equipment": "bodyweight"
+    },
+    "Chin-ups (rings)": {
+      "primary": [
+        "back",
+        "biceps"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "equipment": "rings"
     }
   },
   "fallback": [
+    {
+      "pattern": "chin",
+      "primary": [
+        "back",
+        "biceps"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "equipment": "rings"
+    },
     {
       "pattern": "get-up",
       "primary": [

@@ -1,0 +1,372 @@
+{
+  "note": "The fixed list a plan picks from. An id never changes; a name may be corrected. Seeded from data/exercise-taxonomy.json, curated by hand afterwards.",
+  "version": 1,
+  "equipment": [
+    {
+      "id": "kettlebell",
+      "label": "Гири 10/16/20 кг",
+      "available": true
+    },
+    {
+      "id": "rings",
+      "label": "Кольца",
+      "available": true
+    },
+    {
+      "id": "pull-up-bar",
+      "label": "Турник",
+      "available": true
+    },
+    {
+      "id": "pull-band",
+      "label": "Эспандеры",
+      "available": true
+    },
+    {
+      "id": "backpack",
+      "label": "Рюкзак 13 кг",
+      "available": true
+    },
+    {
+      "id": "bodyweight",
+      "label": "Своё тело",
+      "available": true
+    },
+    {
+      "id": "barbell",
+      "label": "Штанга",
+      "available": false
+    },
+    {
+      "id": "dumbbell",
+      "label": "Гантели",
+      "available": false
+    }
+  ],
+  "exercises": [
+    {
+      "id": "bench-press",
+      "name": "Bench Press",
+      "equipment": "barbell",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps",
+        "shoulders"
+      ]
+    },
+    {
+      "id": "biceps-curl",
+      "name": "Biceps Curl",
+      "equipment": "dumbbell",
+      "primary": [
+        "biceps"
+      ],
+      "secondary": []
+    },
+    {
+      "id": "bodyweight-rows",
+      "name": "Bodyweight Rows",
+      "equipment": "bodyweight",
+      "primary": [
+        "back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "bodyweight_factor": 0.9
+    },
+    {
+      "id": "burpees",
+      "name": "Burpees",
+      "equipment": "bodyweight",
+      "primary": [
+        "quads",
+        "chest"
+      ],
+      "secondary": [
+        "core",
+        "shoulders"
+      ],
+      "bodyweight_factor": 1.0
+    },
+    {
+      "id": "calf-raise",
+      "name": "Calf Raise",
+      "equipment": "bodyweight",
+      "primary": [
+        "calves"
+      ],
+      "secondary": [],
+      "bodyweight_factor": 1.0
+    },
+    {
+      "id": "calisthenics",
+      "name": "Calisthenics",
+      "equipment": "bodyweight",
+      "primary": [
+        "chest",
+        "back"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "bodyweight_factor": 0.8
+    },
+    {
+      "id": "chin-ups-rings",
+      "name": "Chin-ups (rings)",
+      "equipment": "rings",
+      "primary": [
+        "back",
+        "biceps"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "bodyweight_factor": 1.0
+    },
+    {
+      "id": "dips",
+      "name": "Dips",
+      "equipment": "bodyweight",
+      "primary": [
+        "triceps",
+        "chest"
+      ],
+      "secondary": [
+        "shoulders"
+      ],
+      "bodyweight_factor": 0.8
+    },
+    {
+      "id": "farmer-carry",
+      "name": "Farmer Carry",
+      "equipment": "kettlebell",
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "back"
+      ]
+    },
+    {
+      "id": "kettlebell-clean",
+      "name": "Kettlebell Clean",
+      "equipment": "kettlebell",
+      "primary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary": [
+        "back",
+        "shoulders"
+      ]
+    },
+    {
+      "id": "kettlebell-deadlift",
+      "name": "Kettlebell Deadlift",
+      "equipment": "kettlebell",
+      "primary": [
+        "hamstrings",
+        "glutes"
+      ],
+      "secondary": [
+        "back"
+      ]
+    },
+    {
+      "id": "kettlebell-front-rack-carry",
+      "name": "Kettlebell Front Rack Carry",
+      "equipment": "kettlebell",
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "shoulders",
+        "quads"
+      ]
+    },
+    {
+      "id": "kettlebell-goblet-squat",
+      "name": "Kettlebell Goblet Squat",
+      "equipment": "kettlebell",
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "core"
+      ]
+    },
+    {
+      "id": "kettlebell-press",
+      "name": "Kettlebell Press",
+      "equipment": "kettlebell",
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "triceps",
+        "core"
+      ]
+    },
+    {
+      "id": "kettlebell-row",
+      "name": "Kettlebell Row",
+      "equipment": "kettlebell",
+      "primary": [
+        "back"
+      ],
+      "secondary": [
+        "biceps"
+      ]
+    },
+    {
+      "id": "kettlebell-snatch",
+      "name": "Kettlebell Snatch",
+      "equipment": "kettlebell",
+      "primary": [
+        "glutes",
+        "shoulders"
+      ],
+      "secondary": [
+        "hamstrings",
+        "back"
+      ]
+    },
+    {
+      "id": "kettlebell-swing",
+      "name": "Kettlebell Swing",
+      "equipment": "kettlebell",
+      "primary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary": [
+        "back",
+        "core"
+      ]
+    },
+    {
+      "id": "lunges",
+      "name": "Lunges",
+      "equipment": "bodyweight",
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings"
+      ],
+      "bodyweight_factor": 0.7
+    },
+    {
+      "id": "mountain-climbers",
+      "name": "Mountain Climbers",
+      "equipment": "bodyweight",
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "shoulders",
+        "quads"
+      ],
+      "bodyweight_factor": 0.6
+    },
+    {
+      "id": "overhead-press",
+      "name": "Overhead Press",
+      "equipment": "barbell",
+      "primary": [
+        "shoulders"
+      ],
+      "secondary": [
+        "triceps",
+        "core"
+      ]
+    },
+    {
+      "id": "plank",
+      "name": "Plank",
+      "equipment": "bodyweight",
+      "primary": [
+        "core"
+      ],
+      "secondary": [],
+      "bodyweight_factor": 0.5
+    },
+    {
+      "id": "pull-ups",
+      "name": "Pull-ups",
+      "equipment": "pull-up-bar",
+      "primary": [
+        "back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "bodyweight_factor": 1.0
+    },
+    {
+      "id": "push-ups",
+      "name": "Push-ups",
+      "equipment": "bodyweight",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "triceps",
+        "shoulders"
+      ],
+      "bodyweight_factor": 0.75
+    },
+    {
+      "id": "rows",
+      "name": "Rows",
+      "equipment": "barbell",
+      "primary": [
+        "back"
+      ],
+      "secondary": [
+        "biceps"
+      ]
+    },
+    {
+      "id": "squats",
+      "name": "Squats",
+      "equipment": "bodyweight",
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "bodyweight_factor": 0.85
+    },
+    {
+      "id": "triceps-extension",
+      "name": "Triceps Extension",
+      "equipment": "dumbbell",
+      "primary": [
+        "triceps"
+      ],
+      "secondary": []
+    },
+    {
+      "id": "turkish-get-up",
+      "name": "Turkish Get-Up",
+      "equipment": "kettlebell",
+      "primary": [
+        "core",
+        "shoulders"
+      ],
+      "secondary": [
+        "glutes",
+        "quads"
+      ]
+    }
+  ]
+}

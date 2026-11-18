@@ -3,10 +3,17 @@ import { Dashboard } from './components/Dashboard';
 import { FooterNav, PAGE_LABELS, type PageId } from './components/FooterNav';
 import { Header } from './components/Header';
 import { Placeholder } from './components/Placeholder';
+import { PlanView } from './components/plan/PlanView';
 import { formatWeekRange } from './lib/format';
+import { useTrainingPlans } from './lib/plans';
 import { useTheme } from './lib/theme';
 import { useDashboardData } from './lib/useDashboardData';
 import { resolveUserId } from './lib/user';
+
+function PlanScreen() {
+  const { data, loading, error, reload } = useTrainingPlans();
+  return <PlanView plans={data} loading={loading} error={error} onRetry={reload} />;
+}
 
 export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
@@ -21,6 +28,8 @@ export default function App() {
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-24 pt-5">
         {page === 'dashboard' ? (
           <Dashboard data={data} loading={loading} error={error} onRetry={reload} />
+        ) : page === 'plan' ? (
+          <PlanScreen />
         ) : (
           <Placeholder title={PAGE_LABELS[page]} />
         )}

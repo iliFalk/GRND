@@ -4,7 +4,7 @@
 // shadcn/ui and Tailwind expect, so a component never carries a hex value and the two schemes cannot
 // drift apart. Generate the file, never edit it:
 //
-//   node tools/theme-from-palette.mjs > frontend/src/styles/tokens.css
+//   node tools/theme-from-palette.mjs > web/src/styles/tokens.css
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

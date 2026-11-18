@@ -6,6 +6,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const VolumeCalculator = require('./backend/utils/volumeCalculator');
 const MuscleVolume = require('./backend/utils/muscleVolume');
+const { suggestForReport } = require('./backend/utils/muscleSuggestions');
 require('dotenv').config();
 
 const app = express();
@@ -395,6 +396,34 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error building the weekly muscle report:', error);
     res.status(500).json({ error: 'Failed to build the weekly muscle report' });
+  }
+});
+
+// What to add this week: the short groups with exercises his own equipment can cover.
+app.get('/api/suggestions/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const week = req.query.week || undefined;
+    const limit = Number.parseInt(req.query.limit, 10);
+    let sessions = [];
+    try {
+      const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
+      sessions = JSON.parse(data).sessions || [];
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    const report = MuscleVolume.weeklyReport(sessions, { userId, week });
+    const suggestions = suggestForReport(report, Number.isFinite(limit) ? { limit } : {});
+    res.json({
+      week_start: report.week_start,
+      week_end: report.week_end,
+      sessions: report.sessions,
+      groups: suggestions,
+      unmapped: report.unmapped
+    });
+  } catch (error) {
+    console.error('Error building suggestions:', error);
+    res.status(500).json({ error: 'Failed to build suggestions' });
   }
 });
 

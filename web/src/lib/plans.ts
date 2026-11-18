@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { CatalogueEntry } from './catalogue';
 
 /** A step of a plan block. The name is the snapshot the plan stored; the catalogue id is optional. */
 export interface PlanExercise {
@@ -40,6 +41,25 @@ export interface TrainingPlan {
   weeks: PlanWeek[];
 }
 
+/** The day types the editor stores. The label is only what the screen shows. */
+export const DAY_TYPES = ['STANDARD', 'REST', 'CIRCUIT'] as const;
+export type DayType = (typeof DAY_TYPES)[number];
+
+const DAY_TYPE_LABELS: Record<DayType, string> = {
+  STANDARD: 'Standar',
+  REST: 'Rest',
+  CIRCUIT: 'Circuit'
+};
+
+export function isDayType(value: string): value is DayType {
+  return (DAY_TYPES as readonly string[]).includes(value);
+}
+
+/** A legacy day type is shown as stored; the editor only ever writes the three known values. */
+export function dayTypeLabel(value: string): string {
+  return isDayType(value) ? DAY_TYPE_LABELS[value] : value;
+}
+
 export interface PlansState {
   data?: TrainingPlan[];
   error?: Error;
@@ -54,6 +74,14 @@ interface CacheEntry {
   data?: TrainingPlan[];
   error?: Error;
   promise?: Promise<TrainingPlan[]>;
+}
+
+/** One id per edit, so a re-render never merges two exercises or two blocks written in the screen. */
+let draftSequence = 0;
+
+function draftId(prefix: string): string {
+  draftSequence += 1;
+  return `draft-${prefix}-${Date.now().toString(36)}-${draftSequence}`;
 }
 
 /** Plans are not user-scoped: `/api/training-plans` answers the same list for the app. */
@@ -226,6 +254,210 @@ export function loadTrainingPlans(): Promise<TrainingPlan[]> {
   cache = { promise };
   notify();
   return promise;
+}
+
+/** The body of `PUT /api/training-plans/:planId`: the server replaces `weeks` wholesale. */
+export interface PlanUpdateExercise {
+  exerciseId?: string;
+  name: string;
+  sets: number;
+  reps: number;
+  weight?: number;
+}
+
+export interface PlanUpdateBlock {
+  id: string;
+  blockType: string;
+  rounds?: number;
+  targetTime?: number;
+  exercises: PlanUpdateExercise[];
+}
+
+export interface PlanUpdateDay {
+  id: string;
+  name: string;
+  dayType: string;
+  blocks: PlanUpdateBlock[];
+}
+
+export interface PlanUpdateWeek {
+  id: string;
+  weekNumber: number;
+  name?: string;
+  days: PlanUpdateDay[];
+}
+
+export interface PlanUpdatePayload {
+  id: string;
+  name: string;
+  description?: string;
+  weeks: PlanUpdateWeek[];
+}
+
+export function buildPlanUpdatePayload(plan: TrainingPlan): PlanUpdatePayload {
+  return {
+    id: plan.id,
+    name: plan.name,
+    ...(plan.description === undefined ? {} : { description: plan.description }),
+    weeks: plan.weeks.map((week) => ({
+      id: week.id,
+      weekNumber: week.weekNumber,
+      ...(week.name === undefined ? {} : { name: week.name }),
+      days: week.days.map((day) => ({
+        id: day.id,
+        name: day.name,
+        dayType: day.dayType,
+        blocks: day.blocks.map((block) => ({
+          id: block.id,
+          blockType: block.blockType,
+          ...(block.rounds === undefined ? {} : { rounds: block.rounds }),
+          ...(block.targetTime === undefined ? {} : { targetTime: block.targetTime }),
+          exercises: block.exercises.map((exercise) => ({
+            ...(exercise.exerciseId === undefined || exercise.exerciseId === ''
+              ? {}
+              : { exerciseId: exercise.exerciseId }),
+            name: exercise.name,
+            sets: exercise.sets,
+            reps: exercise.reps,
+            ...(typeof exercise.weight === 'number' && Number.isFinite(exercise.weight)
+              ? { weight: exercise.weight }
+              : {})
+          }))
+        }))
+      }))
+    }))
+  };
+}
+
+async function failureReason(response: Response): Promise<string> {
+  try {
+    const payload: unknown = await response.json();
+    if (payload && typeof payload === 'object') {
+      const message = (payload as { error?: unknown }).error;
+      if (typeof message === 'string' && message.trim() !== '') return message.trim();
+    }
+  } catch {
+    // The body was not JSON; the status line below names the reason then.
+  }
+  return response.statusText || `status ${response.status}`;
+}
+
+/** Saves the whole plan and reports what the server stored. A failure throws with the server's reason. */
+export async function saveTrainingPlan(plan: TrainingPlan): Promise<TrainingPlan> {
+  const url = `/api/training-plans/${encodeURIComponent(plan.id)}`;
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildPlanUpdatePayload(plan))
+  });
+
+  if (!response.ok) {
+    throw new Error(`PUT ${url} returned ${response.status}: ${await failureReason(response)}`);
+  }
+
+  const saved = normalizePlan(await response.json()) ?? plan;
+
+  if (cache?.data) {
+    cache = { data: cache.data.map((entry) => (entry.id === saved.id ? saved : entry)) };
+    notify();
+  }
+
+  return saved;
+}
+
+/** A block is added as a standard block; the day type is set separately. */
+export function addBlock(day: PlanDay): PlanDay {
+  return {
+    ...day,
+    blocks: [...day.blocks, { id: draftId('block'), blockType: 'Standard', exercises: [] }]
+  };
+}
+
+export function updateBlock(
+  day: PlanDay,
+  blockIndex: number,
+  update: (block: PlanBlock) => PlanBlock
+): PlanDay {
+  const block = day.blocks[blockIndex];
+  if (!block) return day;
+
+  const blocks = [...day.blocks];
+  blocks[blockIndex] = update(block);
+  return { ...day, blocks };
+}
+
+export function setDayType(day: PlanDay, dayType: DayType): PlanDay {
+  return { ...day, dayType };
+}
+
+export interface ExerciseValues {
+  sets?: number;
+  reps?: number;
+  weight?: number;
+}
+
+/**
+ * Adds one catalogue entry. The id and the name snapshot both come from the entry; there is no path
+ * here that takes a typed name, so the plan cannot store an exercise the catalogue does not have.
+ */
+export function addExercise(
+  block: PlanBlock,
+  entry: CatalogueEntry,
+  values?: ExerciseValues
+): PlanBlock {
+  const exercise: PlanExercise = {
+    id: draftId('exercise'),
+    exerciseId: entry.id,
+    name: entry.name,
+    sets: values?.sets ?? 3,
+    reps: values?.reps ?? 10,
+    ...(values?.weight === undefined ? {} : { weight: values.weight })
+  };
+
+  return { ...block, exercises: [...block.exercises, exercise] };
+}
+
+export type ExercisePatch = Partial<Pick<PlanExercise, 'sets' | 'reps' | 'weight'>>;
+
+export function updateExercise(
+  block: PlanBlock,
+  exerciseIndex: number,
+  patch: ExercisePatch
+): PlanBlock {
+  const exercise = block.exercises[exerciseIndex];
+  if (!exercise) return block;
+
+  const exercises = [...block.exercises];
+  exercises[exerciseIndex] = { ...exercise, ...patch };
+  return { ...block, exercises };
+}
+
+export function removeExercise(block: PlanBlock, exerciseIndex: number): PlanBlock {
+  if (!block.exercises[exerciseIndex]) return block;
+
+  return {
+    ...block,
+    exercises: block.exercises.filter((_, index) => index !== exerciseIndex)
+  };
+}
+
+/** Rebuilds one day of one week. An out-of-range index leaves the plan untouched. */
+export function updatePlanDay(
+  plan: TrainingPlan,
+  weekIndex: number,
+  dayIndex: number,
+  update: (day: PlanDay) => PlanDay
+): TrainingPlan {
+  const week = plan.weeks[weekIndex];
+  const day = week?.days[dayIndex];
+  if (!week || !day) return plan;
+
+  const days = [...week.days];
+  days[dayIndex] = update(day);
+
+  const weeks = [...plan.weeks];
+  weeks[weekIndex] = { ...week, days };
+  return { ...plan, weeks };
 }
 
 export function useTrainingPlans(): PlansQuery {

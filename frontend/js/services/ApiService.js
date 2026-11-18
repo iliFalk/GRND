@@ -325,6 +325,16 @@ export class ApiService {
         };
     }
 
+    /**
+     * Weekly working sets per muscle group.
+     * @param {string} userId
+     * @param {string} [week] - any date inside the wanted week, YYYY-MM-DD
+     */
+    async getMuscleVolume(userId, week) {
+        const query = week ? `?week=${encodeURIComponent(week)}` : '';
+        return this.request(`/muscle-volume/${encodeURIComponent(userId)}${query}`);
+    }
+
     async getQuickStats() {
         // This would fetch quick stats for the dashboard
         // For now, we'll return a mock implementation.

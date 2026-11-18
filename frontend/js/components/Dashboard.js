@@ -25,10 +25,66 @@ export class Dashboard {
           this.stats = stats;
           this.render();
           this.initCalendar();
+          this.loadMuscleVolume();
       } catch (error) {
           console.error('Failed to load dashboard data:', error);
           this.container.innerHTML = `<div class="error">Failed to load dashboard data</div>`;
       }
+  }
+
+  /** Which user the report belongs to: the Telegram user when there is one, else the demo profile. */
+  currentUserId() {
+      const fromTelegram = this.telegramUserId;
+      const stored = (() => {
+          try { return JSON.parse(localStorage.getItem('grnd_user') || 'null')?.id; } catch (error) { return null; }
+      })();
+      return String(fromTelegram || stored || 'default-user');
+  }
+
+  /**
+   * Fill the muscle panel from the server. It starts hidden and stays hidden when the call fails, so a
+   * dashboard that cannot reach the endpoint looks exactly as it did before the panel existed.
+   */
+  async loadMuscleVolume() {
+      const host = this.container.querySelector('#muscle-volume');
+      if (!host) return;
+      try {
+          const report = await this.api.getMuscleVolume(this.currentUserId());
+          host.innerHTML = this.muscleVolumeHTML(report);
+          host.hidden = false;
+      } catch (error) {
+          console.warn('muscle volume unavailable:', error);
+          host.hidden = true;
+      }
+  }
+
+  muscleVolumeHTML(report) {
+      const rows = [...(report.groups || [])]
+          .filter((row) => row.sets > 0)
+          .sort((a, b) => b.sets - a.sets)
+          .map((row) => {
+              const top = Math.max(1, (row.target && row.target.max) || row.sets, row.sets);
+              const percent = Math.round((row.sets / top) * 100);
+              const band = row.target
+                  ? `${row.target.target_low}–${row.target.target_high}`
+                  : '—';
+              return `
+                <li class="mv-row mv-${row.status}">
+                  <span class="mv-group">${row.group}</span>
+                  <span class="mv-bar"><span style="width:${Math.min(100, percent)}%"></span></span>
+                  <span class="mv-sets">${row.sets}</span>
+                  <span class="mv-band">из ${band}</span>
+                </li>`;
+          }).join('');
+      const unmapped = (report.unmapped || []).length
+          ? `<p class="mv-note">Не размечено: ${(report.unmapped || []).map((item) => `${item.name} (${item.sets})`).join(', ')}</p>`
+          : '';
+      const empty = rows ? '' : '<p class="mv-empty">За эту неделю подходов нет.</p>';
+      return `
+        <h4>Подходы по группам · неделя ${report.week_start} — ${report.week_end}</h4>
+        <ul class="mv-list">${rows}</ul>
+        ${empty}${unmapped}
+        <p class="mv-source">Диапазон: 10–20 подходов на группу в неделю (Schoenfeld 2017); меньше 10 — поддержка, а не рост.</p>`;
   }
 
   render() {
@@ -110,6 +166,7 @@ export class Dashboard {
               </div>
               
               ${lastPerfHTML}
+        <section class="muscle-volume" id="muscle-volume" hidden></section>
               
               <!-- Today's Focus Card -->
               <div class="card focus-card">

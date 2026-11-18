@@ -180,3 +180,21 @@ It answers how to build the app.
 *   **Task 5.4: Final Testing and Debugging:** Do an end-to-end test of all features.
     Create a plan, run a standard workout and a circuit workout, check the dashboard history, and save all data.
     Check that the data is correct.
+
+## Weekly sets per muscle group
+
+`backend/utils/muscleVolume.js` is the engine, `tests/muscleVolume.test.js` is its suite, and
+`npm test` runs it with `node --test`. The two data files are meant to be edited by hand:
+`data/exercise-taxonomy.json` (which groups an exercise works, and the keyword fallback) and
+`data/weekly-targets.json` (the band per group, with its source in the file).
+
+Run it without a UI:
+
+```sh
+npm test
+PORT=3055 node server.js      # then:
+curl -s "http://127.0.0.1:3055/api/muscle-volume/<userId>?week=2026-11-18"
+```
+
+The dashboard panel `#muscle-volume` stays hidden when the endpoint answers nothing, so an older
+server and a newer panel still render a screen.

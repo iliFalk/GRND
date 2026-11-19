@@ -9,6 +9,7 @@ const MuscleVolume = require('./backend/utils/muscleVolume');
 const { suggestForReport } = require('./backend/utils/muscleSuggestions');
 const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('./backend/utils/pairings');
 const { computeSessionVolume } = require('./backend/utils/sessionVolume');
+const { mergePlanWeeks } = require('./backend/utils/planMerge');
 require('dotenv').config();
 
 const app = express();
@@ -777,9 +778,10 @@ app.put('/api/training-plans/:planId', async (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
-    // If weeks/days were provided as part of payload, ensure format is preserved
-    if (payload.weeks && Array.isArray(payload.weeks)) {
-      updatedPlan.weeks = payload.weeks;
+    // The editor sends the fields it renders. Merging by id keeps the ones it never sees, like
+    // `dayOfWeek` on a day and `planId` on a week.
+    if (Array.isArray(payload.weeks)) {
+      updatedPlan.weeks = mergePlanWeeks(existingPlan.weeks, payload.weeks);
     }
 
     plans[idx] = updatedPlan;

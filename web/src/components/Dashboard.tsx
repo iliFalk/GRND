@@ -71,9 +71,7 @@ function PillarTile({ row }: { row: PillarRow }) {
           aria-label={`${row.label}: ${formatNumber(row.sets)} sets this week, ${formatNumber(floor)} needed`}
         />
         <p className="text-[11px] font-semibold" style={{ color: colour }}>
-          {row.status === 'below'
-            ? `${formatNumber(row.short)} more to ${formatNumber(floor)}`
-            : STATUS_LABEL[row.status]}
+          {row.status === 'below' ? `${formatNumber(row.short)} more` : STATUS_LABEL[row.status]}
         </p>
         <p className="min-h-[14px] text-[11px] text-muted-foreground">
           {parts.length > 0 ? parts.join(' · ') : ''}

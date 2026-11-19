@@ -247,11 +247,8 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             </CardHeader>
             <CardContent className="space-y-2">
               {plan.data.pillars.map((row) => {
-                const max =
-                  typeof row.target.max === 'number' && row.target.max > 0
-                    ? row.target.max
-                    : row.sets + row.short;
-                const percent = max > 0 ? Math.min(100, (row.sets / max) * 100) : 0;
+                const floor = typeof row.target.min === 'number' ? row.target.min : 0;
+                const percent = floor > 0 ? Math.min(100, (row.sets / floor) * 100) : 0;
                 const active = pillarFilter === row.id;
 
                 return (
@@ -269,10 +266,15 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                     <span className="flex items-baseline justify-between gap-2 text-sm">
                       <span className="font-medium">{row.label}</span>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {`${formatNumber(row.sets)} / ${formatNumber(max)} · ${formatNumber(row.short)} short`}
+                        {row.status === 'below'
+                          ? `${formatNumber(row.sets)} sets · ${formatNumber(row.short)} more`
+                          : `${formatNumber(row.sets)} sets · OK`}
                       </span>
                     </span>
-                    <Progress value={percent} aria-label={`${row.label} ${formatNumber(row.sets)} of ${formatNumber(max)}`} />
+                    <Progress
+                      value={percent}
+                      aria-label={`${row.label}: ${formatNumber(row.sets)} sets this week, ${formatNumber(floor)} needed`}
+                    />
                   </button>
                 );
               })}

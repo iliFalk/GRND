@@ -46,6 +46,6 @@ it('test_a_tile_shows_the_floor_and_says_ok_once_it_is_reached', () => {
 
   expect(html).toContain('sets this week');
   expect(html).toContain('OK');
-  expect(html).toContain('3 more to 4');
+  expect(html).toContain('3 more');
   expect(html).not.toContain('of 4 sets');
 });

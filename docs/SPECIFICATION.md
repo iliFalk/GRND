@@ -56,8 +56,13 @@ Counting rule:
 
 - A set counts **1.0** for each primary muscle group of its exercise.
 - A set counts **0.5** for each secondary muscle group.
-- A completed set and a completed round of a circuit both count as one set.
+- A set marked `warmup: true` is not work and counts in no group.
 - An exercise the taxonomy does not know is reported as unmapped and is counted in no group.
+
+**Superseded 2026-11-18 (Ilja, `ROADMAP.md` §1c).** This section used to say that a completed round of
+a circuit counts as one set, on the same footing as a strength set. A circuit is endurance work: it does
+not enter the 10–20 band. The report gives it its own row — rounds and time under load — beside the
+groups, and the band counts strength sets only.
 
 The bands live in `data/weekly-targets.json` and name their source: 10 sets per week is the low end that
 still grows a muscle, 10 to 20 is the productive band, above 20 the return per set falls. Four sets per
@@ -69,7 +74,9 @@ wins; a keyword fallback places a new variant; anything left is reported, never 
 The report is available at `GET /api/muscle-volume/:userId?week=YYYY-MM-DD` and answers:
 
 ```text
-week_start, week_end, sessions, groups[{group, sets, primary_sets, secondary_sets, target, status}],
+week_start, week_end, sessions,
+groups[{group, sets, primary_sets, secondary_sets, target, status}],
+circuits[{date, rounds, time_under_load, exercises}], circuit_rounds,
 unmapped[{name, sets}]
 ```
 

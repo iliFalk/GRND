@@ -7,6 +7,8 @@ interface ExercisePickerProps {
   /** Every chosen id. The plan editor adds one at a time; a workout takes several. */
   selectedIds: string[];
   onToggle: (exerciseId: string) => void;
+  /** The caller already ordered the list; the picker keeps it instead of sorting by name. */
+  ordered?: boolean;
   className?: string;
 }
 
@@ -22,14 +24,20 @@ function matches(entry: CatalogueEntry, query: string): boolean {
  * One flat list, one row per exercise: an exercise that trains two muscle groups is still one
  * exercise. Grouping by a primary group listed Chin-ups under back and again under biceps.
  */
-export function ExercisePicker({ entries, selectedIds, onToggle, className }: ExercisePickerProps) {
+export function ExercisePicker({
+  entries,
+  selectedIds,
+  onToggle,
+  ordered = false,
+  className
+}: ExercisePickerProps) {
   const [query, setQuery] = useState('');
   const needle = query.trim().toLowerCase();
 
-  const shown = useMemo(
-    () => entries.filter((entry) => matches(entry, needle)).sort((a, b) => a.name.localeCompare(b.name)),
-    [entries, needle]
-  );
+  const shown = useMemo(() => {
+    const visible = entries.filter((entry) => matches(entry, needle));
+    return ordered ? visible : [...visible].sort((a, b) => a.name.localeCompare(b.name));
+  }, [entries, needle, ordered]);
 
   return (
     <div className={cn('space-y-3', className)}>

@@ -1,6 +1,6 @@
 import { useExerciseCatalogue, type CatalogueEntry } from '../lib/catalogue';
-import type { DayRow, PillarsData } from '../lib/pillars';
-import { PillarRing } from './PillarRing';
+import type { DayRow, PillarRow, PillarsData } from '../lib/pillars';
+import { PillarRing, pillarColor } from './PillarRing';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
@@ -31,7 +31,7 @@ function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3
 }
 
 /** The week by day: what each day carried, today in the accent colour. */
-function WeekBars({ days }: { days: DayRow[] }) {
+function WeekBars({ days, pillars }: { days: DayRow[]; pillars: PillarRow[] }) {
   const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   // The scale holds at the floor, so a quiet week does not read as a busy one.
   const max = Math.max(4, ...days.map((day) => day.sets));
@@ -42,18 +42,32 @@ function WeekBars({ days }: { days: DayRow[] }) {
       <CardContent className="flex items-end gap-1 px-2 pb-2 pt-3">
         {days.map((day, index) => {
           const isToday = day.date === today;
-          const height = Math.round((day.sets / max) * 100);
 
           return (
             <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
               <span className="text-[10px] tabular-nums text-muted-foreground">
                 {day.sets > 0 ? day.sets : ''}
               </span>
-              <div className="flex h-16 w-full items-end">
-                <div
-                  className={isToday ? 'w-full rounded-t bg-primary' : 'w-full rounded-t bg-muted-foreground/30'}
-                  style={{ height: `${Math.max(day.sets > 0 ? 8 : 2, height)}%` }}
-                />
+              <div className="flex h-16 w-full flex-col justify-end overflow-hidden rounded-t">
+                {pillars.map((pillar) => {
+                  const sets = day.pillars[pillar.id] ?? 0;
+                  if (sets <= 0) return null;
+                  return (
+                    <div
+                      key={pillar.id}
+                      className="w-full"
+                      style={{
+                        height: `${(sets / max) * 100}%`,
+                        backgroundColor: pillarColor(pillar.id),
+                        opacity: isToday ? 1 : 0.75
+                      }}
+                      title={`${pillar.label}: ${formatNumber(sets)}`}
+                    />
+                  );
+                })}
+                {day.sets === 0 ? (
+                  <div className="w-full bg-muted-foreground/20" style={{ height: '2%' }} />
+                ) : null}
               </div>
               <span
                 className={
@@ -131,6 +145,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
           {data.pillars.map((row) => (
             <PillarRing
               key={row.id}
+              id={row.id}
               label={row.label}
               sets={row.sets}
               floor={typeof row.target.min === 'number' ? row.target.min : 0}
@@ -139,7 +154,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
         </CardContent>
       </Card>
 
-      {data.days.length > 0 ? <WeekBars days={data.days} /> : null}
+      {data.days.length > 0 ? <WeekBars days={data.days} pillars={data.pillars} /> : null}
 
       <Card>
         <CardHeader className="pb-2">

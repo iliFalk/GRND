@@ -1,4 +1,6 @@
 interface PillarRingProps {
+  /** The pillar's id: it names the colour, so the ring and the day column match. */
+  id: string;
   label: string;
   /** What has been done: sets of the week on the dashboard, sets of this workout in the train. */
   sets: number;
@@ -11,10 +13,15 @@ function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
+/** The colour of a pillar, from the theme: `--pillar-pull`, `--pillar-push`, … */
+export function pillarColor(id: string): string {
+  return `var(--pillar-${id})`;
+}
+
 /** A ring that fills from nothing to the floor: a quarter at one set, full at four. */
-export function PillarRing({ label, sets, floor, size = 'md' }: PillarRingProps) {
+export function PillarRing({ id, label, sets, floor, size = 'md' }: PillarRingProps) {
   const done = floor > 0 && sets >= floor;
-  const colour = done ? 'var(--status-in)' : 'var(--status-below)';
+  const colour = pillarColor(id);
   const percent = floor > 0 ? Math.min(100, (sets / floor) * 100) : 0;
   const box = size === 'sm' ? 'h-12 w-12' : 'h-14 w-14';
 
@@ -45,10 +52,13 @@ export function PillarRing({ label, sets, floor, size = 'md' }: PillarRingProps)
           {formatNumber(sets)}
         </span>
       </div>
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: colour }}>
         {label}
       </span>
-      <span className="text-[10px] font-semibold" style={{ color: colour }}>
+      <span
+        className="text-[10px] font-semibold"
+        style={{ color: done ? 'var(--status-in)' : 'var(--status-below)' }}
+      >
         {done ? 'OK' : `${formatNumber(Math.max(0, floor - sets))} more`}
       </span>
     </div>

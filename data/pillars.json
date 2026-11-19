@@ -1,6 +1,6 @@
 {
   "source": "Ilja, 2026-11-19: functional, multi-joint work. The base is pulling yourself up, pressing something away — dips, a kettlebell pressed overhead, a thruster — and the goblet squat. Everything else complements. A single link (triceps, biceps, calves) is not measured. Conditioning such as burpees is endurance and belongs to the AMRAP circuit, which he runs only when there is no basketball for a long time.",
-  "credit": "A completed set counts ONCE for the pillar of its movement. No fractional credit by muscle, and no double credit for a combination lift.",
+  "credit": "A completed set counts ONCE for the pillar of its movement. No fractional credit by muscle, and no double credit for a combination lift. Within a pillar the list is ordered by the base first, then by impact: a primary group of the pillar counts 2, a secondary one 1.",
   "rules": [
     "A lift that pulls and presses at once — a snatch, a clean and press — counts once, in the axis where it usually fails: the lockout overhead, so push. The catalogue marks it `power`.",
     "`role` in the catalogue separates the base from what completes it: a base set and a support set both count, but the plan and the suggestions name the base first."
@@ -9,34 +9,63 @@
     {
       "id": "pull",
       "label": "Pull",
-      "movements": ["pull"],
+      "movements": [
+        "pull"
+      ],
       "min": 10,
       "target_high": 20,
-      "max": 25
+      "max": 25,
+      "groups": [
+        "back",
+        "biceps",
+        "core"
+      ]
     },
     {
       "id": "push",
       "label": "Push",
-      "movements": ["push"],
+      "movements": [
+        "push"
+      ],
       "min": 10,
       "target_high": 20,
-      "max": 25
+      "max": 25,
+      "groups": [
+        "chest",
+        "shoulders",
+        "triceps"
+      ]
     },
     {
       "id": "legs",
       "label": "Legs",
-      "movements": ["squat", "hinge", "power"],
+      "movements": [
+        "squat",
+        "hinge",
+        "power"
+      ],
       "min": 12,
       "target_high": 24,
-      "max": 30
+      "max": 30,
+      "groups": [
+        "quads",
+        "hamstrings",
+        "glutes",
+        "calves"
+      ]
     },
     {
       "id": "core",
       "label": "Core",
-      "movements": ["core"],
+      "movements": [
+        "core"
+      ],
       "min": 6,
       "target_high": 16,
-      "max": 20
+      "max": 20,
+      "groups": [
+        "core"
+      ]
     }
   ],
   "outside": {

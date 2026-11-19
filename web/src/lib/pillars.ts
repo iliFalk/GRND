@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CatalogueEntry } from './catalogue';
 
 export type PillarStatus = 'below' | 'in' | 'above' | 'high' | 'unknown';
 
@@ -20,6 +21,8 @@ export interface PillarRow {
   id: string;
   label: string;
   movements: string[];
+  /** The muscle groups the pillar rests on. */
+  groups: string[];
   sets: number;
   /** The part of `sets` done on the base of the pillar. */
   base_sets: number;
@@ -61,6 +64,31 @@ interface CacheEntry {
   promise?: Promise<PillarsData>;
 }
 
+/**
+ * How much an exercise does for a pillar: a primary group of the pillar counts 2, a secondary 1.
+ * Ilja, 2026-11-19: the base comes first, then the stronger impact.
+ */
+export function impactOn(entry: CatalogueEntry, groups: string[]): number {
+  const wanted = new Set(groups.map((group) => group.toLowerCase()));
+  const primary = (entry.primary ?? []).filter((group) => wanted.has(group.toLowerCase())).length;
+  const secondary = (entry.secondary ?? []).filter((group) => wanted.has(group.toLowerCase())).length;
+  return primary * 2 + secondary;
+}
+
+/** The base first, then the exercises that hit the pillar hardest, then the name. */
+export function orderForPillar(entries: CatalogueEntry[], groups: string[]): CatalogueEntry[] {
+  return [...entries].sort((a, b) => {
+    const baseA = a.role === 'base' ? 0 : 1;
+    const baseB = b.role === 'base' ? 0 : 1;
+    if (baseA !== baseB) return baseA - baseB;
+
+    const impact = impactOn(b, groups) - impactOn(a, groups);
+    if (impact !== 0) return impact;
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
 const STATUSES: readonly PillarStatus[] = ['below', 'in', 'above', 'high', 'unknown'];
 
 function normalizeStatus(value: unknown): PillarStatus {
@@ -82,6 +110,7 @@ function normalize(payload: unknown): PillarsData {
       id: String(row.id ?? ''),
       label: String(row.label ?? row.id ?? ''),
       movements: Array.isArray(row.movements) ? row.movements.map(String) : [],
+      groups: Array.isArray(row.groups) ? row.groups.map(String) : [],
       sets: numberOr(row.sets, 0),
       base_sets: numberOr(row.base_sets, 0),
       power_sets: numberOr(row.power_sets, 0),

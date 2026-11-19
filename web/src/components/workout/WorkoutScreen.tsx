@@ -17,7 +17,7 @@ import {
   type WorkoutChoice,
   type WorkoutState
 } from '../../lib/workout';
-import { usePillars } from '../../lib/pillars';
+import { orderForPillar, usePillars } from '../../lib/pillars';
 import { AmrapScreen } from './AmrapScreen';
 import { useUserProfile } from '../../lib/profile';
 import { ExercisePicker } from '../plan/ExercisePicker';
@@ -105,11 +105,15 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     ? (plan.data?.pillars ?? []).find((row) => row.id === pillarFilter)
     : undefined;
   const setsList = setsEntries(entries);
+  // Inside a pillar: its base first, then whatever hits the pillar hardest.
   const visibleEntries = filteredPillar
-    ? setsList.filter((entry) =>
-        filteredPillar.movements
-          .map((movement) => movement.toLowerCase())
-          .includes(String(entry.movement ?? '').toLowerCase())
+    ? orderForPillar(
+        setsList.filter((entry) =>
+          filteredPillar.movements
+            .map((movement) => movement.toLowerCase())
+            .includes(String(entry.movement ?? '').toLowerCase())
+        ),
+        filteredPillar.groups
       )
     : setsList;
 
@@ -285,6 +289,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             entries={visibleEntries}
             selectedIds={chosen.map((choice) => choice.id)}
             onToggle={toggle}
+            ordered={filteredPillar !== undefined}
           />
         )}
 

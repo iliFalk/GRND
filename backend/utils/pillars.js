@@ -139,6 +139,8 @@ function weeklyPillars(sessions, options = {}) {
       id: row.id,
       label: row.label || row.id,
       movements: row.movements || [],
+      // The muscle groups the pillar rests on; the screen orders its list by them.
+      groups: row.groups || [],
       sets,
       base_sets: round1(value.base_sets),
       power_sets: round1(value.power_sets),

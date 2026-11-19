@@ -239,8 +239,8 @@ function BlockCard({
             {catalogue ? (
               <ExercisePicker
                 entries={catalogue}
-                selectedId={null}
-                onSelect={(exerciseId) => {
+                selectedIds={[]}
+                onToggle={(exerciseId) => {
                   const entry = catalogue.find((candidate) => candidate.id === exerciseId);
                   if (!entry) return;
                   onAddExercise(entry);

@@ -24,32 +24,32 @@ export interface SavedSession {
 }
 
 /**
- * The body of one save. A workout with no closed set has no work, so there is nothing to send.
- * The exercise travels by catalogue id and by name: the id is the stable key, the name is the
- * snapshot the history keeps.
+ * The body of one save: every exercise that has a closed set, each with its own weight.
+ * An exercise that was picked but never done is not in the session.
  */
 export function buildSessionPayload(
   state: WorkoutState,
   userId: string,
   now: Date = new Date()
 ): SessionPayload | null {
-  if (state.sets.length === 0 || !userId || !state.exerciseId) return null;
+  if (!userId) return null;
+
+  const done = state.exercises.filter((exercise) => exercise.sets.length > 0);
+  if (done.length === 0) return null;
 
   return {
     userId,
     date: now.toISOString(),
     dayType: 'STANDARD',
     duration: Math.max(0, Math.round((now.getTime() - state.startedAt) / 1000)),
-    completedExercises: [
-      {
-        exerciseId: state.exerciseId,
-        name: state.name,
-        sets: state.sets.map((set) => ({
-          reps: set.reps,
-          ...(set.weight === undefined ? {} : { weight: set.weight })
-        }))
-      }
-    ]
+    completedExercises: done.map((exercise) => ({
+      exerciseId: exercise.id,
+      name: exercise.name,
+      sets: exercise.sets.map((set) => ({
+        reps: set.reps,
+        ...(set.weight === undefined ? {} : { weight: set.weight })
+      }))
+    }))
   };
 }
 

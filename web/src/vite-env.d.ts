@@ -15,6 +15,8 @@ interface TelegramWebApp {
   offEvent?: (event: string, callback: () => void) => void;
   ready?: () => void;
   expand?: () => void;
+  disableVerticalSwipes?: () => void;
+  isVerticalSwipesEnabled?: boolean;
 }
 
 interface Window {

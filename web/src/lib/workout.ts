@@ -1,12 +1,13 @@
 /**
- * The workout mode of docs/ROADMAP.md §1a — repetitions on the fly.
+ * The workout mode of docs/ROADMAP.md §1a — repetitions on the fly, over one or more exercises.
  *
- * Ilja's flow, kept as it was decided on 2026-11-18:
- *   1. pick one exercise from the catalogue and one weight for it;
+ * Ilja's flow, decided on 2026-11-18 and extended to several exercises on 2026-11-19:
+ *   1. pick the exercises from the catalogue and one weight for each;
  *   2. count repetitions with +1 and +3;
  *   3. press pause: the set closes with the repetitions counted, and the rest timer counts up;
  *   4. tap the timer: the rest stops and the next set begins with a zeroed counter;
- *   5. there is no stop button — the workout ends with "finish", which saves the session.
+ *   5. move on with "next exercise" once the current one has a set;
+ *   6. there is no stop button — the workout ends with "finish", which saves the session.
  *
  * The state is plain data so the rules can be tested without a screen.
  */
@@ -17,53 +18,75 @@ export interface WorkoutSet {
   weight?: number;
 }
 
-export interface WorkoutState {
-  exerciseId: string;
-  name: string;
-  /** One weight per exercise; it never changes between sets. */
-  weight?: number;
-  /** Repetitions counted in the open set. */
-  counter: number;
-  sets: WorkoutSet[];
-  /** When the rest began, in ms. `null` while a set is being counted. */
-  restingSince: number | null;
-  startedAt: number;
-}
-
-export interface WorkoutExerciseEntry {
+export interface WorkoutChoice {
   id: string;
   name: string;
+  weight?: number;
+}
+
+export interface WorkoutExercise extends WorkoutChoice {
+  sets: WorkoutSet[];
+  /** Repetitions counted in the open set. */
+  counter: number;
+  /** When the rest began, in ms. `null` while a set is being counted. */
+  restingSince: number | null;
+}
+
+export interface WorkoutState {
+  exercises: WorkoutExercise[];
+  /** Index of the exercise being done. */
+  active: number;
+  startedAt: number;
 }
 
 function optionalWeight(weight: number | undefined): number | undefined {
   return typeof weight === 'number' && Number.isFinite(weight) && weight > 0 ? weight : undefined;
 }
 
-export function startWorkout(
-  entry: WorkoutExerciseEntry,
-  weight: number | undefined,
-  now: number
+export function startWorkout(choices: WorkoutChoice[], now: number): WorkoutState {
+  const exercises: WorkoutExercise[] = (Array.isArray(choices) ? choices : []).map((choice) => {
+    const weight = optionalWeight(choice.weight);
+    return {
+      id: choice.id,
+      name: choice.name,
+      ...(weight === undefined ? {} : { weight }),
+      sets: [],
+      counter: 0,
+      restingSince: null
+    };
+  });
+
+  return { exercises, active: 0, startedAt: now };
+}
+
+export function activeExercise(state: WorkoutState): WorkoutExercise | undefined {
+  return state.exercises[state.active];
+}
+
+/** Rebuilds the active exercise and leaves the others untouched. */
+function withActive(
+  state: WorkoutState,
+  update: (exercise: WorkoutExercise) => WorkoutExercise
 ): WorkoutState {
-  const chosen = optionalWeight(weight);
-  return {
-    exerciseId: entry.id,
-    name: entry.name,
-    ...(chosen === undefined ? {} : { weight: chosen }),
-    counter: 0,
-    sets: [],
-    restingSince: null,
-    startedAt: now
-  };
+  const exercise = state.exercises[state.active];
+  if (!exercise) return state;
+  const exercises = [...state.exercises];
+  exercises[state.active] = update(exercise);
+  return { ...state, exercises };
 }
 
 /** +1 and +3. A count below zero is not a repetition, so it never happens. */
 export function countReps(state: WorkoutState, amount: number): WorkoutState {
   if (!Number.isFinite(amount) || amount <= 0) return state;
-  return { ...state, counter: state.counter + Math.floor(amount) };
+  return withActive(state, (exercise) => ({
+    ...exercise,
+    counter: exercise.counter + Math.floor(amount)
+  }));
 }
 
 export function isResting(state: WorkoutState): boolean {
-  return state.restingSince !== null;
+  const exercise = activeExercise(state);
+  return exercise !== undefined && exercise.restingSince !== null;
 }
 
 /**
@@ -71,38 +94,61 @@ export function isResting(state: WorkoutState): boolean {
  * A pause with no repetitions closes nothing and starts no rest.
  */
 export function pause(state: WorkoutState, now: number): WorkoutState {
-  if (isResting(state)) return state;
-  if (state.counter <= 0) return state;
+  const exercise = activeExercise(state);
+  if (!exercise || exercise.restingSince !== null || exercise.counter <= 0) return state;
 
-  const closed: WorkoutSet = {
-    reps: state.counter,
-    ...(state.weight === undefined ? {} : { weight: state.weight })
-  };
-
-  return {
-    ...state,
-    sets: [...state.sets, closed],
+  return withActive(state, (current) => ({
+    ...current,
+    sets: [
+      ...current.sets,
+      {
+        reps: current.counter,
+        ...(current.weight === undefined ? {} : { weight: current.weight })
+      }
+    ],
     counter: 0,
     restingSince: now
-  };
+  }));
 }
 
 /** Tapping the timer stops the rest and opens the next set. */
 export function nextSet(state: WorkoutState): WorkoutState {
-  if (!isResting(state)) return state;
-  return { ...state, restingSince: null, counter: 0 };
+  const exercise = activeExercise(state);
+  if (!exercise || exercise.restingSince === null) return state;
+  return withActive(state, (current) => ({ ...current, restingSince: null, counter: 0 }));
+}
+
+/** Moving on needs one closed set on the current exercise; the last one has nowhere to go. */
+export function nextExercise(state: WorkoutState): WorkoutState {
+  const exercise = activeExercise(state);
+  if (!exercise || exercise.restingSince !== null) return state;
+  if (exercise.sets.length === 0) return state;
+  if (state.active >= state.exercises.length - 1) return state;
+  return { ...state, active: state.active + 1 };
+}
+
+export function isLastExercise(state: WorkoutState): boolean {
+  return state.exercises.length === 0 || state.active >= state.exercises.length - 1;
 }
 
 export function restSeconds(state: WorkoutState, now: number): number {
-  if (state.restingSince === null) return 0;
-  return Math.max(0, Math.floor((now - state.restingSince) / 1000));
+  const restingSince = activeExercise(state)?.restingSince;
+  if (restingSince === null || restingSince === undefined) return 0;
+  return Math.max(0, Math.floor((now - restingSince) / 1000));
+}
+
+export function totalSets(state: WorkoutState): number {
+  return state.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0);
 }
 
 export function totalReps(state: WorkoutState): number {
-  return state.sets.reduce((sum, set) => sum + set.reps, 0);
+  return state.exercises.reduce(
+    (sum, exercise) => sum + exercise.sets.reduce((reps, set) => reps + set.reps, 0),
+    0
+  );
 }
 
 /** A workout with no closed set carries no work, so it is not saved. */
 export function hasWork(state: WorkoutState): boolean {
-  return state.sets.length > 0;
+  return totalSets(state) > 0;
 }

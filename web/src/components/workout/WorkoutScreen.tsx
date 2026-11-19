@@ -2,14 +2,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useExerciseCatalogue } from '../../lib/catalogue';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
 import {
+  activeExercise,
   countReps,
   hasWork,
+  isLastExercise,
   isResting,
+  nextExercise,
   nextSet,
   pause,
   restSeconds,
   startWorkout,
   totalReps,
+  totalSets,
+  type WorkoutChoice,
   type WorkoutState
 } from '../../lib/workout';
 import { ExercisePicker } from '../plan/ExercisePicker';
@@ -35,8 +40,7 @@ function formatClock(seconds: number): string {
 
 export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const catalogue = useExerciseCatalogue();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [weightInput, setWeightInput] = useState('');
+  const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
   const [state, setState] = useState<WorkoutState | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
@@ -50,17 +54,43 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     return () => clearInterval(handle);
   }, [state]);
 
-  const start = useCallback(() => {
-    const entry = (catalogue.data ?? []).find((candidate) => candidate.id === selectedId);
-    if (!entry) return;
+  const entries = catalogue.data ?? [];
 
-    const weight = weightInput.trim() === '' ? undefined : Number(weightInput);
+  const toggle = useCallback(
+    (exerciseId: string) => {
+      setChosen((previous) => {
+        if (previous.some((choice) => choice.id === exerciseId)) {
+          return previous.filter((choice) => choice.id !== exerciseId);
+        }
+        const entry = entries.find((candidate) => candidate.id === exerciseId);
+        if (!entry) return previous;
+        return [...previous, { id: entry.id, name: entry.name }];
+      });
+    },
+    [entries]
+  );
+
+  const setWeight = useCallback((exerciseId: string, raw: string) => {
+    setChosen((previous) =>
+      previous.map((choice) => {
+        if (choice.id !== exerciseId) return choice;
+        if (raw.trim() === '') return { id: choice.id, name: choice.name };
+        const value = Number(raw);
+        return Number.isFinite(value) && value > 0
+          ? { id: choice.id, name: choice.name, weight: value }
+          : { id: choice.id, name: choice.name };
+      })
+    );
+  }, []);
+
+  const start = useCallback(() => {
+    if (chosen.length === 0) return;
     const started = Date.now();
-    setState(startWorkout(entry, Number.isFinite(weight) ? weight : undefined, started));
+    setState(startWorkout(chosen, started));
     setNow(started);
     setSaved(null);
     setError(null);
-  }, [catalogue.data, selectedId, weightInput]);
+  }, [chosen]);
 
   const finish = useCallback(async () => {
     if (!state) return;
@@ -104,8 +134,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
           <Button
             onClick={() => {
               setSaved(null);
-              setSelectedId(null);
-              setWeightInput('');
+              setChosen([]);
             }}
           >
             New workout
@@ -116,7 +145,6 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   }
 
   if (!state) {
-    const entries = catalogue.data ?? [];
     return (
       <section aria-labelledby="workout-setup-title" className="space-y-4">
         <div>
@@ -124,33 +152,9 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             Start a workout
           </h2>
           <p className="text-xs text-muted-foreground">
-            One exercise, one weight, then count the repetitions.
+            Choose the exercises, give each its weight, then count the repetitions.
           </p>
         </div>
-
-        <Card>
-          <CardContent className="space-y-3 py-4">
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">Weight in kg</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="1"
-                value={weightInput}
-                onChange={(event) => setWeightInput(event.target.value)}
-                placeholder="Empty for bodyweight work"
-                className="w-full rounded-control border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </label>
-            <p className="text-xs text-muted-foreground">
-              For bodyweight work this is the load added to the body, never the body itself.
-            </p>
-            <Button onClick={start} disabled={!selectedId}>
-              Start workout
-            </Button>
-          </CardContent>
-        </Card>
 
         {catalogue.loading ? (
           <Card>
@@ -159,28 +163,68 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             </CardContent>
           </Card>
         ) : (
-          <ExercisePicker entries={entries} selectedId={selectedId} onSelect={setSelectedId} />
+          <ExercisePicker
+            entries={entries}
+            selectedIds={chosen.map((choice) => choice.id)}
+            onToggle={toggle}
+          />
         )}
+
+        {chosen.length > 0 ? (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>{`Chosen · ${chosen.length}`}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {chosen.map((choice) => (
+                <label key={choice.id} className="flex items-center justify-between gap-3">
+                  <span className="min-w-0 truncate text-sm">{choice.name}</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="1"
+                    value={choice.weight ?? ''}
+                    onChange={(event) => setWeight(choice.id, event.target.value)}
+                    placeholder="kg"
+                    aria-label={`Weight in kg for ${choice.name}`}
+                    className="w-24 shrink-0 rounded-control border border-border bg-background px-2 py-1 text-right text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </label>
+              ))}
+              <p className="text-xs text-muted-foreground">
+                Empty is bodyweight work; a number there is the load added to the body.
+              </p>
+              <Button className="w-full" onClick={start}>
+                Start workout
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
       </section>
     );
   }
 
+  const exercise = activeExercise(state);
   const resting = isResting(state);
   const rest = restSeconds(state, now);
+  const remaining = state.exercises.slice(state.active + 1).map((entry) => entry.name);
 
   return (
     <section aria-labelledby="workout-title" className="space-y-4">
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2 id="workout-title" className="text-lg font-semibold">
-            {state.name}
+            {exercise?.name ?? ''}
           </h2>
           <p className="text-xs text-muted-foreground">
-            {`${formatNumber(state.sets.length)} sets · ${formatNumber(totalReps(state))} reps`}
+            {`Exercise ${state.active + 1} of ${state.exercises.length} · ${formatNumber(
+              totalSets(state)
+            )} sets · ${formatNumber(totalReps(state))} reps`}
           </p>
         </div>
         <Badge title="One weight per exercise">
-          {state.weight === undefined ? 'bodyweight' : `${formatNumber(state.weight)} kg`}
+          {exercise?.weight === undefined ? 'bodyweight' : `${formatNumber(exercise.weight)} kg`}
         </Badge>
       </div>
 
@@ -196,7 +240,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
         <Card>
           <CardContent className="space-y-4 py-6 text-center">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Repetitions</p>
-            <p className="font-mono text-6xl tabular-nums">{state.counter}</p>
+            <p className="font-mono text-6xl tabular-nums">{exercise?.counter ?? 0}</p>
             <div className="flex justify-center gap-3">
               <Button className="h-16 flex-1 text-lg" onClick={() => setState(countReps(state, 1))}>
                 +1
@@ -208,7 +252,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             <Button
               variant="secondary"
               onClick={() => setState(pause(state, Date.now()))}
-              disabled={state.counter === 0}
+              disabled={(exercise?.counter ?? 0) === 0}
             >
               Pause and close the set
             </Button>
@@ -216,7 +260,21 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
         </Card>
       )}
 
+      {remaining.length > 0 ? (
+        <p className="text-xs text-muted-foreground">{`Then: ${remaining.join(', ')}`}</p>
+      ) : null}
+
       <div className="space-y-2">
+        {!isLastExercise(state) ? (
+          <Button
+            className="w-full"
+            variant="outline"
+            onClick={() => setState(nextExercise(state))}
+            disabled={resting || (exercise?.sets.length ?? 0) === 0}
+          >
+            Next exercise
+          </Button>
+        ) : null}
         <Button
           className="w-full"
           onClick={finish}

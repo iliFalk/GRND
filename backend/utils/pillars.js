@@ -127,11 +127,12 @@ function weeklyPillars(sessions, options = {}) {
 
   const pillars = rows.map((row) => {
     const value = totals.get(row.id) || { sets: 0, base_sets: 0, power_sets: 0, exercises: [] };
+    // A floor, not a band: below the floor the pillar is short, above it nothing is judged.
     const target = {
       min: row.min,
       target_low: row.min,
-      target_high: row.target_high,
-      max: row.max
+      target_high: row.target_high ?? null,
+      max: row.max ?? null
     };
     const sets = round1(value.sets);
 

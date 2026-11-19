@@ -1,5 +1,5 @@
 {
-  "note": "The fixed list a plan picks from. An id never changes; a name may be corrected. Seeded from data/exercise-taxonomy.json, curated by hand afterwards.",
+  "note": "The fixed list a plan picks from. An id never changes; a name may be corrected. `is_heavy_basic` marks the movements that carry a rep range and a weight suggestion; `is_power` marks ballistic work, tracked by rounds and time under load instead.",
   "version": 1,
   "equipment": [
     {
@@ -125,7 +125,8 @@
       "secondary": [
         "core"
       ],
-      "bodyweight_factor": 1.0
+      "bodyweight_factor": 1.0,
+      "is_heavy_basic": true
     },
     {
       "id": "dips",
@@ -138,7 +139,37 @@
       "secondary": [
         "shoulders"
       ],
-      "bodyweight_factor": 0.8
+      "bodyweight_factor": 0.8,
+      "is_heavy_basic": true
+    },
+    {
+      "id": "double-kettlebell-goblet-squat",
+      "name": "Double kettlebell goblet squat",
+      "equipment": "kettlebell",
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "is_heavy_basic": true,
+      "note": "Two bells held in the front rack; his name for it."
+    },
+    {
+      "id": "double-kettlebell-thruster",
+      "name": "Double kettlebell thruster",
+      "equipment": "kettlebell",
+      "primary": [
+        "quads",
+        "shoulders"
+      ],
+      "secondary": [
+        "glutes",
+        "triceps",
+        "core"
+      ],
+      "is_heavy_basic": true
     },
     {
       "id": "farmer-carry",
@@ -150,6 +181,21 @@
       "secondary": [
         "back"
       ]
+    },
+    {
+      "id": "jumps",
+      "name": "Jumps",
+      "equipment": "bodyweight",
+      "primary": [
+        "quads",
+        "calves"
+      ],
+      "secondary": [
+        "glutes",
+        "core"
+      ],
+      "is_power": true,
+      "note": "Which jump is still open: squat jump, box jump or broad jump."
     },
     {
       "id": "kettlebell-clean",
@@ -234,7 +280,8 @@
       "secondary": [
         "hamstrings",
         "back"
-      ]
+      ],
+      "is_power": true
     },
     {
       "id": "kettlebell-swing",
@@ -247,7 +294,9 @@
       "secondary": [
         "back",
         "core"
-      ]
+      ],
+      "is_power": true,
+      "is_heavy_basic": false
     },
     {
       "id": "lunges",
@@ -321,6 +370,19 @@
         "shoulders"
       ],
       "bodyweight_factor": 0.75
+    },
+    {
+      "id": "rdl-one-leg",
+      "name": "RDL one leg",
+      "equipment": "kettlebell",
+      "primary": [
+        "hamstrings",
+        "glutes"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "is_heavy_basic": true
     },
     {
       "id": "rows",

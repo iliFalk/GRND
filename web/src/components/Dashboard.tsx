@@ -13,8 +13,8 @@ const STATUS_COLOR: Record<PillarStatus, string> = {
 };
 
 const STATUS_LABEL: Record<PillarStatus, string> = {
-  below: 'Below',
-  in: 'In band',
+  below: 'Short',
+  in: 'OK',
   above: 'Above',
   high: 'High',
   unknown: 'Unknown'
@@ -48,15 +48,9 @@ function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3
 
 function PillarTile({ row }: { row: PillarRow }) {
   const colour = STATUS_COLOR[row.status];
-  // The band the week is measured against: its floor and its productive top.
-  const low = typeof row.target.min === 'number' ? row.target.min : 0;
-  const high =
-    typeof row.target.target_high === 'number' && row.target.target_high > 0
-      ? row.target.target_high
-      : typeof row.target.max === 'number' && row.target.max > 0
-        ? row.target.max
-        : row.sets + row.short;
-  const percent = high > 0 ? Math.min(100, (row.sets / high) * 100) : 0;
+  // A floor: four sets make a pillar count, and nothing above it is judged.
+  const floor = typeof row.target.min === 'number' ? row.target.min : 0;
+  const percent = floor > 0 ? Math.min(100, (row.sets / floor) * 100) : 0;
 
   const parts = [
     row.base_sets > 0 ? `base ${formatNumber(row.base_sets)}` : '',
@@ -70,13 +64,11 @@ function PillarTile({ row }: { row: PillarRow }) {
           {row.label}
         </p>
         <p className="font-mono text-3xl leading-none tabular-nums">{formatNumber(row.sets)}</p>
-        <p className="text-[11px] text-muted-foreground">
-          {`of ${formatNumber(low)}–${formatNumber(high)} sets`}
-        </p>
+        <p className="text-[11px] text-muted-foreground">{`of ${formatNumber(floor)} sets`}</p>
         <Progress
           value={percent}
           indicatorStyle={{ backgroundColor: colour }}
-          aria-label={`${row.label}: ${formatNumber(row.sets)} sets against ${formatNumber(low)} to ${formatNumber(high)}`}
+          aria-label={`${row.label}: ${formatNumber(row.sets)} sets against a floor of ${formatNumber(floor)}`}
         />
         <p className="text-[11px] font-semibold" style={{ color: colour }}>
           {row.status === 'below' ? `${formatNumber(row.short)} short` : STATUS_LABEL[row.status]}

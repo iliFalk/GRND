@@ -1,6 +1,6 @@
 {
   "source": "Ilja, 2026-11-19: functional, multi-joint work. The base is pulling yourself up, pressing something away — dips, a kettlebell pressed overhead, a thruster — and the goblet squat. Everything else complements. A single link (triceps, biceps, calves) is not measured. Conditioning such as burpees is endurance and belongs to the AMRAP circuit, which he runs only when there is no basketball for a long time.",
-  "credit": "A completed set counts ONCE for the pillar of its movement. No fractional credit by muscle, and no double credit for a combination lift. Within a pillar the list is ordered by the base first, then by impact: a primary group of the pillar counts 2, a secondary one 1.",
+  "credit": "A completed set counts ONCE for the pillar of its movement. No fractional credit by muscle. The floor is four sets per pillar (Ilja, 2026-11-19): below four the pillar is short, four and above is fine, and no upper bound is judged.",
   "rules": [
     "A lift that pulls and presses at once — a snatch, a clean and press — counts once, in the axis where it usually fails: the lockout overhead, so push. The catalogue marks it `power`.",
     "`role` in the catalogue separates the base from what completes it: a base set and a support set both count, but the plan and the suggestions name the base first."
@@ -12,9 +12,9 @@
       "movements": [
         "pull"
       ],
-      "min": 10,
-      "target_high": 20,
-      "max": 25,
+      "min": 4,
+      "target_high": null,
+      "max": null,
       "groups": [
         "back",
         "biceps",
@@ -27,9 +27,9 @@
       "movements": [
         "push"
       ],
-      "min": 10,
-      "target_high": 20,
-      "max": 25,
+      "min": 4,
+      "target_high": null,
+      "max": null,
       "groups": [
         "chest",
         "shoulders",
@@ -44,9 +44,9 @@
         "hinge",
         "power"
       ],
-      "min": 12,
-      "target_high": 24,
-      "max": 30,
+      "min": 4,
+      "target_high": null,
+      "max": null,
       "groups": [
         "quads",
         "hamstrings",
@@ -60,9 +60,9 @@
       "movements": [
         "core"
       ],
-      "min": 6,
-      "target_high": 16,
-      "max": 20,
+      "min": 4,
+      "target_high": null,
+      "max": null,
       "groups": [
         "core"
       ]

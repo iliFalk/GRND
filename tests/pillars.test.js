@@ -162,17 +162,16 @@ test('test_short_is_the_gap_to_the_low_end', () => {
   const pull = report.pillars.find((row) => row.id === 'pull');
 
   assert.equal(pull.sets, 2);
-  assert.equal(pull.short, 8);
+  assert.equal(pull.short, 2);
 });
 
-test('test_the_legs_band_starts_higher_than_the_upper_band', () => {
+test('test_every_pillar_needs_four_sets', () => {
+  // Ilja, 2026-11-19: four sets is the floor of a pillar, and no upper bound is judged.
   const report = weeklyPillars([], { week: '2026-03-03' });
   const bands = Object.fromEntries(report.pillars.map((row) => [row.id, row.target.min]));
 
-  assert.equal(bands.pull, 10);
-  assert.equal(bands.push, 10);
-  assert.equal(bands.legs, 12);
-  assert.equal(bands.core, 6);
+  assert.deepEqual(bands, { pull: 4, push: 4, legs: 4, core: 4 });
+  assert.equal(report.pillars[0].target.max, null);
 });
 
 test('test_status_follows_the_band', () => {
@@ -182,10 +181,10 @@ test('test_status_follows_the_band', () => {
       { week: '2026-03-03' }
     ).pillars.find((row) => row.id === 'push').status;
 
-  assert.equal(state(4), 'below');
+  assert.equal(state(3), 'below');
+  assert.equal(state(4), 'in');
   assert.equal(state(14), 'in');
-  assert.equal(state(23), 'above');
-  assert.equal(state(30), 'high');
+  assert.equal(state(30), 'in');
 });
 
 test('test_another_users_sessions_are_excluded', () => {

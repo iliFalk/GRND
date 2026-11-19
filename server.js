@@ -7,6 +7,7 @@ const path = require('path');
 const VolumeCalculator = require('./backend/utils/volumeCalculator');
 const MuscleVolume = require('./backend/utils/muscleVolume');
 const { suggestForReport } = require('./backend/utils/muscleSuggestions');
+const { suggestPairs, alternativesForMissingEquipment } = require('./backend/utils/pairings');
 require('dotenv').config();
 
 const app = express();
@@ -407,6 +408,25 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error building the weekly muscle report:', error);
     res.status(500).json({ error: 'Failed to build the weekly muscle report' });
+  }
+});
+
+// What pairs well with what, for a circuit. It advises; the user chooses.
+app.post('/api/pairings', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const catalogue = JSON.parse(await fs.readFile(path.join(__dirname, 'data', 'exercise-catalogue.json'), 'utf8'));
+    const equipmentFile = JSON.parse(await fs.readFile(path.join(__dirname, 'data', 'equipment.json'), 'utf8'));
+    const owned = (equipmentFile.items || []).filter((item) => item.available).map((item) => item.id);
+    const selected = Array.isArray(body.selected) ? body.selected : [];
+    const limit = Number.isFinite(body.limit) ? body.limit : 3;
+    res.json({
+      pairs: suggestPairs(catalogue, selected, { limit, equipment: owned }),
+      alternatives: alternativesForMissingEquipment(catalogue, selected, owned)
+    });
+  } catch (error) {
+    console.error('Error building pairings:', error);
+    res.status(500).json({ error: 'Failed to build pairings' });
   }
 });
 

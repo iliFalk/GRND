@@ -75,12 +75,19 @@ export function impactOn(entry: CatalogueEntry, groups: string[]): number {
   return primary * 2 + secondary;
 }
 
-/** The base first, then the exercises that hit the pillar hardest, then the name. */
+/**
+ * The order Ilja chose for the category wins; an exercise he has not placed yet falls in behind the
+ * placed ones, strongest impact first, then by name.
+ */
 export function orderForPillar(entries: CatalogueEntry[], groups: string[]): CatalogueEntry[] {
+  const place = (entry: CatalogueEntry) =>
+    typeof entry.order === 'number' && Number.isFinite(entry.order) ? entry.order : Number.POSITIVE_INFINITY;
+
   return [...entries].sort((a, b) => {
-    const baseA = a.role === 'base' ? 0 : 1;
-    const baseB = b.role === 'base' ? 0 : 1;
-    if (baseA !== baseB) return baseA - baseB;
+    // Two unplaced exercises both read Infinity, and Infinity - Infinity is NaN: compare, never subtract.
+    const placeA = place(a);
+    const placeB = place(b);
+    if (placeA !== placeB) return placeA < placeB ? -1 : 1;
 
     const impact = impactOn(b, groups) - impactOn(a, groups);
     if (impact !== 0) return impact;

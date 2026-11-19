@@ -1,4 +1,6 @@
 import { expect, it } from 'vitest';
+import { renderToString } from 'react-dom/server';
+import { WorkoutScreen } from '../components/workout/WorkoutScreen';
 import { buildSessionPayload } from './session';
 import {
   countReps,
@@ -70,6 +72,13 @@ it('test_a_bodyweight_workout_carries_no_weight_on_its_sets', () => {
 it('test_no_closed_set_is_nothing_to_save', () => {
   const state = startWorkout(entry, 16, start);
   expect(buildSessionPayload(state, '931142831')).toBeNull();
+});
+
+it('test_the_workout_screen_opens_on_its_setup_step', () => {
+  // The screen has no exercise yet, so it asks for one instead of showing a counter.
+  const html = renderToString(<WorkoutScreen userId="931142831" onSaved={() => {}} />);
+  expect(html).toContain('Start a workout');
+  expect(html).toContain('One exercise, one weight');
 });
 
 it('test_the_payload_carries_the_catalogue_id_the_name_and_the_sets', () => {

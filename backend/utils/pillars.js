@@ -47,6 +47,10 @@ function pillarForMovement(movement, rows) {
 function weeklyPillars(sessions, options = {}) {
   const config = table();
   const rows = Array.isArray(config.pillars) ? config.pillars : [];
+  if (rows.length === 0) {
+    // The volume carries the seed of data/, so a new data file is not in it until it is copied.
+    console.warn('pillars: data/pillars.json carries no pillars — no set can be placed in one');
+  }
   const bounds = MuscleVolume.weekBounds(options.week);
   const wantedUser = options.userId ? String(options.userId) : '';
 

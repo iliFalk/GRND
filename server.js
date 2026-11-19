@@ -419,7 +419,8 @@ app.post('/api/pairings', async (req, res) => {
     const equipmentFile = JSON.parse(await fs.readFile(path.join(__dirname, 'data', 'equipment.json'), 'utf8'));
     const owned = (equipmentFile.items || []).filter((item) => item.available).map((item) => item.id);
     const selected = Array.isArray(body.selected) ? body.selected : [];
-    const limit = Number.isFinite(body.limit) ? body.limit : 3;
+    // No limit unless the caller asks for one: the picker shows the whole ranked list.
+    const limit = Number.isFinite(body.limit) ? body.limit : 0;
     res.json({
       pairs: suggestPairs(catalogue, selected, { limit, equipment: owned }),
       alternatives: alternativesForMissingEquipment(catalogue, selected, owned),

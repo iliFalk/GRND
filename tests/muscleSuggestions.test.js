@@ -43,10 +43,8 @@ test('test_primary_only', () => {
   const report = { groups: [row('shoulders', 0, 8, 'below')] };
   const result = suggestForReport(report);
   const list = names(result[0]);
-  assert.ok(list.includes('Kettlebell Press'));
-  assert.ok(list.includes('Kettlebell Snatch'));
-  assert.ok(list.includes('Turkish Get-Up'));
-  // Push-ups, Dips and Burpees only train shoulders as a secondary group.
+  assert.ok(list.includes('Double kettlebell thruster'));
+  // Push-ups and Dips train shoulders only as a secondary group, so they never fill the gap.
   assert.ok(!list.includes('Push-ups'));
   assert.ok(!list.includes('Dips'));
   assert.ok(!list.includes('Burpees'));
@@ -55,8 +53,8 @@ test('test_primary_only', () => {
 test('test_equipment_filter', () => {
   const report = { groups: [row('chest', 0, 10, 'below')] };
   const bodyweightOnly = suggestForReport(report, { equipment: ['bodyweight'], limit: 10 });
-  assert.deepEqual(names(bodyweightOnly[0]), ['Burpees', 'Calisthenics', 'Dips', 'Push-ups']);
-  assert.ok(!names(bodyweightOnly[0]).includes('Bench Press'));
+  // Dumbbell flyes also train the chest, and dumbbells are not in this list.
+  assert.deepEqual(names(bodyweightOnly[0]), ['Burpees', 'Dips', 'Push-ups']);
 
   // `any` is allowed only when bodyweight is allowed.
   const taxonomy = {

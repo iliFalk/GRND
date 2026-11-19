@@ -8,13 +8,13 @@ function session(date, exercises, userId = 'u1') {
 }
 
 test('test_primary_counts_one_and_secondary_half', () => {
-  // Bench Press: chest is primary, triceps and shoulders are secondary.
+  // Dips: triceps and chest are primary, shoulders are secondary.
   const report = MuscleVolume.weeklyReport([
-    session('2026-03-03T10:00:00', [{ name: 'Bench Press', completed_sets: [{ reps: 5 }, { reps: 5 }] }])
+    session('2026-03-03T10:00:00', [{ name: 'Dips', completed_sets: [{ reps: 5 }, { reps: 5 }] }])
   ], { week: '2026-03-03' });
   const by = Object.fromEntries(report.groups.map((row) => [row.group, row.sets]));
+  assert.equal(by.triceps, 2);
   assert.equal(by.chest, 2);
-  assert.equal(by.triceps, 1);
   assert.equal(by.shoulders, 1);
 });
 
@@ -31,10 +31,10 @@ test('test_circuit_rounds_count_as_sets', () => {
 
 test('test_week_holds_monday_to_sunday_only', () => {
   const report = MuscleVolume.weeklyReport([
-    session('2026-03-01T10:00:00', [{ name: 'Plank', completed_sets: [{ reps: 1 }] }]), // Sunday before
-    session('2026-03-02T10:00:00', [{ name: 'Plank', completed_sets: [{ reps: 1 }] }]), // Monday
-    session('2026-03-08T23:00:00', [{ name: 'Plank', completed_sets: [{ reps: 1 }] }]), // Sunday last
-    session('2026-03-09T00:30:00', [{ name: 'Plank', completed_sets: [{ reps: 1 }] }])  // next Monday
+    session('2026-03-01T10:00:00', [{ name: 'Hanging knee raises', completed_sets: [{ reps: 1 }] }]), // Sunday before
+    session('2026-03-02T10:00:00', [{ name: 'Hanging knee raises', completed_sets: [{ reps: 1 }] }]), // Monday
+    session('2026-03-08T23:00:00', [{ name: 'Hanging knee raises', completed_sets: [{ reps: 1 }] }]), // Sunday last
+    session('2026-03-09T00:30:00', [{ name: 'Hanging knee raises', completed_sets: [{ reps: 1 }] }])  // next Monday
   ], { week: '2026-03-04' });
   const core = report.groups.find((row) => row.group === 'core');
   assert.equal(core.sets, 2);
@@ -68,8 +68,8 @@ test('test_status_follows_the_band', () => {
 
 test('test_other_users_are_excluded', () => {
   const report = MuscleVolume.weeklyReport([
-    session('2026-03-03T10:00:00', [{ name: 'Plank', completed_sets: [{ reps: 1 }] }], 'u1'),
-    session('2026-03-03T10:00:00', [{ name: 'Plank', completed_sets: [{ reps: 1 }] }], 'u2')
+    session('2026-03-03T10:00:00', [{ name: 'Hanging knee raises', completed_sets: [{ reps: 1 }] }], 'u1'),
+    session('2026-03-03T10:00:00', [{ name: 'Hanging knee raises', completed_sets: [{ reps: 1 }] }], 'u2')
   ], { week: '2026-03-03', userId: 'u1' });
   assert.equal(report.groups.find((row) => row.group === 'core').sets, 1);
 });

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { suggestPairs, alternativesForMissingEquipment } = require('../backend/utils/pairings.js');
+const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('../backend/utils/pairings.js');
 
 const catalogue = {
   exercises: [
@@ -63,3 +63,29 @@ test('test_present_equipment_asks_for_nothing', () => {
   assert.equal(rows[0].missing, false);
   assert.deepEqual(rows[0].alternatives, []);
 });
+
+test('test_a_circuit_never_repeats_a_primary_group', () => {
+  // Measured on his eight: ranking each partner against the seed alone gave three triples with a
+  // duplicate. Building the circuit step by step must give none.
+  const rows = suggestCircuit(catalogue, { exerciseId: 'push-ups' }, { size: 3 });
+  const groups = rows.exercises.flatMap((entry) => entry.primary);
+  assert.equal(groups.length, new Set(groups).size, `duplicate in ${JSON.stringify(rows.exercises.map((e) => e.name))}`);
+  assert.equal(rows.complete, true);
+});
+
+test('test_a_circuit_of_one_is_the_seed', () => {
+  const rows = suggestCircuit(catalogue, { exerciseId: 'air-squats' }, { size: 1 });
+  assert.deepEqual(rows.exercises.map((e) => e.name), ['Air squats']);
+  assert.equal(rows.complete, true);
+});
+
+test('test_a_circuit_stops_when_nothing_fits', () => {
+  const tiny = { exercises: [
+    { id: 'a', name: 'A', equipment: 'bodyweight', movement: 'push', primary: ['chest'] },
+    { id: 'b', name: 'B', equipment: 'bodyweight', movement: 'push', primary: ['chest'] },
+  ] };
+  const rows = suggestCircuit(tiny, { exerciseId: 'a' }, { size: 3 });
+  assert.equal(rows.exercises.length, 1);
+  assert.equal(rows.complete, false);
+});
+

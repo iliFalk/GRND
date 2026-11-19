@@ -17,74 +17,7 @@
     "secondary": 0.5
   },
   "exercises": {
-    "Push-ups": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "triceps",
-        "shoulders"
-      ],
-      "equipment": "bodyweight"
-    },
-    "Bench Press": {
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "triceps",
-        "shoulders"
-      ],
-      "equipment": "barbell"
-    },
-    "Pull-ups": {
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "equipment": "pull-up-bar"
-    },
-    "Bodyweight Rows": {
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "equipment": "bodyweight"
-    },
-    "Rows": {
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "equipment": "barbell"
-    },
-    "Dips": {
-      "primary": [
-        "triceps",
-        "chest"
-      ],
-      "secondary": [
-        "shoulders"
-      ],
-      "equipment": "bodyweight"
-    },
-    "Overhead Press": {
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "triceps",
-        "core"
-      ],
-      "equipment": "barbell"
-    },
-    "Squats": {
+    "Air squats": {
       "primary": [
         "quads",
         "glutes"
@@ -94,22 +27,16 @@
       ],
       "equipment": "bodyweight"
     },
-    "Lunges": {
+    "Back foot on chair — light jumps on front leg": {
       "primary": [
         "quads",
-        "glutes"
+        "calves"
       ],
       "secondary": [
-        "hamstrings"
-      ],
-      "equipment": "bodyweight"
-    },
-    "Plank": {
-      "primary": [
+        "glutes",
         "core"
       ],
-      "secondary": [],
-      "equipment": "bodyweight"
+      "equipment": "chair"
     },
     "Burpees": {
       "primary": [
@@ -122,25 +49,97 @@
       ],
       "equipment": "bodyweight"
     },
-    "Mountain Climbers": {
+    "Chin-ups (rings)": {
       "primary": [
-        "core"
+        "back",
+        "biceps"
       ],
       "secondary": [
-        "shoulders",
-        "quads"
+        "core"
+      ],
+      "equipment": "rings"
+    },
+    "Dips": {
+      "primary": [
+        "triceps",
+        "chest"
+      ],
+      "secondary": [
+        "shoulders"
       ],
       "equipment": "bodyweight"
     },
-    "Calisthenics": {
+    "Double kettlebell goblet squat": {
       "primary": [
-        "chest",
-        "back"
+        "quads",
+        "glutes"
       ],
       "secondary": [
         "core"
       ],
-      "equipment": "bodyweight"
+      "equipment": "kettlebell"
+    },
+    "Double kettlebell thruster": {
+      "primary": [
+        "quads",
+        "shoulders"
+      ],
+      "secondary": [
+        "glutes",
+        "triceps",
+        "core"
+      ],
+      "equipment": "kettlebell"
+    },
+    "Dumbbell flyes": {
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "shoulders"
+      ],
+      "equipment": "dumbbell"
+    },
+    "Front foot on chair — jump on back leg, side to side": {
+      "primary": [
+        "quads",
+        "calves"
+      ],
+      "secondary": [
+        "glutes",
+        "core"
+      ],
+      "equipment": "chair"
+    },
+    "Front foot on chair — jump on back leg, up": {
+      "primary": [
+        "quads",
+        "calves"
+      ],
+      "secondary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "equipment": "chair"
+    },
+    "Hanging knee raises": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "pull-up-bar"
+    },
+    "Jump onto chair": {
+      "primary": [
+        "quads",
+        "calves"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "equipment": "chair"
     },
     "Kettlebell Swing": {
       "primary": [
@@ -153,127 +152,43 @@
       ],
       "equipment": "kettlebell"
     },
-    "Kettlebell Goblet Squat": {
+    "One-arm kettlebell row": {
       "primary": [
-        "quads",
-        "glutes"
+        "back"
       ],
       "secondary": [
-        "core"
+        "biceps"
       ],
       "equipment": "kettlebell"
     },
-    "Kettlebell Press": {
+    "Pull-ups": {
       "primary": [
-        "shoulders"
+        "back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "equipment": "pull-up-bar"
+    },
+    "Push-ups": {
+      "primary": [
+        "chest"
       ],
       "secondary": [
         "triceps",
-        "core"
-      ],
-      "equipment": "kettlebell"
-    },
-    "Kettlebell Row": {
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "equipment": "kettlebell"
-    },
-    "Kettlebell Clean": {
-      "primary": [
-        "glutes",
-        "hamstrings"
-      ],
-      "secondary": [
-        "back",
         "shoulders"
       ],
-      "equipment": "kettlebell"
+      "equipment": "bodyweight"
     },
-    "Kettlebell Snatch": {
-      "primary": [
-        "glutes",
-        "shoulders"
-      ],
-      "secondary": [
-        "hamstrings",
-        "back"
-      ],
-      "equipment": "kettlebell"
-    },
-    "Kettlebell Deadlift": {
+    "RDL one leg": {
       "primary": [
         "hamstrings",
         "glutes"
       ],
       "secondary": [
-        "back"
-      ],
-      "equipment": "kettlebell"
-    },
-    "Kettlebell Front Rack Carry": {
-      "primary": [
         "core"
       ],
-      "secondary": [
-        "shoulders",
-        "quads"
-      ],
       "equipment": "kettlebell"
-    },
-    "Turkish Get-Up": {
-      "primary": [
-        "core",
-        "shoulders"
-      ],
-      "secondary": [
-        "glutes",
-        "quads"
-      ],
-      "equipment": "kettlebell"
-    },
-    "Farmer Carry": {
-      "primary": [
-        "core"
-      ],
-      "secondary": [
-        "back"
-      ],
-      "equipment": "kettlebell"
-    },
-    "Biceps Curl": {
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [],
-      "equipment": "dumbbell"
-    },
-    "Triceps Extension": {
-      "primary": [
-        "triceps"
-      ],
-      "secondary": [],
-      "equipment": "dumbbell"
-    },
-    "Calf Raise": {
-      "primary": [
-        "calves"
-      ],
-      "secondary": [],
-      "equipment": "bodyweight"
-    },
-    "Chin-ups (rings)": {
-      "primary": [
-        "back",
-        "biceps"
-      ],
-      "secondary": [
-        "core"
-      ],
-      "equipment": "rings"
     }
   },
   "fallback": [
@@ -289,18 +204,6 @@
       "equipment": "rings"
     },
     {
-      "pattern": "get-up",
-      "primary": [
-        "core",
-        "shoulders"
-      ],
-      "secondary": [
-        "glutes",
-        "quads"
-      ],
-      "equipment": "kettlebell"
-    },
-    {
       "pattern": "swing",
       "primary": [
         "glutes",
@@ -313,30 +216,6 @@
       "equipment": "kettlebell"
     },
     {
-      "pattern": "snatch",
-      "primary": [
-        "glutes",
-        "shoulders"
-      ],
-      "secondary": [
-        "hamstrings",
-        "back"
-      ],
-      "equipment": "kettlebell"
-    },
-    {
-      "pattern": "clean",
-      "primary": [
-        "glutes",
-        "hamstrings"
-      ],
-      "secondary": [
-        "back",
-        "shoulders"
-      ],
-      "equipment": "kettlebell"
-    },
-    {
       "pattern": "squat",
       "primary": [
         "quads",
@@ -344,84 +223,6 @@
       ],
       "secondary": [
         "core"
-      ],
-      "equipment": "any"
-    },
-    {
-      "pattern": "lunge",
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "hamstrings"
-      ],
-      "equipment": "any"
-    },
-    {
-      "pattern": "deadlift",
-      "primary": [
-        "hamstrings",
-        "glutes"
-      ],
-      "secondary": [
-        "back"
-      ],
-      "equipment": "any"
-    },
-    {
-      "pattern": "row",
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "equipment": "any"
-    },
-    {
-      "pattern": "press",
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "triceps"
-      ],
-      "equipment": "any"
-    },
-    {
-      "pattern": "pull-up",
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "equipment": "bodyweight"
-    },
-    {
-      "pattern": "curl",
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [],
-      "equipment": "any"
-    },
-    {
-      "pattern": "plank",
-      "primary": [
-        "core"
-      ],
-      "secondary": [],
-      "equipment": "bodyweight"
-    },
-    {
-      "pattern": "carry",
-      "primary": [
-        "core"
-      ],
-      "secondary": [
-        "back"
       ],
       "equipment": "any"
     }

@@ -115,4 +115,51 @@ function alternativesForMissingEquipment(catalogue, selected, availableEquipment
 	});
 }
 
-module.exports = { suggestPairs, alternativesForMissingEquipment, AXIS_OPPOSITE };
+/**
+ * Build a whole circuit of `size` exercises from one seed.
+ *
+ * `suggestPairs` ranks every partner against the seed alone, so a third pick could repeat a primary
+ * group the second one already covered — measured on his eight movements: three of eight triples had a
+ * duplicate. Here each pick excludes every group the circuit already trains.
+ *
+ * @returns {{exercises: object[], groups: string[], complete: boolean}}
+ */
+function suggestCircuit(catalogue, seed, options = {}) {
+	const entries = Array.isArray(catalogue) ? catalogue : (catalogue && catalogue.exercises) || [];
+	const equipment = Array.isArray(options.equipment) ? options.equipment.map(normalise) : null;
+	const size = Math.max(1, Number.isFinite(options.size) ? Number(options.size) : 3);
+	const wanted = normalise(seed && (seed.exerciseId || seed.name));
+	const first = entries.find((entry) => normalise(entry.id) === wanted || normalise(entry.name) === wanted);
+	if (!first) return { exercises: [], groups: [], complete: false };
+
+	const chosen = [first];
+	const used = new Set(first.primary || []);
+
+	while (chosen.length < size) {
+		const previous = chosen[chosen.length - 1];
+		const wantedAxes = AXIS_OPPOSITE[normalise(previous.movement)] || [];
+		const candidates = entries
+			.filter((entry) => !chosen.some((pick) => pick.id === entry.id))
+			.filter((entry) => !equipment || equipment.length === 0 || equipment.includes(normalise(entry.equipment)))
+			.filter((entry) => !(entry.primary || []).some((group) => used.has(group)))
+			.map((entry) => ({
+				entry,
+				score: wantedAxes.includes(normalise(entry.movement)) ? 3 : 1,
+			}))
+			.sort((a, b) => (b.score - a.score) || a.entry.name.localeCompare(b.entry.name));
+		if (!candidates.length) break;
+		const pick = candidates[0].entry;
+		chosen.push(pick);
+		for (const group of pick.primary || []) used.add(group);
+	}
+
+	return {
+		exercises: chosen.map((entry) => ({
+			name: entry.name, equipment: entry.equipment, movement: entry.movement, primary: entry.primary || [],
+		})),
+		groups: [...used],
+		complete: chosen.length === size,
+	};
+}
+
+module.exports = { suggestPairs, suggestCircuit, alternativesForMissingEquipment, AXIS_OPPOSITE };

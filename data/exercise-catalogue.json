@@ -1,5 +1,5 @@
 {
-  "note": "The fixed list a plan picks from. An id never changes; a name may be corrected. `is_heavy_basic` marks the movements with a rep range and a weight suggestion; `is_power` marks ballistic work; `movement` is the axis a circuit pairing reads; `per_side` means one rep counts on each side.",
+  "note": "His list and nothing else: the five heavy basics, one ballistic movement, four jumps and eight circuit movements. `movement` is the axis a pairing reads; `per_side` means one rep counts on each side.",
   "version": 1,
   "equipment": [
     {
@@ -74,42 +74,6 @@
       "movement": "power"
     },
     {
-      "id": "bench-press",
-      "name": "Bench Press",
-      "equipment": "barbell",
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "triceps",
-        "shoulders"
-      ],
-      "movement": "push"
-    },
-    {
-      "id": "biceps-curl",
-      "name": "Biceps Curl",
-      "equipment": "dumbbell",
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [],
-      "movement": "pull"
-    },
-    {
-      "id": "bodyweight-rows",
-      "name": "Bodyweight Rows",
-      "equipment": "bodyweight",
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "bodyweight_factor": 0.9,
-      "movement": "pull"
-    },
-    {
       "id": "burpees",
       "name": "Burpees",
       "equipment": "bodyweight",
@@ -123,31 +87,6 @@
       ],
       "bodyweight_factor": 1.0,
       "movement": "conditioning"
-    },
-    {
-      "id": "calf-raise",
-      "name": "Calf Raise",
-      "equipment": "bodyweight",
-      "primary": [
-        "calves"
-      ],
-      "secondary": [],
-      "bodyweight_factor": 1.0,
-      "movement": "calves"
-    },
-    {
-      "id": "calisthenics",
-      "name": "Calisthenics",
-      "equipment": "bodyweight",
-      "primary": [
-        "chest",
-        "back"
-      ],
-      "secondary": [
-        "core"
-      ],
-      "bodyweight_factor": 0.8,
-      "movement": "push"
     },
     {
       "id": "chin-ups-rings",
@@ -223,18 +162,6 @@
       "movement": "push"
     },
     {
-      "id": "farmer-carry",
-      "name": "Farmer Carry",
-      "equipment": "kettlebell",
-      "primary": [
-        "core"
-      ],
-      "secondary": [
-        "back"
-      ],
-      "movement": "carry"
-    },
-    {
       "id": "jump-back-leg-side",
       "name": "Front foot on chair — jump on back leg, side to side",
       "equipment": "chair",
@@ -294,99 +221,6 @@
       "movement": "power"
     },
     {
-      "id": "kettlebell-clean",
-      "name": "Kettlebell Clean",
-      "equipment": "kettlebell",
-      "primary": [
-        "glutes",
-        "hamstrings"
-      ],
-      "secondary": [
-        "back",
-        "shoulders"
-      ],
-      "movement": "hinge"
-    },
-    {
-      "id": "kettlebell-deadlift",
-      "name": "Kettlebell Deadlift",
-      "equipment": "kettlebell",
-      "primary": [
-        "hamstrings",
-        "glutes"
-      ],
-      "secondary": [
-        "back"
-      ],
-      "movement": "hinge"
-    },
-    {
-      "id": "kettlebell-front-rack-carry",
-      "name": "Kettlebell Front Rack Carry",
-      "equipment": "kettlebell",
-      "primary": [
-        "core"
-      ],
-      "secondary": [
-        "shoulders",
-        "quads"
-      ],
-      "movement": "carry"
-    },
-    {
-      "id": "kettlebell-goblet-squat",
-      "name": "Kettlebell Goblet Squat",
-      "equipment": "kettlebell",
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "core"
-      ],
-      "movement": "squat"
-    },
-    {
-      "id": "kettlebell-press",
-      "name": "Kettlebell Press",
-      "equipment": "kettlebell",
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "triceps",
-        "core"
-      ],
-      "movement": "push"
-    },
-    {
-      "id": "kettlebell-row",
-      "name": "Kettlebell Row",
-      "equipment": "kettlebell",
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "movement": "pull"
-    },
-    {
-      "id": "kettlebell-snatch",
-      "name": "Kettlebell Snatch",
-      "equipment": "kettlebell",
-      "primary": [
-        "glutes",
-        "shoulders"
-      ],
-      "secondary": [
-        "hamstrings",
-        "back"
-      ],
-      "is_power": true,
-      "movement": "hinge"
-    },
-    {
       "id": "kettlebell-swing",
       "name": "Kettlebell Swing",
       "equipment": "kettlebell",
@@ -403,34 +237,6 @@
       "movement": "hinge"
     },
     {
-      "id": "lunges",
-      "name": "Lunges",
-      "equipment": "bodyweight",
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "hamstrings"
-      ],
-      "bodyweight_factor": 0.7,
-      "movement": "squat"
-    },
-    {
-      "id": "mountain-climbers",
-      "name": "Mountain Climbers",
-      "equipment": "bodyweight",
-      "primary": [
-        "core"
-      ],
-      "secondary": [
-        "shoulders",
-        "quads"
-      ],
-      "bodyweight_factor": 0.6,
-      "movement": "core"
-    },
-    {
       "id": "one-arm-kettlebell-row",
       "name": "One-arm kettlebell row",
       "equipment": "kettlebell",
@@ -443,30 +249,6 @@
       "movement": "pull",
       "per_side": true,
       "note": "A rep of 10 means 10 on each arm."
-    },
-    {
-      "id": "overhead-press",
-      "name": "Overhead Press",
-      "equipment": "barbell",
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "triceps",
-        "core"
-      ],
-      "movement": "push"
-    },
-    {
-      "id": "plank",
-      "name": "Plank",
-      "equipment": "bodyweight",
-      "primary": [
-        "core"
-      ],
-      "secondary": [],
-      "bodyweight_factor": 0.5,
-      "movement": "core"
     },
     {
       "id": "pull-ups",
@@ -508,56 +290,6 @@
       ],
       "is_heavy_basic": true,
       "movement": "hinge"
-    },
-    {
-      "id": "rows",
-      "name": "Rows",
-      "equipment": "barbell",
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "movement": "pull"
-    },
-    {
-      "id": "squats",
-      "name": "Squats",
-      "equipment": "bodyweight",
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "core"
-      ],
-      "bodyweight_factor": 0.85,
-      "movement": "squat"
-    },
-    {
-      "id": "triceps-extension",
-      "name": "Triceps Extension",
-      "equipment": "dumbbell",
-      "primary": [
-        "triceps"
-      ],
-      "secondary": [],
-      "movement": "push"
-    },
-    {
-      "id": "turkish-get-up",
-      "name": "Turkish Get-Up",
-      "equipment": "kettlebell",
-      "primary": [
-        "core",
-        "shoulders"
-      ],
-      "secondary": [
-        "glutes",
-        "quads"
-      ],
-      "movement": "core"
     }
   ]
 }

@@ -96,7 +96,7 @@ test('a finished workout is written to the server', async (t) => {
     total_volume_kg: 1200,
     completedExercises: [
       {
-        name: 'Bench Press',
+        name: 'Dips',
         sets: [
           { reps: 5, weight: 60 },
           { reps: 5, weight: 60 }

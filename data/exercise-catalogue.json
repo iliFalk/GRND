@@ -268,6 +268,25 @@
       "is_circuit": true
     },
     {
+      "id": "kettlebell-snatch",
+      "name": "Kettlebell Snatch",
+      "equipment": "kettlebell",
+      "primary": [
+        "shoulders",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core",
+        "back"
+      ],
+      "movement": "push",
+      "role": "support",
+      "power": true,
+      "per_side": true,
+      "note": "Ilja, 2026-11-19: a pull that ends in a lockout. It counts once, in Push, because the lockout is where it fails."
+    },
+    {
       "id": "kettlebell-swing",
       "name": "Kettlebell Swing",
       "equipment": "kettlebell",

@@ -196,6 +196,18 @@
       ],
       "secondary": [],
       "equipment": "pull-up-bar"
+    },
+    "Kettlebell Snatch": {
+      "primary": [
+        "shoulders",
+        "glutes"
+      ],
+      "secondary": [
+        "hamstrings",
+        "core",
+        "back"
+      ],
+      "equipment": "kettlebell"
     }
   },
   "fallback": [

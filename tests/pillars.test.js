@@ -39,6 +39,20 @@ test('test_legs_take_squat_hinge_and_power', () => {
   assert.equal(byPillar(report).legs, 5);
 });
 
+test('test_a_snatch_counts_once_in_push', () => {
+  // A pull that ends in a lockout: it counts in Push and nowhere else, and it is power work.
+  const report = weeklyPillars(
+    [session('2026-03-03T10:00:00', [{ name: 'Kettlebell Snatch', completed_sets: [{ reps: 5 }, { reps: 5 }] }])],
+    { week: '2026-03-03' }
+  );
+  const push = report.pillars.find((row) => row.id === 'push');
+
+  assert.equal(push.sets, 2);
+  assert.equal(push.power_sets, 2);
+  assert.equal(push.base_sets, 0);
+  assert.equal(byPillar(report).pull, 0);
+});
+
 test('test_core_is_its_own_pillar', () => {
   // Ilja, 2026-11-19: the core is separate and it matters.
   const report = weeklyPillars(

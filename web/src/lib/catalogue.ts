@@ -13,6 +13,8 @@ export interface CatalogueEntry {
   role?: 'base' | 'support';
   /** Ballistic work: a jump, the swing, a snatch. */
   power?: boolean;
+  /** May be used in an AMRAP circuit. */
+  is_circuit?: boolean;
   bodyweight_factor?: number;
 }
 
@@ -77,6 +79,7 @@ function normalizeEntry(raw: unknown): CatalogueEntry | null {
     ...(movement === '' ? {} : { movement }),
     ...(record.role === 'base' || record.role === 'support' ? { role: record.role } : {}),
     ...(record.power === true ? { power: true } : {}),
+    ...(record.is_circuit === true ? { is_circuit: true } : {}),
     ...(typeof factor === 'number' && Number.isFinite(factor)
       ? { bodyweight_factor: factor }
       : {})

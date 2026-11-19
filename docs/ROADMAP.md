@@ -189,6 +189,22 @@ repository (2026-11-19). The React app in `web/` is the only front end.
 - Views, in this order: Dashboard (done in the shell), Plan, Workout with the timer, History.
 - **Proved by:** `npm run build`, `test:web`, and the same screen open in Telegram from the bot.
 
+## 2a. Abilities, not muscles — done (2026-11-19)
+
+The dashboard counts three abilities and the core, not ten muscles (Ilja, 2026-11-19: functional and
+multi-joint; a single link is not measured). `data/pillars.json` maps every `movement` of the catalogue
+to **pull, push, legs, core**, with a band per pillar; a set counts once, so three sets of pull-ups are
+three. A combination lift — a snatch — counts once in the axis where it fails: the lockout, so push.
+
+Every entry carries `role: base|support`: the base is the pull-up, the press (dips, a kettlebell
+thruster), the goblet squat and — since 2026-11-19 — the hanging leg raise for the core, with the knee
+raise as its regression. `GET /api/pillars/:userId` answers `sets`, `base_sets` and `power_sets` per
+pillar; the tiles show progress only, the detail sits below them.
+
+**History** lists a session as date, base exercise, sets, tonnage, duration and the time spent on
+pauses; a tap opens the sets with their load, a two-tap button deletes. `web/src/lib/history.ts` holds
+the formatters, the screen is `web/src/components/history/HistoryScreen.tsx`.
+
 ## 3. Weekly sets against the band — done
 
 `backend/utils/muscleVolume.js` counts working sets per muscle group (1.0 primary, 0.5 secondary, a
@@ -212,7 +228,8 @@ the write, the volume and the refusal of bodyweight work without a bodyweight.
 - **The circuit screen** in React, from §1a and §1c: total time, up to three exercises with the ranked
   pairing, reps per exercise, partial rounds written. The API answers (`POST /api/pairings`), the screen
   does not exist. No component calls `/api/pairings` today.
-- **History.** The tab is a placeholder; a finished session reaches the store, not the screen.
+- **A session's tonnage for kettlebell work** is the bell times the reps; the body that moved with it is
+  not counted. Only the bodyweight exercises carry a factor (12 of 18 have one).
 - **`initData` check on the API.** The Mini App sends Telegram's `initData`; the server does not verify
   it, so any caller can read any user's data. Turn it on behind an environment flag, prove the app still
   opens from the phone, then make it the default.

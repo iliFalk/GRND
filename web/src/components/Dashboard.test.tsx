@@ -1,0 +1,51 @@
+import { expect, it } from 'vitest';
+import { renderToString } from 'react-dom/server';
+import type { PillarsData } from '../lib/pillars';
+import { Dashboard } from './Dashboard';
+
+const data: PillarsData = {
+  week_start: '2026-11-16',
+  week_end: '2026-11-22',
+  sessions: 5,
+  pillars: [
+    {
+      id: 'pull',
+      label: 'Pull',
+      movements: ['pull'],
+      groups: ['back'],
+      sets: 5,
+      base_sets: 5,
+      power_sets: 0,
+      target: { min: 4, target_low: 4, target_high: null, max: null },
+      status: 'in',
+      short: 0,
+      exercises: [{ name: 'Chin-ups (rings)', sets: 5 }]
+    },
+    {
+      id: 'core',
+      label: 'Core',
+      movements: ['core'],
+      groups: ['core'],
+      sets: 1,
+      base_sets: 1,
+      power_sets: 0,
+      target: { min: 4, target_low: 4, target_high: null, max: null },
+      status: 'below',
+      short: 3,
+      exercises: [{ name: 'Hanging leg raise', sets: 1 }]
+    }
+  ],
+  circuits: [],
+  circuit_rounds: 0,
+  outside: [],
+  unmapped: []
+};
+
+it('test_a_tile_shows_the_floor_and_says_ok_once_it_is_reached', () => {
+  const html = renderToString(<Dashboard data={data} loading={false} onRetry={() => {}} />);
+
+  expect(html).toContain('of 4 sets');
+  expect(html).toContain('OK');
+  expect(html).toContain('3 short');
+  expect(html).not.toContain('of 20 sets');
+});

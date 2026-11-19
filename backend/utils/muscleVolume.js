@@ -8,8 +8,10 @@
  * Counting rule (one word, one meaning):
  *   - a set counts 1.0 for every primary group of its exercise;
  *   - a set counts 0.5 for every secondary group;
- *   - a set is a completed set, or one completed round of a circuit;
- *   - a warm-up set is not counted, because it is not marked as work.
+ *   - a set marked `warmup` is not work and is never counted;
+ *   - CIRCUIT work is endurance work: it is measured in rounds and time under load and never enters
+ *     the 10–20 strength band (Ilja, 2026-11-18). It is reported in `circuits`, beside the groups.
+ *   - a session with no counted set is not a session.
  */
 const fs = require('fs');
 const path = require('path');
@@ -59,12 +61,28 @@ class MuscleVolume {
     return { mapped: false, via: 'none', primary: [], secondary: [], equipment: 'unknown' };
   }
 
-  /** Completed work of one exercise, as a count of sets. */
+  /**
+   * Completed work of one exercise, as a count of sets.
+   *
+   * The three names are three names for one list — a session that carried two of them used to be
+   * counted twice. A warm-up set is skipped: it is not work.
+   */
   static setCount(exercise) {
-    const sets = Array.isArray(exercise.completed_sets) ? exercise.completed_sets.length : 0;
-    const rounds = Array.isArray(exercise.completed_rounds) ? exercise.completed_rounds.length : 0;
-    const plain = Array.isArray(exercise.sets) ? exercise.sets.length : 0;
-    return sets + rounds + plain;
+    const sets = Array.isArray(exercise.completed_sets)
+      ? exercise.completed_sets
+      : Array.isArray(exercise.sets)
+        ? exercise.sets
+        : Array.isArray(exercise.completed_rounds)
+          ? exercise.completed_rounds
+          : [];
+
+    return sets.filter((set) => !(set && set.warmup === true)).length;
+  }
+
+  /** A circuit is endurance work. `dayType` travels with the session; the day snapshot is the fallback. */
+  static isCircuit(session) {
+    const type = session.dayType || session.day_type || (session.day && session.day.day_type);
+    return String(type || '').trim().toUpperCase() === 'CIRCUIT';
   }
 
   /** Monday 00:00 of the week that holds `date`, in local time. */
@@ -99,7 +117,8 @@ class MuscleVolume {
    *
    * @param {Array|Object} sessions - the sessions of a user
    * @param {Object} [options] - `week` (any date inside the wanted week) and `userId`
-   * @returns {{week_start: string, week_end: string, groups: Array, unmapped: Array, sessions: number}}
+   * @returns {{week_start: string, week_end: string, groups: Array, circuits: Array,
+   *   circuit_rounds: number, unmapped: Array, sessions: number}}
    */
   static weeklyReport(sessions, options = {}) {
     const taxonomy = MuscleVolume.taxonomy();
@@ -113,14 +132,35 @@ class MuscleVolume {
       totals[group] = { sets: 0, primary_sets: 0, secondary_sets: 0, exercises: [] };
     }
     const unmapped = {};
+    const circuits = [];
     let counted = 0;
 
     for (const session of MuscleVolume.sessionList(sessions)) {
       if (wantedUser && session.userId && String(session.userId) !== wantedUser) continue;
       const date = MuscleVolume.sessionDate(session);
       if (!date || date < bounds.start || date >= bounds.end) continue;
-      counted += 1;
       const exercises = session.completedExercises || session.exercises || [];
+
+      // A circuit goes beside the band: rounds and time under load, no tonnage and no group sets.
+      if (MuscleVolume.isCircuit(session)) {
+        const rounds = exercises.reduce(
+          (most, exercise) => Math.max(most, MuscleVolume.setCount(exercise)),
+          0
+        );
+        if (rounds === 0) continue;
+        counted += 1;
+        circuits.push({
+          date: date.toISOString().slice(0, 10),
+          rounds,
+          time_under_load: Number(session.duration) > 0 ? Math.round(Number(session.duration)) : 0,
+          exercises: exercises
+            .map((exercise) => exercise.name || exercise.exercise_name || '')
+            .filter((name) => name !== '')
+        });
+        continue;
+      }
+
+      let worked = 0;
       for (const exercise of exercises) {
         const sets = MuscleVolume.setCount(exercise);
         if (!sets) continue;
@@ -130,6 +170,7 @@ class MuscleVolume {
           unmapped[name || '(unnamed)'] = (unmapped[name || '(unnamed)'] || 0) + sets;
           continue;
         }
+        worked += sets;
         for (const group of resolved.primary) {
           if (!totals[group]) continue;
           totals[group].sets += sets * credit.primary;
@@ -143,6 +184,9 @@ class MuscleVolume {
           totals[group].exercises.push({ name, sets, credit: credit.secondary });
         }
       }
+
+      // An empty session is not a session: it says nothing about the week.
+      if (worked > 0) counted += 1;
     }
 
     const groups = Object.entries(totals).map(([group, value]) => {
@@ -163,6 +207,8 @@ class MuscleVolume {
       week_start: bounds.start.toISOString().slice(0, 10),
       week_end: new Date(bounds.end.getTime() - 1).toISOString().slice(0, 10),
       groups,
+      circuits,
+      circuit_rounds: circuits.reduce((sum, circuit) => sum + circuit.rounds, 0),
       unmapped: Object.entries(unmapped).map(([name, sets]) => ({ name, sets })),
       sessions: counted
     };

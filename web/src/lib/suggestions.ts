@@ -23,11 +23,20 @@ export interface SuggestionGroup {
   suggestions: SuggestionExercise[];
 }
 
+export interface CircuitRow {
+  date: string;
+  rounds: number;
+  time_under_load: number;
+  exercises: string[];
+}
+
 export interface SuggestionsResponse {
   week_start?: string;
   week_end?: string;
   sessions?: number;
   groups?: SuggestionGroup[];
+  circuits?: CircuitRow[];
+  circuit_rounds?: number;
   unmapped?: Array<{ name: string; sets: number }>;
 }
 
@@ -57,6 +66,9 @@ export interface DashboardData {
   week_end: string | null;
   sessions: number;
   groups: DashboardGroup[];
+  /** Circuit work, which the band never counts. */
+  circuits: CircuitRow[];
+  circuit_rounds: number;
   unmapped: Array<{ name: string; sets: number }>;
 }
 
@@ -144,6 +156,8 @@ function merge(suggestions: SuggestionsResponse, volume: VolumeResponse | null):
     week_end: suggestions.week_end ?? volume?.week_end ?? null,
     sessions: numberOr(suggestions.sessions ?? volume?.sessions, 0),
     groups,
+    circuits: Array.isArray(suggestions.circuits) ? suggestions.circuits : [],
+    circuit_rounds: numberOr(suggestions.circuit_rounds, 0),
     unmapped: Array.isArray(suggestions.unmapped) ? suggestions.unmapped : []
   };
 }

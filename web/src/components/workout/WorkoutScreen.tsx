@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useExerciseCatalogue } from '../../lib/catalogue';
+import { resolveCatalogueEntryByName, useExerciseCatalogue } from '../../lib/catalogue';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
 import {
   activeExercise,
@@ -17,10 +17,12 @@ import {
   type WorkoutChoice,
   type WorkoutState
 } from '../../lib/workout';
+import { useDashboardData } from '../../lib/useDashboardData';
 import { ExercisePicker } from '../plan/ExercisePicker';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Progress } from '../ui/progress';
 
 interface WorkoutScreenProps {
   userId: string;
@@ -40,6 +42,8 @@ function formatClock(seconds: number): string {
 
 export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const catalogue = useExerciseCatalogue();
+  // The plan is not the next workout: it is what the week is short of, with the progress so far.
+  const plan = useDashboardData(userId);
   const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
   const [state, setState] = useState<WorkoutState | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -155,6 +159,61 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             Choose the exercises, give each its weight, then count the repetitions.
           </p>
         </div>
+
+        {plan.data && plan.data.groups.length > 0 ? (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Plan · what is short</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {plan.data.groups.map((group) => {
+                const max =
+                  typeof group.target.max === 'number' && group.target.max > 0
+                    ? group.target.max
+                    : group.sets + group.short;
+                const percent = max > 0 ? Math.min(100, (group.sets / max) * 100) : 0;
+
+                return (
+                  <div key={group.group} className="space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                      <span className="font-medium capitalize">{group.group}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {`${formatNumber(group.sets)} / ${formatNumber(max)} · ${formatNumber(group.short)} short`}
+                      </span>
+                    </div>
+                    <Progress value={percent} />
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.suggestions.map((suggestion) => {
+                        const entry = resolveCatalogueEntryByName(entries, suggestion.name);
+                        const picked = entry ? chosen.some((choice) => choice.id === entry.id) : false;
+                        return (
+                          <button
+                            key={suggestion.name}
+                            type="button"
+                            disabled={!entry}
+                            onClick={() => {
+                              if (entry) toggle(entry.id);
+                            }}
+                            className={
+                              picked
+                                ? 'rounded-pill border border-primary bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'
+                                : 'rounded-pill border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground'
+                            }
+                          >
+                            {picked ? `${suggestion.name} ✓` : suggestion.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-xs text-muted-foreground">
+                Tap a name to add it to the workout.
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {catalogue.loading ? (
           <Card>

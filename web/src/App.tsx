@@ -26,7 +26,7 @@ export default function App() {
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <Header weekRange={weekRange} theme={theme} onToggleTheme={toggleTheme} />
-      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-24 pt-5">
+      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-5">
         {page === 'dashboard' ? (
           <Dashboard data={data} loading={loading} error={error} onRetry={reload} />
         ) : page === 'plan' ? (

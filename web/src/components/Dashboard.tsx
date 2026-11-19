@@ -35,8 +35,13 @@ function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3
   const wanted = movements.map((movement) => movement.toLowerCase());
   return entries
     .filter((entry) => wanted.includes(String(entry.movement ?? '').toLowerCase()))
+    // The base first: it is what the pillar rests on, the rest completes it.
+    .sort((a, b) => {
+      const baseA = a.role === 'base' ? 0 : 1;
+      const baseB = b.role === 'base' ? 0 : 1;
+      return baseA - baseB || a.name.localeCompare(b.name);
+    })
     .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b))
     .slice(0, limit);
 }
 
@@ -64,6 +69,16 @@ function PillarTile({ row }: { row: PillarRow }) {
         <p className="text-[11px] font-semibold" style={{ color: colour }}>
           {row.status === 'below' ? `${formatNumber(row.short)} short` : STATUS_LABEL[row.status]}
         </p>
+        {row.base_sets > 0 || row.power_sets > 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            {[
+              row.base_sets > 0 ? `base ${formatNumber(row.base_sets)}` : '',
+              row.power_sets > 0 ? `power ${formatNumber(row.power_sets)}` : ''
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -123,7 +138,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {data.pillars.map((row) => (
           <PillarTile key={row.id} row={row} />
         ))}
@@ -138,7 +153,8 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
             <p className="text-muted-foreground">Every pillar is inside its band.</p>
           ) : (
             short.map((row) => {
-              const names = candidatesFor(entries, row.movements);
+              // The base first: it is what the pillar rests on.
+              const names = candidatesFor(entries, row.movements, 4);
               return (
                 <div key={row.id} className="flex items-baseline justify-between gap-3">
                   <span className="shrink-0 font-medium">{row.label}</span>

@@ -54,7 +54,7 @@ export function ExercisePicker({ entries, selectedIds, onToggle, className }: Ex
           {needle === '' ? 'The catalogue is empty.' : `No exercise matches “${query.trim()}”.`}
         </p>
       ) : (
-        <ul className="space-y-1">
+        <ul className="max-h-[46vh] space-y-1 overflow-y-auto pr-1">
           {shown.map((entry) => {
             const chosen = selectedIds.includes(entry.id);
             return (
@@ -73,9 +73,11 @@ export function ExercisePicker({ entries, selectedIds, onToggle, className }: Ex
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{entry.name}</span>
-                    {entry.equipment ? (
-                      <span className="block text-xs text-muted-foreground">{entry.equipment}</span>
-                    ) : null}
+                    <span className="block text-xs text-muted-foreground">
+                      {[entry.equipment, entry.role === 'base' ? 'base' : '', entry.power ? 'power' : '']
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
                   </span>
                   <span
                     className={cn(

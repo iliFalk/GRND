@@ -48,6 +48,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   // The body that moves during bodyweight work: the volume needs it, so it is editable here.
   const profile = useUserProfile(userId);
   const [editingWeight, setEditingWeight] = useState(false);
+  const [pillarFilter, setPillarFilter] = useState<string | null>(null);
   const [weightDraft, setWeightDraft] = useState('');
   const [weightError, setWeightError] = useState<string | null>(null);
   const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
@@ -65,6 +66,18 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   }, [state]);
 
   const entries = catalogue.data ?? [];
+
+  // A pillar narrows the list to its own movements; without a filter nothing is hidden.
+  const filteredPillar = pillarFilter
+    ? (plan.data?.pillars ?? []).find((row) => row.id === pillarFilter)
+    : undefined;
+  const visibleEntries = filteredPillar
+    ? entries.filter((entry) =>
+        filteredPillar.movements
+          .map((movement) => movement.toLowerCase())
+          .includes(String(entry.movement ?? '').toLowerCase())
+      )
+    : entries;
 
   const toggle = useCallback(
     (exerciseId: string) => {
@@ -227,53 +240,39 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
         {plan.data ? (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Plan · the week so far</CardTitle>
+              <CardTitle>Plan · tap a pillar to filter</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2">
               {plan.data.pillars.map((row) => {
                 const max =
                   typeof row.target.max === 'number' && row.target.max > 0
                     ? row.target.max
                     : row.sets + row.short;
                 const percent = max > 0 ? Math.min(100, (row.sets / max) * 100) : 0;
-                const wanted = row.movements.map((movement) => movement.toLowerCase());
-                const ideas = entries
-                  .filter((entry) => wanted.includes(String(entry.movement ?? '').toLowerCase()))
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .slice(0, 3);
+                const active = pillarFilter === row.id;
 
                 return (
-                  <div key={row.id} className="space-y-1.5">
-                    <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <button
+                    key={row.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setPillarFilter(active ? null : row.id)}
+                    className={
+                      active
+                        ? 'w-full space-y-1.5 rounded-control border border-primary bg-accent px-2 py-1.5 text-left'
+                        : 'w-full space-y-1.5 rounded-control border border-transparent px-2 py-1.5 text-left hover:bg-accent'
+                    }
+                  >
+                    <span className="flex items-baseline justify-between gap-2 text-sm">
                       <span className="font-medium">{row.label}</span>
                       <span className="shrink-0 text-xs text-muted-foreground">
                         {`${formatNumber(row.sets)} / ${formatNumber(max)} · ${formatNumber(row.short)} short`}
                       </span>
-                    </div>
-                    <Progress value={percent} />
-                    <div className="flex flex-wrap gap-1.5">
-                      {ideas.map((entry) => {
-                        const picked = chosen.some((choice) => choice.id === entry.id);
-                        return (
-                          <button
-                            key={entry.id}
-                            type="button"
-                            onClick={() => toggle(entry.id)}
-                            className={
-                              picked
-                                ? 'rounded-pill border border-primary bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'
-                                : 'rounded-pill border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground'
-                            }
-                          >
-                            {picked ? `${entry.name} ✓` : entry.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                    </span>
+                    <Progress value={percent} aria-label={`${row.label} ${formatNumber(row.sets)} of ${formatNumber(max)}`} />
+                  </button>
                 );
               })}
-              <p className="text-xs text-muted-foreground">Tap a name to add it to the workout.</p>
             </CardContent>
           </Card>
         ) : null}
@@ -286,7 +285,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
           </Card>
         ) : (
           <ExercisePicker
-            entries={entries}
+            entries={visibleEntries}
             selectedIds={chosen.map((choice) => choice.id)}
             onToggle={toggle}
           />

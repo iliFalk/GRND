@@ -56,7 +56,9 @@ function weeklyPillars(sessions, options = {}) {
 
   const totals = new Map();
   for (const row of rows) {
-    totals.set(row.id, { sets: 0, exercises: [] });
+    // A set counts once for the pillar; the base and the power work inside it are counted again
+    // under their own name, so a tile can say "12 sets, 8 of them base".
+    totals.set(row.id, { sets: 0, base_sets: 0, power_sets: 0, exercises: [] });
   }
 
   const outside = {};
@@ -108,7 +110,14 @@ function weeklyPillars(sessions, options = {}) {
 
       const row = totals.get(pillar.id);
       row.sets += sets;
-      row.exercises.push({ name: entry.name, sets });
+      if (entry.role === 'base') row.base_sets += sets;
+      if (entry.power === true) row.power_sets += sets;
+      row.exercises.push({
+        name: entry.name,
+        sets,
+        role: entry.role === 'base' ? 'base' : 'support',
+        power: entry.power === true
+      });
       worked += sets;
     }
 
@@ -116,7 +125,7 @@ function weeklyPillars(sessions, options = {}) {
   }
 
   const pillars = rows.map((row) => {
-    const value = totals.get(row.id) || { sets: 0, exercises: [] };
+    const value = totals.get(row.id) || { sets: 0, base_sets: 0, power_sets: 0, exercises: [] };
     const target = {
       min: row.min,
       target_low: row.min,
@@ -130,6 +139,8 @@ function weeklyPillars(sessions, options = {}) {
       label: row.label || row.id,
       movements: row.movements || [],
       sets,
+      base_sets: round1(value.base_sets),
+      power_sets: round1(value.power_sets),
       target,
       status: MuscleVolume.statusFor(sets, target),
       short: round1(Math.max(0, (Number(row.min) || 0) - sets)),

@@ -9,6 +9,10 @@ export interface CatalogueEntry {
   secondary: string[];
   /** The axis the pillar report counts by: pull, push, squat, hinge, core, carry, power, conditioning. */
   movement?: string;
+  /** The base of its pillar, or what completes it. */
+  role?: 'base' | 'support';
+  /** Ballistic work: a jump, the swing, a snatch. */
+  power?: boolean;
   bodyweight_factor?: number;
 }
 
@@ -71,6 +75,8 @@ function normalizeEntry(raw: unknown): CatalogueEntry | null {
     primary: stringList(record.primary),
     secondary: stringList(record.secondary),
     ...(movement === '' ? {} : { movement }),
+    ...(record.role === 'base' || record.role === 'support' ? { role: record.role } : {}),
+    ...(record.power === true ? { power: true } : {}),
     ...(typeof factor === 'number' && Number.isFinite(factor)
       ? { bodyweight_factor: factor }
       : {})

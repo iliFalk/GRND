@@ -39,13 +39,45 @@ test('test_legs_take_squat_hinge_and_power', () => {
   assert.equal(byPillar(report).legs, 5);
 });
 
-test('test_core_work_counts_as_pull', () => {
+test('test_core_is_its_own_pillar', () => {
+  // Ilja, 2026-11-19: the core is separate and it matters.
   const report = weeklyPillars(
     [session('2026-03-03T10:00:00', [{ name: 'Hanging knee raises', completed_sets: [{ reps: 10 }, { reps: 10 }] }])],
     { week: '2026-03-03' }
   );
 
-  assert.equal(byPillar(report).pull, 2);
+  assert.equal(byPillar(report).core, 2);
+  assert.equal(byPillar(report).pull, 0);
+});
+
+test('test_the_base_is_counted_inside_its_pillar', () => {
+  // A goblet squat is base work; a jump is what completes it.
+  const report = weeklyPillars(
+    [
+      session('2026-03-03T10:00:00', [
+        { name: 'Double kettlebell goblet squat', completed_sets: [{ reps: 8 }, { reps: 8 }, { reps: 8 }] },
+        { name: 'Jump onto chair', completed_sets: [{ reps: 5 }] }
+      ])
+    ],
+    { week: '2026-03-03' }
+  );
+  const legs = report.pillars.find((row) => row.id === 'legs');
+
+  assert.equal(legs.sets, 4);
+  assert.equal(legs.base_sets, 3);
+  assert.equal(legs.power_sets, 1);
+});
+
+test('test_a_support_exercise_is_not_base', () => {
+  const report = weeklyPillars(
+    [session('2026-03-03T10:00:00', [{ name: 'Dumbbell flyes', completed_sets: [{ reps: 10 }, { reps: 10 }] }])],
+    { week: '2026-03-03' }
+  );
+  const push = report.pillars.find((row) => row.id === 'push');
+
+  assert.equal(push.sets, 2);
+  assert.equal(push.base_sets, 0);
+  assert.equal(push.exercises[0].role, 'support');
 });
 
 test('test_conditioning_stays_outside_the_pillars', () => {
@@ -54,7 +86,7 @@ test('test_conditioning_stays_outside_the_pillars', () => {
     { week: '2026-03-03' }
   );
 
-  assert.deepEqual(byPillar(report), { pull: 0, push: 0, legs: 0 });
+  assert.deepEqual(byPillar(report), { pull: 0, push: 0, legs: 0, core: 0 });
   assert.deepEqual(report.outside, [{ name: 'Burpees', sets: 2 }]);
   assert.equal(report.sessions, 0);
 });
@@ -105,6 +137,7 @@ test('test_the_legs_band_starts_higher_than_the_upper_band', () => {
   assert.equal(bands.pull, 10);
   assert.equal(bands.push, 10);
   assert.equal(bands.legs, 12);
+  assert.equal(bands.core, 6);
 });
 
 test('test_status_follows_the_band', () => {
@@ -139,5 +172,5 @@ test('test_an_exercise_outside_the_catalogue_is_unmapped', () => {
   );
 
   assert.deepEqual(report.unmapped, [{ name: 'Bench Press', sets: 1 }]);
-  assert.deepEqual(byPillar(report), { pull: 0, push: 0, legs: 0 });
+  assert.deepEqual(byPillar(report), { pull: 0, push: 0, legs: 0, core: 0 });
 });

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Dashboard } from './components/Dashboard';
-import { FooterNav, PAGE_LABELS, type PageId } from './components/FooterNav';
+import { FooterNav, type PageId } from './components/FooterNav';
 import { Header } from './components/Header';
-import { Placeholder } from './components/Placeholder';
+import { HistoryScreen } from './components/history/HistoryScreen';
 import { PlanView } from './components/plan/PlanView';
 import { WorkoutScreen } from './components/workout/WorkoutScreen';
 import { formatWeekRange } from './lib/format';
+import { invalidateHistory } from './lib/history';
 import { useTrainingPlans } from './lib/plans';
 import { useTheme } from './lib/theme';
 import { usePillars } from './lib/pillars';
@@ -23,6 +24,12 @@ export default function App() {
   const { data, loading, error, reload } = usePillars(userId);
   const weekRange = data ? formatWeekRange(data.week_start, data.week_end) : null;
 
+  // A saved workout changes the week and the history, so both are read again.
+  const saved = useCallback(() => {
+    invalidateHistory(userId);
+    reload();
+  }, [reload, userId]);
+
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <Header weekRange={weekRange} theme={theme} onToggleTheme={toggleTheme} />
@@ -32,9 +39,9 @@ export default function App() {
         ) : page === 'plan' ? (
           <PlanScreen />
         ) : page === 'workout' ? (
-          <WorkoutScreen userId={userId} onSaved={reload} />
+          <WorkoutScreen userId={userId} onSaved={saved} />
         ) : (
-          <Placeholder title={PAGE_LABELS[page]} />
+          <HistoryScreen userId={userId} />
         )}
       </main>
       <FooterNav active={page} onChange={setPage} />

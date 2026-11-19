@@ -7,6 +7,8 @@ export interface SessionPayload {
   /** The report counts a circuit apart from the strength band; this is how it knows. */
   dayType: 'STANDARD' | 'CIRCUIT';
   duration: number;
+  /** Seconds spent on the pauses, so the history can show them apart from the work. */
+  rest_seconds: number;
   completedExercises: Array<{
     exerciseId: string;
     name: string;
@@ -42,6 +44,7 @@ export function buildSessionPayload(
     date: now.toISOString(),
     dayType: 'STANDARD',
     duration: Math.max(0, Math.round((now.getTime() - state.startedAt) / 1000)),
+    rest_seconds: state.restSeconds,
     completedExercises: done.map((exercise) => ({
       exerciseId: exercise.id,
       name: exercise.name,

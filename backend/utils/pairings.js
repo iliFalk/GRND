@@ -20,6 +20,13 @@ const AXIS_OPPOSITE = {
 
 const STATUS = { antagonist: 3, neutral: 2, overlap: 1, same: 0 };
 
+/**
+ * A group that tolerates a second exercise in the same circuit. Ilja, 2026-11-19: "если в тройках что-то
+ * вызывает проблему, тогда допускается два упражнения на спину". Nothing else is relaxed: the rule
+ * exists so a circuit does not burn one muscle three times, and the back is the group that carries it.
+ */
+const RELAXABLE_GROUPS = ["back"];
+
 function normalise(value) {
 	return String(value || "").trim().toLowerCase();
 }
@@ -147,8 +154,20 @@ function suggestCircuit(catalogue, seed, options = {}) {
 				score: wantedAxes.includes(normalise(entry.movement)) ? 3 : 1,
 			}))
 			.sort((a, b) => (b.score - a.score) || a.entry.name.localeCompare(b.entry.name));
-		if (!candidates.length) break;
-		const pick = candidates[0].entry;
+		let pick = candidates.length ? candidates[0].entry : null;
+		if (!pick) {
+			// The strict list is empty: allow an exercise that only repeats a relaxable group.
+			const relaxed = entries
+				.filter((entry) => !chosen.some((chosenEntry) => chosenEntry.id === entry.id))
+				.filter((entry) => !equipment || equipment.length === 0 || equipment.includes(normalise(entry.equipment)))
+				.filter((entry) => {
+					const shared = (entry.primary || []).filter((group) => used.has(group));
+					return shared.length > 0 && shared.every((group) => RELAXABLE_GROUPS.includes(group));
+				})
+				.sort((a, b) => a.name.localeCompare(b.name));
+			pick = relaxed.length ? relaxed[0] : null;
+		}
+		if (!pick) break;
 		chosen.push(pick);
 		for (const group of pick.primary || []) used.add(group);
 	}
@@ -162,4 +181,4 @@ function suggestCircuit(catalogue, seed, options = {}) {
 	};
 }
 
-module.exports = { suggestPairs, suggestCircuit, alternativesForMissingEquipment, AXIS_OPPOSITE };
+module.exports = { suggestPairs, suggestCircuit, alternativesForMissingEquipment, AXIS_OPPOSITE, RELAXABLE_GROUPS };

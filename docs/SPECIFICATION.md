@@ -76,6 +76,16 @@ unmapped[{name, sets}]
 `status` is `below` under the low end, `in` inside the productive band, `above` past the top of it and
 `high` past the maximum.
 
+#### 4.1.2. The plan is direction, the workout is load
+
+A plan day states **what** is trained and in which shape: the exercises, the day type, and for a heavy
+basic exercise the rep range. It does not state the numbers of a particular session.
+
+A circuit day stores the exercises and nothing else — no time, no reps. Before each workout the user
+chooses the total time and the reps of each exercise, and that session records what actually happened.
+The rule behind it: a plan is held to even on a flat day, so doing less is allowed and leaving the plan's
+direction is not.
+
 #### 4.2. Data Persistence Logic
 1.  **Load:** At app start, the app sends a `GET` request to `/api/workout-data/:userId`.
     The server returns the user's JSON file.

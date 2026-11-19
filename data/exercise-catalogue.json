@@ -86,7 +86,9 @@
         "shoulders"
       ],
       "bodyweight_factor": 1.0,
-      "movement": "conditioning"
+      "movement": "conditioning",
+      "solo": true,
+      "note": "Almost always a circuit on its own; it has no antagonist pair."
     },
     {
       "id": "chin-ups-rings",

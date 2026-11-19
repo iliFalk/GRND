@@ -143,6 +143,17 @@ says is advice: any exercise in the catalogue can be picked.
 Verified: eight tests over the pairing, the whole suite 32 green; `POST /api/pairings` answers for his
 catalogue and his kit.
 
+### Three refinements, 2026-11-19
+
+1. **A second exercise on the back is allowed** when a triple cannot be filled otherwise. The back is the
+   only group that carries this: every other primary group still appears once per circuit. `RELAXABLE_GROUPS`
+   in `backend/utils/pairings.js` holds the list, one entry, so changing the rule is one line.
+2. **Burpees are their own circuit.** Nothing is their antagonist and they need no pair: the catalogue
+   marks them `solo`.
+3. **The plan carries the direction; the workout carries the load.** Reps for a circuit are chosen before
+   each workout, never stored in the plan. A plan is held to even when the day feels flat: less work is
+   allowed, leaving the plan's direction is not.
+
 ## 2. The React UI
 
 The vanilla frontend (`frontend/js/**`, 6 782 lines of components) is replaced by a React app in `web/`.

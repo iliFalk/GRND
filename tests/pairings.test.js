@@ -89,3 +89,25 @@ test('test_a_circuit_stops_when_nothing_fits', () => {
   assert.equal(rows.complete, false);
 });
 
+test('test_a_second_back_exercise_is_allowed_when_nothing_else_fits', () => {
+  // Ilja, 2026-11-19: a triple that cannot be filled may carry two back exercises. Nothing else may.
+  const tight = { exercises: [
+    { id: 'chin', name: 'Chin-ups', equipment: 'bodyweight', movement: 'pull', primary: ['back'] },
+    { id: 'row', name: 'Row', equipment: 'bodyweight', movement: 'pull', primary: ['back'] },
+    { id: 'chest', name: 'Push', equipment: 'bodyweight', movement: 'push', primary: ['chest'] },
+  ] };
+  const rows = suggestCircuit(tight, { exerciseId: 'chin' }, { size: 3 });
+  const names = rows.exercises.map((e) => e.name);
+  assert.deepEqual(names, ['Chin-ups', 'Push', 'Row'], 'the back is the group that may repeat');
+});
+
+test('test_another_group_never_repeats', () => {
+  const tight = { exercises: [
+    { id: 'push1', name: 'Push A', equipment: 'bodyweight', movement: 'push', primary: ['chest'] },
+    { id: 'push2', name: 'Push B', equipment: 'bodyweight', movement: 'push', primary: ['chest'] },
+  ] };
+  const rows = suggestCircuit(tight, { exerciseId: 'push1' }, { size: 2 });
+  assert.equal(rows.exercises.length, 1, 'a second chest exercise is not allowed');
+  assert.equal(rows.complete, false);
+});
+

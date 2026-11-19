@@ -48,38 +48,42 @@ function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3
 
 function PillarTile({ row }: { row: PillarRow }) {
   const colour = STATUS_COLOR[row.status];
-  const max =
-    typeof row.target.max === 'number' && row.target.max > 0
-      ? row.target.max
-      : row.sets + row.short;
-  const percent = max > 0 ? Math.min(100, (row.sets / max) * 100) : 0;
+  // The band the week is measured against: its floor and its productive top.
+  const low = typeof row.target.min === 'number' ? row.target.min : 0;
+  const high =
+    typeof row.target.target_high === 'number' && row.target.target_high > 0
+      ? row.target.target_high
+      : typeof row.target.max === 'number' && row.target.max > 0
+        ? row.target.max
+        : row.sets + row.short;
+  const percent = high > 0 ? Math.min(100, (row.sets / high) * 100) : 0;
+
+  const parts = [
+    row.base_sets > 0 ? `base ${formatNumber(row.base_sets)}` : '',
+    row.power_sets > 0 ? `power ${formatNumber(row.power_sets)}` : ''
+  ].filter(Boolean);
 
   return (
     <Card>
-      <CardContent className="space-y-2 px-3 py-3">
+      <CardContent className="space-y-1.5 px-3 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {row.label}
         </p>
-        <p className="font-mono text-2xl leading-none tabular-nums">{formatNumber(row.sets)}</p>
-        <p className="text-[11px] text-muted-foreground">{`of ${formatNumber(max)} sets`}</p>
+        <p className="font-mono text-3xl leading-none tabular-nums">{formatNumber(row.sets)}</p>
+        <p className="text-[11px] text-muted-foreground">
+          {`of ${formatNumber(low)}–${formatNumber(high)} sets`}
+        </p>
         <Progress
           value={percent}
           indicatorStyle={{ backgroundColor: colour }}
-          aria-label={`${row.label}: ${formatNumber(row.sets)} of ${formatNumber(max)} sets`}
+          aria-label={`${row.label}: ${formatNumber(row.sets)} sets against ${formatNumber(low)} to ${formatNumber(high)}`}
         />
         <p className="text-[11px] font-semibold" style={{ color: colour }}>
           {row.status === 'below' ? `${formatNumber(row.short)} short` : STATUS_LABEL[row.status]}
         </p>
-        {row.base_sets > 0 || row.power_sets > 0 ? (
-          <p className="text-[11px] text-muted-foreground">
-            {[
-              row.base_sets > 0 ? `base ${formatNumber(row.base_sets)}` : '',
-              row.power_sets > 0 ? `power ${formatNumber(row.power_sets)}` : ''
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        ) : null}
+        <p className="min-h-[14px] text-[11px] text-muted-foreground">
+          {parts.length > 0 ? parts.join(' · ') : ''}
+        </p>
       </CardContent>
     </Card>
   );
@@ -157,11 +161,11 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
               // The base first: it is what the pillar rests on.
               const names = candidatesFor(entries, row.movements, 4);
               return (
-                <div key={row.id} className="flex items-baseline justify-between gap-3">
-                  <span className="shrink-0 font-medium">{row.label}</span>
-                  <span className="min-w-0 truncate text-right text-xs text-muted-foreground">
+                <div key={row.id} className="space-y-0.5">
+                  <p className="text-sm font-semibold">{row.label}</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
                     {names.length > 0 ? names.join(' · ') : 'nothing at home closes this'}
-                  </span>
+                  </p>
                 </div>
               );
             })

@@ -12,6 +12,7 @@ import {
   type AmrapState
 } from '../../lib/amrap';
 import { amrapEntries, useExerciseCatalogue } from '../../lib/catalogue';
+import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { saveWorkoutSession, type SavedSession } from '../../lib/session';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -221,8 +222,8 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                   onClick={() => setMinutes(String(value))}
                   className={
                     minutes === String(value)
-                      ? 'rounded-pill border border-primary bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground'
-                      : 'rounded-pill border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground'
+                      ? 'rounded-pill border border-primary bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground'
+                      : 'rounded-pill border border-border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'
                   }
                 >
                   {`${value} min`}
@@ -234,6 +235,10 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                 min="1"
                 value={minutes}
                 onChange={(event) => setMinutes(event.target.value)}
+                onFocus={(event) => {
+                  selectAllOnFocus(event);
+                  revealInput(event.currentTarget);
+                }}
                 aria-label="Total time in minutes"
                 className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
@@ -258,6 +263,10 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                     min="1"
                     value={choice.reps}
                     onChange={(event) => setReps(choice.id, event.target.value)}
+                    onFocus={(event) => {
+                      selectAllOnFocus(event);
+                      revealInput(event.currentTarget);
+                    }}
                     aria-label={`Repetitions of ${choice.name} per round`}
                     className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />

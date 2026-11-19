@@ -34,7 +34,7 @@ export function FooterNav({ active, onChange }: FooterNavProps) {
               aria-current={selected ? 'page' : undefined}
               className={cn(
                 // A third larger than the four-tab bar it replaces.
-                'flex flex-col items-center gap-1.5 rounded-control px-3 py-3.5 text-base font-medium transition-colors',
+                'flex flex-col items-center gap-1.5 rounded-control px-3 py-3.5 text-base font-medium uppercase tracking-wide transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 selected ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )}

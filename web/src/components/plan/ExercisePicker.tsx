@@ -89,7 +89,7 @@ export function ExercisePicker({
                   </span>
                   <span
                     className={cn(
-                      'shrink-0 rounded-pill border px-2 py-0.5 text-xs font-semibold',
+                      'shrink-0 rounded-pill border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
                       chosen
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-border text-muted-foreground'

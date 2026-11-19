@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { setsEntries, useExerciseCatalogue } from '../../lib/catalogue';
+import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
 import {
   activeExercise,
@@ -309,8 +310,13 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                       min="30"
                       max="300"
                       step="0.5"
+                      autoFocus
                       value={weightDraft}
                       onChange={(event) => setWeightDraft(event.target.value)}
+                      onFocus={(event) => {
+                        selectAllOnFocus(event);
+                        revealInput(event.currentTarget);
+                      }}
                       aria-label="Bodyweight in kg"
                       className="w-16 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
@@ -337,7 +343,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                       setWeightError(null);
                       setEditingWeight(true);
                     }}
-                    className="rounded-control px-1 py-0.5 text-xs font-medium text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="rounded-control px-1 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {profile.loading
                       ? '…'
@@ -360,6 +366,10 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                     step="1"
                     value={choice.weight ?? ''}
                     onChange={(event) => setWeight(choice.id, event.target.value)}
+                    onFocus={(event) => {
+                      selectAllOnFocus(event);
+                      revealInput(event.currentTarget);
+                    }}
                     placeholder="kg"
                     aria-label={`Weight in kg for ${choice.name}`}
                     className="w-24 shrink-0 rounded-control border border-border bg-background px-2 py-1 text-right text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

@@ -56,7 +56,8 @@
         "core"
       ],
       "movement": "squat",
-      "role": "support"
+      "role": "support",
+      "bodyweight_factor": 0.85
     },
     {
       "id": "spring-front-leg",
@@ -74,7 +75,8 @@
       "typical": "по 40 на ногу",
       "movement": "power",
       "role": "support",
-      "power": true
+      "power": true,
+      "bodyweight_factor": 1.0
     },
     {
       "id": "burpees",
@@ -189,7 +191,8 @@
       "typical": "по 40 на ногу",
       "movement": "power",
       "role": "support",
-      "power": true
+      "power": true,
+      "bodyweight_factor": 1.0
     },
     {
       "id": "jump-back-leg-up",
@@ -207,7 +210,8 @@
       "typical": "по 40 на ногу",
       "movement": "power",
       "role": "support",
-      "power": true
+      "power": true,
+      "bodyweight_factor": 1.0
     },
     {
       "id": "hanging-knee-raises",
@@ -221,7 +225,8 @@
       ],
       "movement": "core",
       "role": "support",
-      "note": "The regression of the hanging leg raise."
+      "note": "The regression of the hanging leg raise.",
+      "bodyweight_factor": 0.4
     },
     {
       "id": "hanging-leg-raise",
@@ -233,7 +238,8 @@
       "secondary": [],
       "movement": "core",
       "role": "base",
-      "note": "The core base, like the pull-up is the pull base: the legs go up straight and the body stays still. Progression: knee raise, leg raise, toes to bar, L-sit."
+      "note": "The core base, like the pull-up is the pull base: the legs go up straight and the body stays still. Progression: knee raise, leg raise, toes to bar, L-sit.",
+      "bodyweight_factor": 0.5
     },
     {
       "id": "jump-onto-chair",
@@ -250,7 +256,8 @@
       "typical": "2×10",
       "movement": "power",
       "role": "support",
-      "power": true
+      "power": true,
+      "bodyweight_factor": 1.0
     },
     {
       "id": "kettlebell-swing",

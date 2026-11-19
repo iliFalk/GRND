@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   getDashboardState,
+  invalidateDashboard,
   loadDashboardData,
   subscribeDashboard,
   type DashboardState
@@ -31,7 +32,9 @@ export function useDashboardData(userId: string): DashboardQuery {
     };
   }, [userId]);
 
+  // A reload asks the server again: a saved workout must reach the week it changed.
   const reload = useCallback(() => {
+    invalidateDashboard(userId);
     void loadDashboardData(userId).catch(() => {
       // The state carries the error; the view offers a retry.
     });

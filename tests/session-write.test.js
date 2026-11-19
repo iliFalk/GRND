@@ -88,18 +88,34 @@ test('a finished workout is written to the server', async (t) => {
 
   await waitForHealth(baseUrl, child);
 
-  // The shape the WorkoutSession model produces once the component adds userId.
+  // Bodyweight work needs a bodyweight to count with. The test user has no profile, so the route
+  // must refuse the session with a reason instead of storing a silent zero.
+  const bodyweightOnly = await fetch(`${baseUrl}/api/workout-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: TEST_USER_ID,
+      date: new Date().toISOString(),
+      dayType: 'STANDARD',
+      completedExercises: [{ exerciseId: 'dips', name: 'Dips', sets: [{ reps: 5 }] }]
+    })
+  });
+  assert.equal(bodyweightOnly.status, 400);
+  const refusal = await bodyweightOnly.json();
+  assert.match(String(refusal.details), /bodyweight/);
+
+  // The shape the Workout tab posts: the exercise by catalogue id and name, the sets as done.
   const payload = {
     userId: TEST_USER_ID,
     date: new Date().toISOString(),
-    total_duration: 1800,
-    total_volume_kg: 1200,
+    dayType: 'STANDARD',
     completedExercises: [
       {
-        name: 'Dips',
+        exerciseId: 'kettlebell-swing',
+        name: 'Kettlebell Swing',
         sets: [
-          { reps: 5, weight: 60 },
-          { reps: 5, weight: 60 }
+          { reps: 10, weight: 30 },
+          { reps: 10, weight: 30 }
         ]
       }
     ]
@@ -120,4 +136,12 @@ test('a finished workout is written to the server', async (t) => {
   const stored = await (await fetch(`${baseUrl}/api/workout-sessions/${TEST_USER_ID}`)).json();
   assert.equal(stored.length, 1);
   assert.equal(stored[0].id, id);
+
+  // The volume is the sets that were done, not a zero.
+  assert.equal(stored[0].totalVolume, 600);
+  assert.equal(stored[0].total_volume_kg, 600);
+  assert.equal(stored[0].totalSets, 2);
+  assert.equal(stored[0].dayType, 'STANDARD');
+  assert.equal(stored[0].completedExercises[0].volume, 600);
+  assert.equal(stored[0].completedExercises[0].exerciseType, 'WEIGHTED');
 });

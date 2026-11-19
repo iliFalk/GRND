@@ -17,17 +17,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('frontend'));
+// The React app. `npm run build` writes it into dist/, and it is the only front end: the vanilla app
+// under frontend/ is gone. It serves at the root, which is the address the bot opens.
+const appDir = path.join(__dirname, 'dist');
+app.use(express.static(appDir));
 
-// The React app, built by `npm run build` into frontend/dist. It lives beside the old frontend until
-// the port is finished: /next/ is the new one, / is the one the bot opens today.
-const nextAppDir = path.join(__dirname, 'frontend', 'dist');
-app.use('/next', express.static(nextAppDir));
+// A link saved before the move still carries /next/; send it to the same path at the root.
 app.use('/next', (req, res, next) => {
-  if (req.method !== 'GET') return next();
-  res.sendFile(path.join(nextAppDir, 'index.html'), (error) => {
-    if (error) next(error);
-  });
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const target = req.originalUrl.replace(/^\/next/, '') || '/';
+  res.redirect(301, target);
 });
 
 // Configure multer for file uploads

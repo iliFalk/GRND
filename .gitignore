@@ -99,5 +99,5 @@ ehthumbs.db
 Thumbs.db
 
 # The React build
-frontend/dist/
+dist/
 web/node_modules/

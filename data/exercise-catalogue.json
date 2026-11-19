@@ -279,8 +279,8 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "is_circuit": true,
-      "order": 4
+      "order": 4,
+      "note": "Ilja, 2026-11-19: stays in Legs as power work; not offered in the AMRAP list."
     },
     {
       "id": "kettlebell-snatch",

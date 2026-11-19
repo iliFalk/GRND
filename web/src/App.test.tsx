@@ -78,5 +78,5 @@ it('renders the three pillars with their progress', async () => {
   expect(html).toContain('Legs');
   expect(html).toContain('6 more');
   expect(html).toContain('12 more');
-  expect(html).toContain('2 to close');
+  expect(html).toContain('2 short');
 });

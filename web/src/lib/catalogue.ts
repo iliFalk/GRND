@@ -7,6 +7,8 @@ export interface CatalogueEntry {
   equipment: string;
   primary: string[];
   secondary: string[];
+  /** The axis the pillar report counts by: pull, push, squat, hinge, core, carry, power, conditioning. */
+  movement?: string;
   bodyweight_factor?: number;
 }
 
@@ -61,12 +63,14 @@ function normalizeEntry(raw: unknown): CatalogueEntry | null {
   if (!id || !name) return null;
 
   const factor = record.bodyweight_factor;
+  const movement = typeof record.movement === 'string' ? record.movement.trim() : '';
   return {
     id,
     name,
     equipment: typeof record.equipment === 'string' ? record.equipment : '',
     primary: stringList(record.primary),
     secondary: stringList(record.secondary),
+    ...(movement === '' ? {} : { movement }),
     ...(typeof factor === 'number' && Number.isFinite(factor)
       ? { bodyweight_factor: factor }
       : {})

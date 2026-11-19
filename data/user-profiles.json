@@ -1,4 +1,10 @@
 {
+  "931142831": {
+    "userId": "931142831",
+    "bodyweight": 70,
+    "createdAt": "2026-11-18T15:55:20.479Z",
+    "updatedAt": "2026-11-18T15:55:20.479Z"
+  },
   "test-user": {
     "userId": "test-user",
     "bodyweight": 70,

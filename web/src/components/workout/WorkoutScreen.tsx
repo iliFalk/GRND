@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { resolveCatalogueEntryByName, useExerciseCatalogue } from '../../lib/catalogue';
+import { useExerciseCatalogue } from '../../lib/catalogue';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
 import {
   activeExercise,
@@ -17,8 +17,8 @@ import {
   type WorkoutChoice,
   type WorkoutState
 } from '../../lib/workout';
+import { usePillars } from '../../lib/pillars';
 import { useUserProfile } from '../../lib/profile';
-import { useDashboardData } from '../../lib/useDashboardData';
 import { ExercisePicker } from '../plan/ExercisePicker';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -43,8 +43,8 @@ function formatClock(seconds: number): string {
 
 export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const catalogue = useExerciseCatalogue();
-  // The plan is not the next workout: it is what the week is short of, with the progress so far.
-  const plan = useDashboardData(userId);
+  // The plan is not the next workout: it is the three pillars and what the week is short of.
+  const plan = usePillars(userId);
   // The body that moves during bodyweight work: the volume needs it, so it is editable here.
   const profile = useUserProfile(userId);
   const [editingWeight, setEditingWeight] = useState(false);
@@ -224,47 +224,48 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
           </p>
         </div>
 
-        {plan.data && plan.data.groups.length > 0 ? (
+        {plan.data ? (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Plan · what is short</CardTitle>
+              <CardTitle>Plan · the week so far</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {plan.data.groups.map((group) => {
+              {plan.data.pillars.map((row) => {
                 const max =
-                  typeof group.target.max === 'number' && group.target.max > 0
-                    ? group.target.max
-                    : group.sets + group.short;
-                const percent = max > 0 ? Math.min(100, (group.sets / max) * 100) : 0;
+                  typeof row.target.max === 'number' && row.target.max > 0
+                    ? row.target.max
+                    : row.sets + row.short;
+                const percent = max > 0 ? Math.min(100, (row.sets / max) * 100) : 0;
+                const wanted = row.movements.map((movement) => movement.toLowerCase());
+                const ideas = entries
+                  .filter((entry) => wanted.includes(String(entry.movement ?? '').toLowerCase()))
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .slice(0, 3);
 
                 return (
-                  <div key={group.group} className="space-y-1.5">
+                  <div key={row.id} className="space-y-1.5">
                     <div className="flex items-baseline justify-between gap-2 text-sm">
-                      <span className="font-medium capitalize">{group.group}</span>
+                      <span className="font-medium">{row.label}</span>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        {`${formatNumber(group.sets)} / ${formatNumber(max)} · ${formatNumber(group.short)} short`}
+                        {`${formatNumber(row.sets)} / ${formatNumber(max)} · ${formatNumber(row.short)} short`}
                       </span>
                     </div>
                     <Progress value={percent} />
                     <div className="flex flex-wrap gap-1.5">
-                      {group.suggestions.map((suggestion) => {
-                        const entry = resolveCatalogueEntryByName(entries, suggestion.name);
-                        const picked = entry ? chosen.some((choice) => choice.id === entry.id) : false;
+                      {ideas.map((entry) => {
+                        const picked = chosen.some((choice) => choice.id === entry.id);
                         return (
                           <button
-                            key={suggestion.name}
+                            key={entry.id}
                             type="button"
-                            disabled={!entry}
-                            onClick={() => {
-                              if (entry) toggle(entry.id);
-                            }}
+                            onClick={() => toggle(entry.id)}
                             className={
                               picked
                                 ? 'rounded-pill border border-primary bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground'
                                 : 'rounded-pill border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground'
                             }
                           >
-                            {picked ? `${suggestion.name} ✓` : suggestion.name}
+                            {picked ? `${entry.name} ✓` : entry.name}
                           </button>
                         );
                       })}
@@ -272,9 +273,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                   </div>
                 );
               })}
-              <p className="text-xs text-muted-foreground">
-                Tap a name to add it to the workout.
-              </p>
+              <p className="text-xs text-muted-foreground">Tap a name to add it to the workout.</p>
             </CardContent>
           </Card>
         ) : null}

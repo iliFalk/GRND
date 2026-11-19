@@ -1,3 +1,174 @@
 {
-  "sessions": []
+  "sessions": [
+    {
+      "date": "2026-11-18T17:15:04.057Z",
+      "total_duration": 0,
+      "total_volume_kg": 0,
+      "day_id_completed": "day-1",
+      "performance_summary": {},
+      "userId": "931142831",
+      "planId": null,
+      "weekId": null,
+      "dayId": "day-1",
+      "day": {
+        "day_id": "day-1",
+        "week_id": null,
+        "day_name": "Upper Body Strength",
+        "day_of_week": null,
+        "day_type": "STANDARD",
+        "workoutBlocks": [
+          {
+            "block_id": "block-1795022104057",
+            "day_id": null,
+            "block_type": "Standard",
+            "display_order": 1,
+            "rounds": null,
+            "target_time": null,
+            "exercises": [
+              {
+                "exercise_id": "exercise-1",
+                "exercise_name": "Bench Press",
+                "description": "",
+                "image_url": "",
+                "exercise_type": "WEIGHTED",
+                "bodyweight_load_percentage": 1,
+                "target_sets": 4,
+                "target_reps": 8,
+                "completed_sets": [],
+                "id": "exercise-1",
+                "name": "Bench Press",
+                "instructions": "",
+                "imageUrl": "",
+                "sets": 4,
+                "reps": 8,
+                "weight": 0,
+                "duration": 0,
+                "restTime": 60,
+                "notes": ""
+              },
+              {
+                "exercise_id": "exercise-2",
+                "exercise_name": "Bent Over Rows",
+                "description": "",
+                "image_url": "",
+                "exercise_type": "WEIGHTED",
+                "bodyweight_load_percentage": 1,
+                "target_sets": 4,
+                "target_reps": 10,
+                "completed_sets": [],
+                "id": "exercise-2",
+                "name": "Bent Over Rows",
+                "instructions": "",
+                "imageUrl": "",
+                "sets": 4,
+                "reps": 10,
+                "weight": 0,
+                "duration": 0,
+                "restTime": 60,
+                "notes": ""
+              }
+            ],
+            "id": "block-1795022104057"
+          }
+        ],
+        "exercises": [
+          {
+            "exercise_id": "exercise-1",
+            "exercise_name": "Bench Press",
+            "description": "",
+            "image_url": "",
+            "exercise_type": "WEIGHTED",
+            "bodyweight_load_percentage": 1,
+            "target_sets": 4,
+            "target_reps": 8,
+            "completed_sets": [],
+            "id": "exercise-1",
+            "name": "Bench Press",
+            "instructions": "",
+            "imageUrl": "",
+            "sets": 4,
+            "reps": 8,
+            "weight": 0,
+            "duration": 0,
+            "restTime": 60,
+            "notes": ""
+          },
+          {
+            "exercise_id": "exercise-2",
+            "exercise_name": "Bent Over Rows",
+            "description": "",
+            "image_url": "",
+            "exercise_type": "WEIGHTED",
+            "bodyweight_load_percentage": 1,
+            "target_sets": 4,
+            "target_reps": 10,
+            "completed_sets": [],
+            "id": "exercise-2",
+            "name": "Bent Over Rows",
+            "instructions": "",
+            "imageUrl": "",
+            "sets": 4,
+            "reps": 10,
+            "weight": 0,
+            "duration": 0,
+            "restTime": 60,
+            "notes": ""
+          }
+        ],
+        "circuit_config": {
+          "target_rounds": 3,
+          "circuit_exercises": []
+        },
+        "id": "day-1",
+        "name": "Upper Body Strength",
+        "dayNumber": 1,
+        "isCompleted": false,
+        "completedAt": null
+      },
+      "startTime": "2026-11-18T17:15:06.127Z",
+      "endTime": null,
+      "duration": 0,
+      "status": "completed",
+      "timerConfig": {
+        "totalWorkoutTime": 20,
+        "preparationTime": 10,
+        "defaultRestTime": 60,
+        "workoutType": "STANDARD"
+      },
+      "timerState": {
+        "isActive": false,
+        "isPreparation": false,
+        "isRest": false,
+        "currentExerciseIndex": 0,
+        "currentSetIndex": 0,
+        "currentRoundIndex": 0,
+        "timers": {
+          "total": {
+            "currentTime": 0,
+            "isRunning": false
+          },
+          "preparation": {
+            "currentTime": 0,
+            "isRunning": false
+          },
+          "rest": {
+            "currentTime": 0,
+            "isRunning": false
+          }
+        }
+      },
+      "totalVolume": 0,
+      "totalSets": 0,
+      "totalReps": 0,
+      "averageRPE": 0,
+      "completedExercises": [],
+      "notes": "",
+      "mood": null,
+      "energyLevel": null,
+      "location": null,
+      "device": null,
+      "color": null,
+      "id": "1795022106286"
+    }
+  ]
 }

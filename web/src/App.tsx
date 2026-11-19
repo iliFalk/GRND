@@ -8,7 +8,7 @@ import { WorkoutScreen } from './components/workout/WorkoutScreen';
 import { formatWeekRange } from './lib/format';
 import { useTrainingPlans } from './lib/plans';
 import { useTheme } from './lib/theme';
-import { useDashboardData } from './lib/useDashboardData';
+import { usePillars } from './lib/pillars';
 import { resolveUserId } from './lib/user';
 
 function PlanScreen() {
@@ -20,7 +20,7 @@ export default function App() {
   const [page, setPage] = useState<PageId>('dashboard');
   const { theme, toggleTheme } = useTheme();
   const userId = resolveUserId();
-  const { data, loading, error, reload } = useDashboardData(userId);
+  const { data, loading, error, reload } = usePillars(userId);
   const weekRange = data ? formatWeekRange(data.week_start, data.week_end) : null;
 
   return (

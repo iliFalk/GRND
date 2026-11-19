@@ -1,10 +1,10 @@
-import type { DashboardData, DashboardGroup, GroupStatus } from '../lib/suggestions';
-import { Badge } from './ui/badge';
+import { useExerciseCatalogue, type CatalogueEntry } from '../lib/catalogue';
+import type { PillarRow, PillarStatus, PillarsData } from '../lib/pillars';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
 
-const STATUS_COLOR: Record<GroupStatus, string> = {
+const STATUS_COLOR: Record<PillarStatus, string> = {
   below: 'var(--status-below)',
   in: 'var(--status-in)',
   above: 'var(--status-above)',
@@ -12,7 +12,7 @@ const STATUS_COLOR: Record<GroupStatus, string> = {
   unknown: 'var(--muted-foreground)'
 };
 
-const STATUS_LABEL: Record<GroupStatus, string> = {
+const STATUS_LABEL: Record<PillarStatus, string> = {
   below: 'Below',
   in: 'In band',
   above: 'Above',
@@ -30,60 +30,55 @@ function formatClock(seconds: number): string {
   return `${minutes}:${String(rest).padStart(2, '0')}`;
 }
 
-function GroupCard({ group }: { group: DashboardGroup }) {
-  const color = STATUS_COLOR[group.status];
+/** What closes a pillar at home: the catalogue's movements are the pillar's own list. */
+function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3): string[] {
+  const wanted = movements.map((movement) => movement.toLowerCase());
+  return entries
+    .filter((entry) => wanted.includes(String(entry.movement ?? '').toLowerCase()))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b))
+    .slice(0, limit);
+}
+
+function PillarTile({ row }: { row: PillarRow }) {
+  const colour = STATUS_COLOR[row.status];
   const max =
-    typeof group.target.max === 'number' && group.target.max > 0
-      ? group.target.max
-      : group.sets + group.short;
-  const percent = max > 0 ? (group.sets / max) * 100 : 0;
+    typeof row.target.max === 'number' && row.target.max > 0
+      ? row.target.max
+      : row.sets + row.short;
+  const percent = max > 0 ? Math.min(100, (row.sets / max) * 100) : 0;
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-3 space-y-0 pb-2">
-        <CardTitle className="capitalize">{group.group}</CardTitle>
-        <span className="shrink-0 text-xs font-semibold" style={{ color }}>
-          {STATUS_LABEL[group.status]}
-        </span>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-baseline justify-between gap-3 text-sm">
-          <span className="font-semibold tabular-nums">
-            {`${formatNumber(group.sets)} / ${formatNumber(max)} sets`}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {formatNumber(group.short)} short
-          </span>
-        </div>
+      <CardContent className="space-y-2 px-3 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {row.label}
+        </p>
+        <p className="font-mono text-2xl leading-none tabular-nums">{formatNumber(row.sets)}</p>
+        <p className="text-[11px] text-muted-foreground">{`of ${formatNumber(max)} sets`}</p>
         <Progress
           value={percent}
-          indicatorStyle={{ backgroundColor: color }}
-          aria-label={`${group.group}: ${formatNumber(group.sets)} of ${formatNumber(max)} sets`}
+          indicatorStyle={{ backgroundColor: colour }}
+          aria-label={`${row.label}: ${formatNumber(row.sets)} of ${formatNumber(max)} sets`}
         />
-        <div className="flex flex-wrap gap-1.5">
-          {group.suggestions.length > 0 ? (
-            group.suggestions.map((suggestion) => (
-              <Badge key={suggestion.name} title={suggestion.equipment}>
-                {suggestion.name}
-              </Badge>
-            ))
-          ) : (
-            <p className="text-xs text-muted-foreground">nothing at home closes this</p>
-          )}
-        </div>
+        <p className="text-[11px] font-semibold" style={{ color: colour }}>
+          {row.status === 'below' ? `${formatNumber(row.short)} short` : STATUS_LABEL[row.status]}
+        </p>
       </CardContent>
     </Card>
   );
 }
 
 interface DashboardProps {
-  data?: DashboardData;
+  data?: PillarsData;
   loading: boolean;
   error?: Error;
   onRetry: () => void;
 }
 
 export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
+  const catalogue = useExerciseCatalogue();
+
   if (error) {
     return (
       <Card>
@@ -108,58 +103,75 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
     );
   }
 
-  // Circuit work is endurance work: rounds and time under load, reported beside the band.
-  const circuitCard =
-    data.circuit_rounds > 0 ? (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle>Circuit work</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          {`${formatNumber(data.circuit_rounds)} rounds · ${formatClock(
-            data.circuits.reduce((sum, circuit) => sum + circuit.time_under_load, 0)
-          )} under load · outside the strength band`}
-        </CardContent>
-      </Card>
-    ) : null;
-
-  if (data.groups.length === 0) {
-    return (
-      <section className="space-y-3">
-        {circuitCard}
-        <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-sm font-medium">Nothing is short this week.</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Every muscle group has reached its band.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-    );
-  }
+  const entries = catalogue.data ?? [];
+  const short = data.pillars.filter((row) => row.status === 'below');
+  const circuits = data.circuit_rounds;
 
   return (
-    <section aria-labelledby="short-groups-title" className="space-y-3">
+    <section aria-labelledby="week-title" className="space-y-3">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 id="short-groups-title" className="text-lg font-semibold">
-            Short groups
+          <h2 id="week-title" className="text-lg font-semibold">
+            This week
           </h2>
           <p className="text-xs text-muted-foreground">
-            What to add this week · {data.sessions} {data.sessions === 1 ? 'session' : 'sessions'}
+            {`${data.sessions} ${data.sessions === 1 ? 'session' : 'sessions'}`}
           </p>
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">
-          {data.groups.length} to close
+          {short.length === 0 ? 'all in band' : `${short.length} to close`}
         </span>
       </div>
-      {circuitCard}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {data.groups.map((group) => (
-          <GroupCard key={group.group} group={group} />
+
+      <div className="grid grid-cols-3 gap-2">
+        {data.pillars.map((row) => (
+          <PillarTile key={row.id} row={row} />
         ))}
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>{short.length === 0 ? 'Nothing is short' : 'What to add'}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {short.length === 0 ? (
+            <p className="text-muted-foreground">Every pillar is inside its band.</p>
+          ) : (
+            short.map((row) => {
+              const names = candidatesFor(entries, row.movements);
+              return (
+                <div key={row.id} className="flex items-baseline justify-between gap-3">
+                  <span className="shrink-0 font-medium">{row.label}</span>
+                  <span className="min-w-0 truncate text-right text-xs text-muted-foreground">
+                    {names.length > 0 ? names.join(' · ') : 'nothing at home closes this'}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </CardContent>
+      </Card>
+
+      {circuits > 0 ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Circuit work</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {`${formatNumber(circuits)} rounds · ${formatClock(
+              data.circuits.reduce((sum, circuit) => sum + circuit.time_under_load, 0)
+            )} under load · outside the pillars`}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {data.outside.length > 0 ? (
+        <p className="px-1 text-xs text-muted-foreground">
+          {`Outside the pillars: ${data.outside
+            .map((entry) => `${entry.name} ${formatNumber(entry.sets)}`)
+            .join(', ')}`}
+        </p>
+      ) : null}
     </section>
   );
 }

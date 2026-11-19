@@ -1,0 +1,148 @@
+/**
+ * Weekly work per ability, not per muscle.
+ *
+ * Ilja, 2026-11-19: the block is functional and multi-joint, so a single link is not measured. A set
+ * counts ONCE for the pillar its movement belongs to — three sets of pull-ups are three, not three
+ * of back plus one and a half of biceps. The mapping and the bands live in `data/pillars.json`;
+ * conditioning (burpees) is endurance and belongs to the circuit, not here.
+ */
+const fs = require('fs');
+const path = require('path');
+
+const MuscleVolume = require('./muscleVolume');
+const catalogue = require('./exerciseCatalogue');
+
+const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+
+function readJson(name, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(DATA_DIR, name), 'utf8'));
+  } catch (error) {
+    console.warn(`pillars: cannot read ${name}: ${error.message}`);
+    return fallback;
+  }
+}
+
+function table() {
+  return readJson('pillars.json', { pillars: [], outside: {} });
+}
+
+function round1(value) {
+  return Math.round((value + Number.EPSILON) * 10) / 10;
+}
+
+/** The pillar a movement belongs to, or `null` when no pillar claims it. */
+function pillarForMovement(movement, rows) {
+  const wanted = String(movement || '').trim().toLowerCase();
+  if (!wanted) return null;
+  return rows.find((row) => (row.movements || []).map((entry) => String(entry).toLowerCase()).includes(wanted)) || null;
+}
+
+/**
+ * @param {Array|Object} sessions - the sessions of a user
+ * @param {{week?: string, userId?: string}} [options]
+ * @returns {{week_start: string, week_end: string, sessions: number, pillars: Array,
+ *   outside: Array, unmapped: Array}}
+ */
+function weeklyPillars(sessions, options = {}) {
+  const config = table();
+  const rows = Array.isArray(config.pillars) ? config.pillars : [];
+  const bounds = MuscleVolume.weekBounds(options.week);
+  const wantedUser = options.userId ? String(options.userId) : '';
+
+  const totals = new Map();
+  for (const row of rows) {
+    totals.set(row.id, { sets: 0, exercises: [] });
+  }
+
+  const outside = {};
+  const unmapped = {};
+  const circuits = [];
+  let counted = 0;
+
+  for (const session of MuscleVolume.sessionList(sessions)) {
+    if (wantedUser && session.userId && String(session.userId) !== wantedUser) continue;
+    const date = MuscleVolume.sessionDate(session);
+    if (!date || date < bounds.start || date >= bounds.end) continue;
+
+    // The circuit is endurance work: it never lands in a pillar, it is reported beside them.
+    if (MuscleVolume.isCircuit(session)) {
+      const rounds = (session.completedExercises || session.exercises || []).reduce(
+        (most, exercise) => Math.max(most, MuscleVolume.setCount(exercise)),
+        0
+      );
+      if (rounds === 0) continue;
+      counted += 1;
+      circuits.push({
+        date: date.toISOString().slice(0, 10),
+        rounds,
+        time_under_load: Number(session.duration) > 0 ? Math.round(Number(session.duration)) : 0,
+        exercises: (session.completedExercises || session.exercises || [])
+          .map((exercise) => exercise.name || exercise.exercise_name || '')
+          .filter((name) => name !== '')
+      });
+      continue;
+    }
+
+    let worked = 0;
+    for (const exercise of session.completedExercises || session.exercises || []) {
+      const sets = MuscleVolume.setCount(exercise);
+      if (!sets) continue;
+
+      const name = exercise.name || exercise.exercise_name || '';
+      const entry = catalogue.entryFor(exercise);
+      if (!entry) {
+        unmapped[name || '(unnamed)'] = (unmapped[name || '(unnamed)'] || 0) + sets;
+        continue;
+      }
+
+      const pillar = pillarForMovement(entry.movement, rows);
+      if (!pillar) {
+        outside[name || '(unnamed)'] = (outside[name || '(unnamed)'] || 0) + sets;
+        continue;
+      }
+
+      const row = totals.get(pillar.id);
+      row.sets += sets;
+      row.exercises.push({ name: entry.name, sets });
+      worked += sets;
+    }
+
+    if (worked > 0) counted += 1;
+  }
+
+  const pillars = rows.map((row) => {
+    const value = totals.get(row.id) || { sets: 0, exercises: [] };
+    const target = {
+      min: row.min,
+      target_low: row.min,
+      target_high: row.target_high,
+      max: row.max
+    };
+    const sets = round1(value.sets);
+
+    return {
+      id: row.id,
+      label: row.label || row.id,
+      movements: row.movements || [],
+      sets,
+      target,
+      status: MuscleVolume.statusFor(sets, target),
+      short: round1(Math.max(0, (Number(row.min) || 0) - sets)),
+      exercises: value.exercises
+    };
+  });
+
+  return {
+    week_start: bounds.start.toISOString().slice(0, 10),
+    week_end: new Date(bounds.end.getTime() - 1).toISOString().slice(0, 10),
+    sessions: counted,
+    pillars,
+    circuits,
+    circuit_rounds: circuits.reduce((sum, circuit) => sum + circuit.rounds, 0),
+    outside: Object.entries(outside).map(([name, sets]) => ({ name, sets })),
+    unmapped: Object.entries(unmapped).map(([name, sets]) => ({ name, sets }))
+  };
+}
+
+module.exports = { weeklyPillars, pillarForMovement };

@@ -1,0 +1,33 @@
+{
+  "source": "Ilja, 2026-11-19: strength and a little power, the main block only. Functional and multi-joint — a press is a kettlebell pressed overhead or a thruster, not a bench press. A single link (triceps, biceps, calves) is not measured. Conditioning such as burpees is endurance: it belongs to the AMRAP circuit, which he runs only when there is no basketball for a long time.",
+  "credit": "A completed set counts once for the pillar of its movement. No fractional credit by muscle.",
+  "pillars": [
+    {
+      "id": "pull",
+      "label": "Pull",
+      "movements": ["pull", "core"],
+      "min": 10,
+      "target_high": 20,
+      "max": 25
+    },
+    {
+      "id": "push",
+      "label": "Push",
+      "movements": ["push"],
+      "min": 10,
+      "target_high": 20,
+      "max": 25
+    },
+    {
+      "id": "legs",
+      "label": "Legs",
+      "movements": ["squat", "hinge", "power"],
+      "min": 12,
+      "target_high": 24,
+      "max": 30
+    }
+  ],
+  "outside": {
+    "conditioning": "endurance: the AMRAP circuit, not the strength block"
+  }
+}

@@ -185,56 +185,59 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   if (!state) {
     return (
       <section aria-labelledby="workout-setup-title" className="space-y-4">
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">Bodyweight</span>
-          {editingWeight ? (
-            <span className="flex items-center gap-2">
-              <input
-                type="number"
-                inputMode="decimal"
-                min="30"
-                max="300"
-                step="0.5"
-                value={weightDraft}
-                onChange={(event) => setWeightDraft(event.target.value)}
-                aria-label="Bodyweight in kg"
-                className="w-20 rounded-control border border-border bg-background px-2 py-1 text-right text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <span className="text-xs text-muted-foreground">kg</span>
-              <Button size="sm" onClick={saveBodyweight}>
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditingWeight(false)}>
-                Cancel
-              </Button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setWeightDraft(profile.profile?.bodyweight ? String(profile.profile.bodyweight) : '');
-                setWeightError(null);
-                setEditingWeight(true);
-              }}
-              className="rounded-control px-2 py-1 text-sm font-medium text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {profile.loading
-                ? '…'
-                : profile.profile?.bodyweight
-                  ? `${formatNumber(profile.profile.bodyweight)} kg · change`
-                  : 'set your weight'}
-            </button>
-          )}
-        </div>
-        {weightError ? <p className="text-xs text-destructive">{weightError}</p> : null}
-
         <div>
-          <h2 id="workout-setup-title" className="text-lg font-semibold">
-            Start a workout
-          </h2>
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 id="workout-setup-title" className="text-lg font-semibold">
+              Start a workout
+            </h2>
+            {editingWeight ? (
+              <span className="flex items-center gap-1">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="30"
+                  max="300"
+                  step="0.5"
+                  value={weightDraft}
+                  onChange={(event) => setWeightDraft(event.target.value)}
+                  aria-label="Bodyweight in kg"
+                  className="w-16 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <span className="text-[11px] text-muted-foreground">kg</span>
+                <Button size="sm" className="h-6 px-2 text-[11px]" onClick={saveBodyweight}>
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() => setEditingWeight(false)}
+                >
+                  Cancel
+                </Button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setWeightDraft(profile.profile?.bodyweight ? String(profile.profile.bodyweight) : '');
+                  setWeightError(null);
+                  setEditingWeight(true);
+                }}
+                className="rounded-control px-1 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {profile.loading
+                  ? '…'
+                  : profile.profile?.bodyweight
+                    ? `bodyweight ${formatNumber(profile.profile.bodyweight)} kg · change`
+                    : 'set bodyweight'}
+              </button>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
             Choose the exercises, give each its weight, then count the repetitions.
           </p>
+          {weightError ? <p className="text-xs text-destructive">{weightError}</p> : null}
         </div>
 
         {plan.data ? (

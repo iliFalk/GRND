@@ -60,7 +60,8 @@
       "bodyweight_factor": 0.85,
       "is_circuit": true,
       "excluded": true,
-      "note": "Ilja, 2026-11-19: not counted in Legs. It stays pickable and it stays in the AMRAP list."
+      "note": "Ilja, 2026-11-19: AMRAP only. Not in the Sets list, not counted in Legs.",
+      "amrap_only": true
     },
     {
       "id": "spring-front-leg",
@@ -178,7 +179,11 @@
         "shoulders"
       ],
       "movement": "push",
-      "role": "support"
+      "role": "support",
+      "excluded": true,
+      "amrap_only": true,
+      "is_circuit": true,
+      "note": "Ilja, 2026-11-19: AMRAP only. Not in the Sets list, not counted in Push."
     },
     {
       "id": "jump-back-leg-side",

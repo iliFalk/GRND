@@ -11,7 +11,7 @@ import {
   type AmrapChoice,
   type AmrapState
 } from '../../lib/amrap';
-import { useExerciseCatalogue } from '../../lib/catalogue';
+import { amrapEntries, useExerciseCatalogue } from '../../lib/catalogue';
 import { saveWorkoutSession, type SavedSession } from '../../lib/session';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -45,7 +45,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const entries = (catalogue.data ?? []).filter((entry) => entry.is_circuit === true);
+  const entries = amrapEntries(catalogue.data ?? []);
 
   useEffect(() => {
     onBusyChange(state !== null);

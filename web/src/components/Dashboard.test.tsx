@@ -35,6 +35,15 @@ const data: PillarsData = {
       exercises: [{ name: 'Hanging leg raise', sets: 1 }]
     }
   ],
+  days: [
+    { date: '2026-11-16', sets: 0, pillars: {} },
+    { date: '2026-11-17', sets: 4, pillars: { pull: 4 } },
+    { date: '2026-11-18', sets: 0, pillars: {} },
+    { date: '2026-11-19', sets: 2, pillars: { core: 2 } },
+    { date: '2026-11-20', sets: 0, pillars: {} },
+    { date: '2026-11-21', sets: 0, pillars: {} },
+    { date: '2026-11-22', sets: 0, pillars: {} }
+  ],
   circuits: [],
   circuit_rounds: 0,
   outside: [],

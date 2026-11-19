@@ -1,23 +1,8 @@
 import { useExerciseCatalogue, type CatalogueEntry } from '../lib/catalogue';
-import type { PillarRow, PillarStatus, PillarsData } from '../lib/pillars';
+import type { DayRow, PillarsData } from '../lib/pillars';
+import { PillarRing } from './PillarRing';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-
-const STATUS_COLOR: Record<PillarStatus, string> = {
-  below: 'var(--status-below)',
-  in: 'var(--status-in)',
-  above: 'var(--status-above)',
-  high: 'var(--status-high)',
-  unknown: 'var(--muted-foreground)'
-};
-
-const STATUS_LABEL: Record<PillarStatus, string> = {
-  below: 'Short',
-  in: 'OK',
-  above: 'Above',
-  high: 'High',
-  unknown: 'Unknown'
-};
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -45,46 +30,45 @@ function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3
     .slice(0, limit);
 }
 
-/**
- * A ring of progress toward the floor of the pillar: a quarter at one set, full at four. The number
- * inside is what the week has done.
- */
-function PillarRing({ row }: { row: PillarRow }) {
-  const colour = STATUS_COLOR[row.status];
-  const floor = typeof row.target.min === 'number' ? row.target.min : 0;
-  const percent = floor > 0 ? Math.min(100, (row.sets / floor) * 100) : 0;
+/** The week by day: what each day carried, today in the accent colour. */
+function WeekBars({ days }: { days: DayRow[] }) {
+  const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  // The scale holds at the floor, so a quiet week does not read as a busy one.
+  const max = Math.max(4, ...days.map((day) => day.sets));
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative h-14 w-14">
-        <svg viewBox="0 0 36 36" className="h-14 w-14" role="img"
-          aria-label={`${row.label}: ${formatNumber(row.sets)} sets this week, ${formatNumber(floor)} needed`}
-        >
-          <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--muted)" strokeWidth="3" />
-          <circle
-            cx="18"
-            cy="18"
-            r="15.5"
-            fill="none"
-            stroke={colour}
-            strokeWidth="3"
-            strokeLinecap="round"
-            pathLength={100}
-            strokeDasharray={`${percent} 100`}
-            transform="rotate(-90 18 18)"
-          />
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-semibold tabular-nums">
-          {formatNumber(row.sets)}
-        </span>
-      </div>
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {row.label}
-      </span>
-      <span className="text-[10px] font-semibold" style={{ color: colour }}>
-        {row.status === 'below' ? `${formatNumber(row.short)} more` : STATUS_LABEL[row.status]}
-      </span>
-    </div>
+    <Card>
+      <CardContent className="flex items-end gap-1 px-2 pb-2 pt-3">
+        {days.map((day, index) => {
+          const isToday = day.date === today;
+          const height = Math.round((day.sets / max) * 100);
+
+          return (
+            <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                {day.sets > 0 ? day.sets : ''}
+              </span>
+              <div className="flex h-16 w-full items-end">
+                <div
+                  className={isToday ? 'w-full rounded-t bg-primary' : 'w-full rounded-t bg-muted-foreground/30'}
+                  style={{ height: `${Math.max(day.sets > 0 ? 8 : 2, height)}%` }}
+                />
+              </div>
+              <span
+                className={
+                  isToday
+                    ? 'text-[10px] font-semibold text-primary'
+                    : 'text-[10px] text-muted-foreground'
+                }
+              >
+                {letters[index]}
+              </span>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -145,10 +129,17 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
       <Card>
         <CardContent className="grid grid-cols-4 gap-1 px-2 py-3">
           {data.pillars.map((row) => (
-            <PillarRing key={row.id} row={row} />
+            <PillarRing
+              key={row.id}
+              label={row.label}
+              sets={row.sets}
+              floor={typeof row.target.min === 'number' ? row.target.min : 0}
+            />
           ))}
         </CardContent>
       </Card>
+
+      {data.days.length > 0 ? <WeekBars days={data.days} /> : null}
 
       <Card>
         <CardHeader className="pb-2">

@@ -34,6 +34,12 @@ export interface PillarRow {
   exercises: PillarExercise[];
 }
 
+export interface DayRow {
+  date: string;
+  sets: number;
+  pillars: Record<string, number>;
+}
+
 export interface CircuitRow {
   date: string;
   rounds: number;
@@ -46,6 +52,8 @@ export interface PillarsData {
   week_end: string;
   sessions: number;
   pillars: PillarRow[];
+  /** The seven days of the week and what each carried. */
+  days: DayRow[];
   circuits: CircuitRow[];
   circuit_rounds: number;
   outside: PillarExercise[];
@@ -150,6 +158,18 @@ function normalize(payload: unknown): PillarsData {
     week_end: String(record.week_end ?? ''),
     sessions: numberOr(record.sessions, 0),
     pillars,
+    days: Array.isArray(record.days)
+      ? record.days
+          .filter((day): day is Record<string, unknown> => Boolean(day) && typeof day === 'object')
+          .map((day) => ({
+            date: String(day.date ?? ''),
+            sets: numberOr(day.sets, 0),
+            pillars:
+              day.pillars && typeof day.pillars === 'object'
+                ? (day.pillars as Record<string, number>)
+                : {}
+          }))
+      : [],
     circuits: Array.isArray(record.circuits) ? (record.circuits as CircuitRow[]) : [],
     circuit_rounds: numberOr(record.circuit_rounds, 0),
     outside: list(record.outside),

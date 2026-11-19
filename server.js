@@ -9,6 +9,7 @@ const MuscleVolume = require('./backend/utils/muscleVolume');
 const { suggestForReport } = require('./backend/utils/muscleSuggestions');
 const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('./backend/utils/pairings');
 const { computeSessionVolume } = require('./backend/utils/sessionVolume');
+const { weeklyPillars } = require('./backend/utils/pillars');
 const { mergePlanWeeks } = require('./backend/utils/planMerge');
 require('dotenv').config();
 
@@ -409,6 +410,25 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error building the weekly muscle report:', error);
     res.status(500).json({ error: 'Failed to build the weekly muscle report' });
+  }
+});
+
+// Weekly work per ability — pull, push, legs. A set counts once, by the movement of its exercise.
+app.get('/api/pillars/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const week = req.query.week || undefined;
+    let sessions = [];
+    try {
+      const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
+      sessions = JSON.parse(data).sessions || [];
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    res.json(weeklyPillars(sessions, { userId, week }));
+  } catch (error) {
+    console.error('Error building the weekly pillars:', error);
+    res.status(500).json({ error: 'Failed to build the weekly pillars' });
   }
 });
 

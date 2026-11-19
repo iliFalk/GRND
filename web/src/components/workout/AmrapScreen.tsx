@@ -83,6 +83,19 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
     );
   };
 
+  const setWeight = (id: string, raw: string) => {
+    setChoices((previous) =>
+      previous.map((choice) => {
+        if (choice.id !== id) return choice;
+        if (raw.trim() === '') return { id: choice.id, name: choice.name, reps: choice.reps };
+        const weight = Number(raw);
+        return Number.isFinite(weight) && weight > 0
+          ? { ...choice, weight }
+          : { id: choice.id, name: choice.name, reps: choice.reps };
+      })
+    );
+  };
+
   const start = () => {
     const total = Number(minutes) * 60;
     if (!Number.isFinite(total) || total <= 0 || choices.length === 0) return;
@@ -153,7 +166,12 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
               <div key={choice.id} className="flex items-baseline justify-between gap-3 text-sm">
                 <span className="min-w-0 truncate">{choice.name}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">
-                  {`${formatNumber(choice.reps)} reps × ${setsFor(state, index)}`}
+                  {[
+                    `${formatNumber(choice.reps)} reps × ${setsFor(state, index)}`,
+                    choice.weight === undefined ? '' : `${formatNumber(choice.weight)} kg`
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               </div>
             ))}
@@ -271,10 +289,26 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                     className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                   <span className="text-[11px] text-muted-foreground">reps</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    value={choice.weight ?? ''}
+                    onChange={(event) => setWeight(choice.id, event.target.value)}
+                    onFocus={(event) => {
+                      selectAllOnFocus(event);
+                      revealInput(event.currentTarget);
+                    }}
+                    placeholder="kg"
+                    aria-label={`Weight in kg for ${choice.name}`}
+                    className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
                 </span>
               </label>
             ))}
-            <p className="text-xs text-muted-foreground">No weight in a circuit.</p>
+            <p className="text-xs text-muted-foreground">
+              Empty weight is bodyweight work; a number is the load of the bell or the dumbbell.
+            </p>
             <Button className="w-full" onClick={start}>
               Start circuit
             </Button>

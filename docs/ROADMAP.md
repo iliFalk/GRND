@@ -53,6 +53,10 @@ Consequences, written down so the code matches:
 - **A warm-up is not recorded at all** — not in history, not in the volume.
 - The rest timer counts up, and the next set starts on a tap, so the mode never guesses when rest ended.
 
+**Change (Ilja, 2026-11-19): a circuit may carry a weight.** The earlier rule said a circuit has no
+weight; a dumbbell exercise in one then recorded a tonnage of zero. Each chosen exercise now takes an
+optional load, and the delivery set carries it.
+
 **Change (Ilja, 2026-11-19):** a workout holds **several exercises**, each with its own weight. The
 screen walks them one at a time: a set closes on the pause, the rest counts up, and "next exercise"
 moves on once the current one has a set. Everything else in this section holds unchanged — the weight

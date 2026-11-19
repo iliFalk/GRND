@@ -163,12 +163,14 @@ catalogue and his kit.
 
 ## 2. The React UI
 
-The vanilla frontend (`frontend/js/**`, 6 782 lines of components) is replaced by a React app in `web/`.
+The vanilla frontend is deleted — `frontend/` and the root test harnesses under it are gone from the
+repository (2026-11-19). The React app in `web/` is the only front end.
 
 - Stack: Vite 8, React 19, TypeScript, Tailwind 4, shadcn/ui copied into `web/src/components/ui/`.
 - Colours come from `iliFalk/CP1-colors`: `design/cp1-palette.json`, turned into CSS variables by
   `tools/theme-from-palette.mjs`. No component carries a hex value.
-- Build output goes to `frontend/dist`, served beside the old app while the port is in progress.
+- Build output goes to `dist/`, served at the root `/`. A link that still carries `/next/` answers with
+  a 301 to the same path at the root.
 - Views, in this order: Dashboard (done in the shell), Plan, Workout with the timer, History.
 - **Proved by:** `npm run build`, `test:web`, and the same screen open in Telegram from the bot.
 

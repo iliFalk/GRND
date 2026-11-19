@@ -13,7 +13,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY server.js ./
 COPY backend ./backend
-COPY frontend ./frontend
+COPY dist ./dist
 COPY data ./data
 COPY design ./design
 COPY docs ./docs

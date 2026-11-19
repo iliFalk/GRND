@@ -2,7 +2,6 @@ import { useExerciseCatalogue, type CatalogueEntry } from '../lib/catalogue';
 import type { PillarRow, PillarStatus, PillarsData } from '../lib/pillars';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Progress } from './ui/progress';
 
 const STATUS_COLOR: Record<PillarStatus, string> = {
   below: 'var(--status-below)',
@@ -46,38 +45,46 @@ function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3
     .slice(0, limit);
 }
 
-function PillarTile({ row }: { row: PillarRow }) {
+/**
+ * A ring of progress toward the floor of the pillar: a quarter at one set, full at four. The number
+ * inside is what the week has done.
+ */
+function PillarRing({ row }: { row: PillarRow }) {
   const colour = STATUS_COLOR[row.status];
-  // A floor: four sets make a pillar count, and nothing above it is judged.
   const floor = typeof row.target.min === 'number' ? row.target.min : 0;
   const percent = floor > 0 ? Math.min(100, (row.sets / floor) * 100) : 0;
 
-  const parts = [
-    row.base_sets > 0 ? `base ${formatNumber(row.base_sets)}` : '',
-    row.power_sets > 0 ? `power ${formatNumber(row.power_sets)}` : ''
-  ].filter(Boolean);
-
   return (
-    <Card>
-      <CardContent className="space-y-1.5 px-3 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {row.label}
-        </p>
-        <p className="font-mono text-3xl leading-none tabular-nums">{formatNumber(row.sets)}</p>
-        <p className="text-[11px] text-muted-foreground">sets this week</p>
-        <Progress
-          value={percent}
-          indicatorStyle={{ backgroundColor: colour }}
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative h-14 w-14">
+        <svg viewBox="0 0 36 36" className="h-14 w-14" role="img"
           aria-label={`${row.label}: ${formatNumber(row.sets)} sets this week, ${formatNumber(floor)} needed`}
-        />
-        <p className="text-[11px] font-semibold" style={{ color: colour }}>
-          {row.status === 'below' ? `${formatNumber(row.short)} more` : STATUS_LABEL[row.status]}
-        </p>
-        <p className="min-h-[14px] text-[11px] text-muted-foreground">
-          {parts.length > 0 ? parts.join(' · ') : ''}
-        </p>
-      </CardContent>
-    </Card>
+        >
+          <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--muted)" strokeWidth="3" />
+          <circle
+            cx="18"
+            cy="18"
+            r="15.5"
+            fill="none"
+            stroke={colour}
+            strokeWidth="3"
+            strokeLinecap="round"
+            pathLength={100}
+            strokeDasharray={`${percent} 100`}
+            transform="rotate(-90 18 18)"
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-semibold tabular-nums">
+          {formatNumber(row.sets)}
+        </span>
+      </div>
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {row.label}
+      </span>
+      <span className="text-[10px] font-semibold" style={{ color: colour }}>
+        {row.status === 'below' ? `${formatNumber(row.short)} more` : STATUS_LABEL[row.status]}
+      </span>
+    </div>
   );
 }
 
@@ -131,15 +138,17 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
           </p>
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">
-          {short.length === 0 ? 'all in band' : `${short.length} to close`}
+          {short.length === 0 ? 'all done' : `${short.length} short`}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        {data.pillars.map((row) => (
-          <PillarTile key={row.id} row={row} />
-        ))}
-      </div>
+      <Card>
+        <CardContent className="grid grid-cols-4 gap-1 px-2 py-3">
+          {data.pillars.map((row) => (
+            <PillarRing key={row.id} row={row} />
+          ))}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2">
@@ -147,7 +156,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {short.length === 0 ? (
-            <p className="text-muted-foreground">Every pillar is inside its band.</p>
+            <p className="text-muted-foreground">Every pillar has its four sets.</p>
           ) : (
             short.map((row) => {
               // The base first: it is what the pillar rests on.

@@ -1,11 +1,15 @@
 {
-  "source": "Ilja, 2026-11-19: strength and a little power, the main block only. Functional and multi-joint — a press is a kettlebell pressed overhead or a thruster, not a bench press. A single link (triceps, biceps, calves) is not measured. Conditioning such as burpees is endurance: it belongs to the AMRAP circuit, which he runs only when there is no basketball for a long time.",
-  "credit": "A completed set counts once for the pillar of its movement. No fractional credit by muscle.",
+  "source": "Ilja, 2026-11-19: functional, multi-joint work. The base is pulling yourself up, pressing something away — dips, a kettlebell pressed overhead, a thruster — and the goblet squat. Everything else complements. A single link (triceps, biceps, calves) is not measured. Conditioning such as burpees is endurance and belongs to the AMRAP circuit, which he runs only when there is no basketball for a long time.",
+  "credit": "A completed set counts ONCE for the pillar of its movement. No fractional credit by muscle, and no double credit for a combination lift.",
+  "rules": [
+    "A lift that pulls and presses at once — a snatch, a clean and press — counts once, in the axis where it usually fails: the lockout overhead, so push. The catalogue marks it `power`.",
+    "`role` in the catalogue separates the base from what completes it: a base set and a support set both count, but the plan and the suggestions name the base first."
+  ],
   "pillars": [
     {
       "id": "pull",
       "label": "Pull",
-      "movements": ["pull", "core"],
+      "movements": ["pull"],
       "min": 10,
       "target_high": 20,
       "max": 25
@@ -25,6 +29,14 @@
       "min": 12,
       "target_high": 24,
       "max": 30
+    },
+    {
+      "id": "core",
+      "label": "Core",
+      "movements": ["core"],
+      "min": 6,
+      "target_high": 16,
+      "max": 20
     }
   ],
   "outside": {

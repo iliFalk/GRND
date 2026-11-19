@@ -55,7 +55,8 @@
       "secondary": [
         "core"
       ],
-      "movement": "squat"
+      "movement": "squat",
+      "role": "support"
     },
     {
       "id": "spring-front-leg",
@@ -71,7 +72,9 @@
       ],
       "is_power": true,
       "typical": "по 40 на ногу",
-      "movement": "power"
+      "movement": "power",
+      "role": "support",
+      "power": true
     },
     {
       "id": "burpees",
@@ -88,7 +91,9 @@
       "bodyweight_factor": 1.0,
       "movement": "conditioning",
       "solo": true,
-      "note": "Almost always a circuit on its own; it has no antagonist pair."
+      "note": "Almost always a circuit on its own; it has no antagonist pair.",
+      "role": "support",
+      "power": true
     },
     {
       "id": "chin-ups-rings",
@@ -103,7 +108,8 @@
       ],
       "bodyweight_factor": 1.0,
       "is_heavy_basic": true,
-      "movement": "pull"
+      "movement": "pull",
+      "role": "base"
     },
     {
       "id": "dips",
@@ -118,7 +124,8 @@
       ],
       "bodyweight_factor": 0.8,
       "is_heavy_basic": true,
-      "movement": "push"
+      "movement": "push",
+      "role": "base"
     },
     {
       "id": "double-kettlebell-goblet-squat",
@@ -133,7 +140,8 @@
       ],
       "is_heavy_basic": true,
       "note": "Two bells held in the front rack; his name for it.",
-      "movement": "squat"
+      "movement": "squat",
+      "role": "base"
     },
     {
       "id": "double-kettlebell-thruster",
@@ -149,7 +157,8 @@
         "core"
       ],
       "is_heavy_basic": true,
-      "movement": "push"
+      "movement": "push",
+      "role": "base"
     },
     {
       "id": "dumbbell-flyes",
@@ -161,7 +170,8 @@
       "secondary": [
         "shoulders"
       ],
-      "movement": "push"
+      "movement": "push",
+      "role": "support"
     },
     {
       "id": "jump-back-leg-side",
@@ -177,7 +187,9 @@
       ],
       "is_power": true,
       "typical": "по 40 на ногу",
-      "movement": "power"
+      "movement": "power",
+      "role": "support",
+      "power": true
     },
     {
       "id": "jump-back-leg-up",
@@ -193,7 +205,9 @@
       ],
       "is_power": true,
       "typical": "по 40 на ногу",
-      "movement": "power"
+      "movement": "power",
+      "role": "support",
+      "power": true
     },
     {
       "id": "hanging-knee-raises",
@@ -205,7 +219,8 @@
       "secondary": [
         "biceps"
       ],
-      "movement": "core"
+      "movement": "core",
+      "role": "base"
     },
     {
       "id": "jump-onto-chair",
@@ -220,7 +235,9 @@
       ],
       "is_power": true,
       "typical": "2×10",
-      "movement": "power"
+      "movement": "power",
+      "role": "support",
+      "power": true
     },
     {
       "id": "kettlebell-swing",
@@ -236,7 +253,9 @@
       ],
       "is_power": true,
       "is_heavy_basic": false,
-      "movement": "hinge"
+      "movement": "hinge",
+      "role": "support",
+      "power": true
     },
     {
       "id": "one-arm-kettlebell-row",
@@ -250,7 +269,8 @@
       ],
       "movement": "pull",
       "per_side": true,
-      "note": "A rep of 10 means 10 on each arm."
+      "note": "A rep of 10 means 10 on each arm.",
+      "role": "support"
     },
     {
       "id": "pull-ups",
@@ -263,7 +283,8 @@
         "biceps"
       ],
       "bodyweight_factor": 1.0,
-      "movement": "pull"
+      "movement": "pull",
+      "role": "base"
     },
     {
       "id": "push-ups",
@@ -277,7 +298,8 @@
         "shoulders"
       ],
       "bodyweight_factor": 0.75,
-      "movement": "push"
+      "movement": "push",
+      "role": "support"
     },
     {
       "id": "rdl-one-leg",
@@ -291,7 +313,8 @@
         "core"
       ],
       "is_heavy_basic": true,
-      "movement": "hinge"
+      "movement": "hinge",
+      "role": "support"
     }
   ]
 }

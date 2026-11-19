@@ -12,6 +12,8 @@ export interface PillarTarget {
 export interface PillarExercise {
   name: string;
   sets: number;
+  role?: 'base' | 'support';
+  power?: boolean;
 }
 
 export interface PillarRow {
@@ -19,6 +21,10 @@ export interface PillarRow {
   label: string;
   movements: string[];
   sets: number;
+  /** The part of `sets` done on the base of the pillar. */
+  base_sets: number;
+  /** The part of `sets` done on power work: jumps, the swing. */
+  power_sets: number;
   target: PillarTarget;
   status: PillarStatus;
   short: number;
@@ -77,13 +83,22 @@ function normalize(payload: unknown): PillarsData {
       label: String(row.label ?? row.id ?? ''),
       movements: Array.isArray(row.movements) ? row.movements.map(String) : [],
       sets: numberOr(row.sets, 0),
+      base_sets: numberOr(row.base_sets, 0),
+      power_sets: numberOr(row.power_sets, 0),
       target: (row.target && typeof row.target === 'object' ? row.target : {}) as PillarTarget,
       status: normalizeStatus(row.status),
       short: numberOr(row.short, 0),
       exercises: Array.isArray(row.exercises)
         ? row.exercises
             .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object')
-            .map((entry) => ({ name: String(entry.name ?? ''), sets: numberOr(entry.sets, 0) }))
+            .map((entry) => ({
+              name: String(entry.name ?? ''),
+              sets: numberOr(entry.sets, 0),
+              ...(entry.role === 'base' || entry.role === 'support'
+                ? { role: entry.role as 'base' | 'support' }
+                : {}),
+              ...(entry.power === true ? { power: true } : {})
+            }))
         : []
     }));
 

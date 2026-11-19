@@ -140,6 +140,13 @@ kettlebell row is such a movement.
 It also names an **alternative** when a chosen exercise needs equipment he does not own. Everything it
 says is advice: any exercise in the catalogue can be picked.
 
+**Nothing is blocked in the picker (Ilja, 2026-11-19).** The second dropdown holds every exercise; the
+ranking decides the order and a mark shows why a candidate sits where it does — `antagonist` first, then
+a `neutral` neighbour, then one that repeats a primary group (`overlap`, with the shared groups named),
+and a movement on the same axis last (`same`). A blocked list would make him hunt for the exercise he
+already has in mind. The circuit builder stays strict: that one still refuses a repeat except on the
+back.
+
 Verified: eight tests over the pairing, the whole suite 32 green; `POST /api/pairings` answers for his
 catalogue and his kit.
 

@@ -15,28 +15,38 @@ const catalogue = {
 };
 
 test('test_an_antagonist_comes_first', () => {
-  const rows = suggestPairs(catalogue, [{ exerciseId: 'push-ups' }], { limit: 5 });
+  const rows = suggestPairs(catalogue, [{ exerciseId: 'push-ups' }]);
   assert.equal(rows[0].exercise, 'Push-ups');
   assert.equal(rows[0].partners[0].status, 'antagonist');
   assert.equal(rows[0].partners[0].name, 'Chin-ups (rings)');
+  // No limit given: the whole catalogue minus the chosen exercise is answered.
+  assert.equal(rows[0].partners.length, catalogue.exercises.length - 1);
 });
 
 test('test_a_pull_wants_a_push', () => {
-  const rows = suggestPairs(catalogue, [{ exerciseId: 'one-arm-kettlebell-row' }], { limit: 5 });
-  // Antagonists first, alphabetical inside the same rank; the pull that shares the back is gone.
-  assert.deepEqual(rows[0].partners.map((p) => p.name), ['Dips', 'Dumbbell flyes', 'Push-ups', 'Air squats', 'Hanging knee raises']);
-  assert.deepEqual(rows[0].partners.map((p) => p.status), ['antagonist', 'antagonist', 'antagonist', 'neutral', 'neutral']);
+  const rows = suggestPairs(catalogue, [{ exerciseId: 'one-arm-kettlebell-row' }]);
+  // Antagonists first, alphabetical inside the same rank; the pull that shares the back ranks last.
+  assert.deepEqual(rows[0].partners.map((p) => p.status),
+    ['antagonist', 'antagonist', 'antagonist', 'neutral', 'neutral', 'overlap']);
+  assert.equal(rows[0].partners[rows[0].partners.length - 1].name, 'Chin-ups (rings)');
 });
 
-test('test_a_shared_primary_group_is_never_suggested', () => {
+test('test_nothing_is_hidden_and_a_shared_group_ranks_last', () => {
   const rows = suggestPairs(catalogue, [{ exerciseId: 'push-ups' }], { limit: 10 });
   const names = rows[0].partners.map((p) => p.name);
-  assert.ok(!names.includes('Dips'), 'Dips shares the chest with Push-ups');
-  assert.ok(!names.includes('Dumbbell flyes'), 'flyes share the chest too');
+  // Every exercise stays pickable: a repeat of the chest is present, marked and at the bottom.
+  assert.ok(names.includes('Dips'), 'Dips must stay in the list');
+  assert.ok(names.includes('Dumbbell flyes'), 'flyes too');
+  const statuses = rows[0].partners.map((p) => p.status);
+  const lastOverlap = statuses.lastIndexOf('overlap');
+  const firstNeutral = statuses.indexOf('neutral');
+  if (firstNeutral !== -1) {
+    assert.ok(lastOverlap < 0 || lastOverlap > firstNeutral, 'an overlap ranks below a neutral candidate');
+  }
 });
 
 test('test_the_equipment_filter_applies', () => {
-  const rows = suggestPairs(catalogue, [{ exerciseId: 'push-ups' }], { limit: 10, equipment: ['kettlebell'] });
+  const rows = suggestPairs(catalogue, [{ exerciseId: 'push-ups' }], { equipment: ['kettlebell'] });
   assert.deepEqual(rows[0].partners.map((p) => p.name), ['One-arm kettlebell row']);
 });
 

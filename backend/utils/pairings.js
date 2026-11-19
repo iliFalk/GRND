@@ -38,13 +38,15 @@ function entryName(entry) {
 /**
  * @param {object[]} catalogue - the entries of data/exercise-catalogue.json
  * @param {object[]} selected - what the user already picked: `{ exerciseId }` or `{ name }`
- * @param {object} [options] - `equipment` (allowed ids), `limit` (default 3)
- * @returns {object[]} one row per selected exercise: its name and the ranked partners
+ * @param {object} [options] - `equipment` (allowed ids), `limit` (0 or absent = the whole list)
+ * @returns {object[]} one row per selected exercise: its name and every candidate, ranked — an
+ *   antagonist first, then a neutral neighbour, then one that repeats a primary group, marked `overlap`
  */
 function suggestPairs(catalogue, selected, options = {}) {
 	const entries = Array.isArray(catalogue) ? catalogue : (catalogue && catalogue.exercises) || [];
 	const picked = Array.isArray(selected) ? selected : [];
-	const limit = Number.isFinite(options.limit) ? Number(options.limit) : 3;
+	// No limit by default: the picker shows every candidate, ranked.
+	const limit = Number.isFinite(options.limit) ? Number(options.limit) : 0;
 	const equipment = Array.isArray(options.equipment) ? options.equipment.map(normalise) : null;
 
 	const byKey = new Map();
@@ -85,12 +87,13 @@ function suggestPairs(catalogue, selected, options = {}) {
 					score: shares.length ? STATUS.overlap : score,
 				};
 			})
-			// An exercise that trains a primary group the subject already trained is never suggested.
-			.filter((candidate) => candidate.shares.length === 0)
+			// Nothing is hidden: every exercise stays pickable, and the ranking decides the order.
+			// Ilja, 2026-11-19: the second dropdown must hold all the exercises, with the preferred ones
+			// on top and marked. A blocked list makes the user hunt for one he wants.
 			.sort((a, b) => (b.score - a.score) || a.name.localeCompare(b.name))
-			.slice(0, Math.max(0, limit))
-			.map(({ name: partnerName, equipment: partnerEquipment, movement, status }) => ({
-				name: partnerName, equipment: partnerEquipment, movement, status,
+			.slice(0, limit ? Math.max(0, limit) : undefined)
+			.map(({ name: partnerName, equipment: partnerEquipment, movement, status, shares }) => ({
+				name: partnerName, equipment: partnerEquipment, movement, status, shares,
 			}));
 
 		return { exercise: subject.name, partners: ranked };

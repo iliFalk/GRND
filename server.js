@@ -8,6 +8,7 @@ const VolumeCalculator = require('./backend/utils/volumeCalculator');
 const MuscleVolume = require('./backend/utils/muscleVolume');
 const { suggestForReport } = require('./backend/utils/muscleSuggestions');
 const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('./backend/utils/pairings');
+const { computeSessionVolume } = require('./backend/utils/sessionVolume');
 require('dotenv').config();
 
 const app = express();
@@ -889,6 +890,18 @@ function getWorkoutSessionsPath() {
   return path.join(__dirname, 'data', 'workout-sessions.json');
 }
 
+/** The bodyweight the profile carries, or `undefined` when it carries none. */
+async function readUserBodyweight(userId) {
+  try {
+    const raw = await fs.readFile(path.join(__dirname, 'data', 'user-profiles.json'), 'utf8');
+    const profile = JSON.parse(raw)[userId];
+    return profile && typeof profile.bodyweight === 'number' ? profile.bodyweight : undefined;
+  } catch (error) {
+    if (error.code === 'ENOENT') return undefined;
+    throw error;
+  }
+}
+
 // Validation function for workout sessions
 function validateWorkoutSession(session) {
   if (!session || typeof session !== 'object') {
@@ -961,36 +974,28 @@ app.post('/api/workout-session', async (req, res) => {
       return res.status(400).json({ error: 'Invalid workout session structure', details: validationError.message });
     }
 
-    // Create a new session with default values
+    // The volume comes from the sets that were done. Bodyweight work needs the body it moved, so a
+    // missing profile is a refusal with a reason, never a silent zero.
+    let computed;
+    try {
+      const bodyweight = await readUserBodyweight(sessionData.userId);
+      computed = computeSessionVolume(sessionData.completedExercises, bodyweight);
+    } catch (volumeError) {
+      return res.status(400).json({ error: 'The session cannot be measured', details: volumeError.message });
+    }
+
     const newSession = {
       ...sessionData,
       id: Date.now().toString(),
       date: sessionData.date ? new Date(sessionData.date) : new Date(),
       status: 'completed', // Default to completed for new sessions
-      totalVolume: 0
+      // The weekly report counts a circuit apart from the strength band; this is how it knows.
+      dayType: sessionData.dayType === 'CIRCUIT' ? 'CIRCUIT' : 'STANDARD',
+      completedExercises: computed.exercises,
+      totalSets: computed.totalSets,
+      totalVolume: computed.totalVolume,
+      total_volume_kg: computed.totalVolume
     };
-
-    // Calculate volume for each exercise using the utility
-    newSession.completedExercises = newSession.completedExercises.map(exercise => {
-      // Determine if this is a bodyweight exercise
-      const isBodyweight = !exercise.sets.some(set => set.weight !== undefined && set.weight !== null);
-
-      // Get default bodyweight load percentage for this exercise
-      const bodyweightLoadPercentages = VolumeCalculator.getDefaultBodyweightLoadPercentages();
-      const loadPercentage = bodyweightLoadPercentages[exercise.name] || 1;
-
-      // Calculate volume using the utility
-      const volume = VolumeCalculator.calculateExerciseVolume({
-        sets: exercise.sets.length,
-        reps: exercise.sets.reduce((sum, set) => sum + set.reps, 0) / exercise.sets.length,
-        weight: exercise.sets.reduce((sum, set) => sum + (set.weight || 0), 0) / exercise.sets.length,
-        isBodyweight: isBodyweight
-      }, 0, loadPercentage); // Assuming no user bodyweight available in backend
-
-      exercise.volume = volume;
-      newSession.totalVolume += volume;
-      return exercise;
-    });
 
     const filePath = getWorkoutSessionsPath();
 

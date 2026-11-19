@@ -105,6 +105,20 @@ single target. The list of heavy basics is being defined by Ilja from the catalo
 In the **day card of the plan**: what to lift next time. The report after a session shows what happened,
 not what to do.
 
+### The circuit is an AMRAP block
+
+Decided 2026-11-18:
+
+- **Fixed time, as many rounds as possible.** The duration is set **before each workout**, not stored in
+  the plan and not a constant.
+- **A partial round counts**: the unfinished round goes into the report with the reps it reached, so the
+  work is never lost.
+- The measurement stays rounds and time under load, and the work never enters the 10–20 band.
+- **One catalogue with a flag.** `is_circuit` marks what a circuit may use; there is no second list.
+
+Open: whether the circuit's exercises carry per-round target reps (as the jump session does: 2×10, 40,
+40, 40), or whether the user enters the reps of the round as it goes.
+
 ## 2. The React UI
 
 The vanilla frontend (`frontend/js/**`, 6 782 lines of components) is replaced by a React app in `web/`.

@@ -4,6 +4,7 @@ import { FooterNav, PAGE_LABELS, type PageId } from './components/FooterNav';
 import { Header } from './components/Header';
 import { Placeholder } from './components/Placeholder';
 import { PlanView } from './components/plan/PlanView';
+import { WorkoutScreen } from './components/workout/WorkoutScreen';
 import { formatWeekRange } from './lib/format';
 import { useTrainingPlans } from './lib/plans';
 import { useTheme } from './lib/theme';
@@ -30,6 +31,8 @@ export default function App() {
           <Dashboard data={data} loading={loading} error={error} onRetry={reload} />
         ) : page === 'plan' ? (
           <PlanScreen />
+        ) : page === 'workout' ? (
+          <WorkoutScreen userId={userId} onSaved={reload} />
         ) : (
           <Placeholder title={PAGE_LABELS[page]} />
         )}

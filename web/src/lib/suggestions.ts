@@ -148,6 +148,12 @@ function merge(suggestions: SuggestionsResponse, volume: VolumeResponse | null):
   };
 }
 
+/** Drops the cached week, so the next read asks the server again. */
+export function invalidateDashboard(userId: string): void {
+  cache.delete(userId);
+  notify();
+}
+
 /**
  * The suggestions route names the short groups. The volume route carries the target band and the
  * status those groups were measured against, so a card can draw its bar and colour.

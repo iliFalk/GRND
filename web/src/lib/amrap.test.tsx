@@ -56,6 +56,16 @@ it('test_a_circuit_without_a_round_is_nothing_to_save', () => {
   expect(buildAmrapPayload(startAmrap(choices, 600, start), '931142831')).toBeNull();
 });
 
+it('test_a_circuit_may_carry_a_weight', () => {
+  // A dumbbell exercise without a weight counted a tonnage of zero; the choice may carry one.
+  const weighted = [choices[0], { ...choices[1], weight: 8 }];
+  const state = completeRound(startAmrap(weighted, 600, start));
+  const payload = buildAmrapPayload(state, '931142831', new Date(start + 600_000));
+
+  expect(payload?.completedExercises[0].sets).toEqual([{ reps: 15 }]);
+  expect(payload?.completedExercises[1].sets).toEqual([{ reps: 10, weight: 8 }]);
+});
+
 it('test_the_payload_is_a_circuit_with_the_rounds_as_sets', () => {
   const state = setPartial(completeRound(startAmrap(choices, 600, start)), 2);
   const payload = buildAmrapPayload(state, '931142831', new Date(start + 600_000));

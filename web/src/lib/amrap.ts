@@ -12,6 +12,11 @@ export interface AmrapChoice {
   name: string;
   /** Repetitions of this exercise in one round. */
   reps: number;
+  /**
+   * Load, when the exercise takes one. Ilja, 2026-11-19: a circuit may carry weight — without it a
+   * dumbbell exercise counted a tonnage of zero.
+   */
+  weight?: number;
 }
 
 export interface AmrapState {
@@ -86,7 +91,10 @@ export function buildAmrapPayload(
     completedExercises: state.choices.map((choice, index) => ({
       exerciseId: choice.id,
       name: choice.name,
-      sets: Array.from({ length: setsFor(state, index) }, () => ({ reps: choice.reps }))
+      sets: Array.from({ length: setsFor(state, index) }, () => ({
+        reps: choice.reps,
+        ...(choice.weight === undefined ? {} : { weight: choice.weight })
+      }))
     }))
   };
 }

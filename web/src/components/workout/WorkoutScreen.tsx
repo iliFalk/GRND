@@ -6,12 +6,13 @@ import {
   activeExercise,
   countReps,
   hasWork,
-  isLastExercise,
   isResting,
-  nextExercise,
-  nextSet,
+  nextBlock,
+  openCounters,
   pause,
   restSeconds,
+  selectExercise,
+  setsOf,
   startWorkout,
   totalReps,
   totalSets,
@@ -394,38 +395,73 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const exercise = activeExercise(state);
   const resting = isResting(state);
   const rest = restSeconds(state, now);
-  const remaining = state.exercises.slice(state.active + 1).map((entry) => entry.name);
+  const open = openCounters(state);
 
   return (
-    <section aria-labelledby="workout-title" className="space-y-4">
+    <section aria-labelledby="workout-title" className="space-y-3">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 id="workout-title" className="text-lg font-semibold">
-            {exercise?.name ?? ''}
-          </h2>
+          <h2 id="workout-title" className="text-lg font-semibold">{`Block ${state.block}`}</h2>
           <p className="text-xs text-muted-foreground">
-            {`Exercise ${state.active + 1} of ${state.exercises.length} · ${formatNumber(
-              totalSets(state)
-            )} sets · ${formatNumber(totalReps(state))} reps`}
+            {`${formatNumber(totalSets(state))} sets · ${formatNumber(totalReps(state))} reps`}
           </p>
         </div>
-        <Badge title="One weight per exercise">
-          {exercise?.weight === undefined ? 'bodyweight' : `${formatNumber(exercise.weight)} kg`}
-        </Badge>
+        <Badge title="Exercises counted in this block">{`${open} open`}</Badge>
       </div>
+
+      <ul className="space-y-1.5">
+        {state.exercises.map((row, index) => {
+          const selected = index === state.active;
+          return (
+            <li key={`${row.id}-${index}`}>
+              <button
+                type="button"
+                onClick={() => setState(selectExercise(state, index))}
+                disabled={resting}
+                aria-pressed={selected}
+                className={
+                  selected
+                    ? 'flex w-full items-center justify-between gap-3 rounded-control border border-primary bg-accent px-3 py-2 text-left'
+                    : 'flex w-full items-center justify-between gap-3 rounded-control border border-border bg-card px-3 py-2 text-left disabled:opacity-60'
+                }
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{row.name}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {[
+                      row.weight === undefined ? 'bodyweight' : `${formatNumber(row.weight)} kg`,
+                      `${formatNumber(setsOf(row))} sets`
+                    ].join(' · ')}
+                  </span>
+                </span>
+                {row.counter > 0 ? (
+                  <span className="shrink-0 font-mono text-lg tabular-nums">{row.counter}</span>
+                ) : null}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
 
       {resting ? (
         <Card>
-          <CardContent className="space-y-3 py-6 text-center">
+          <CardContent className="space-y-3 py-5 text-center">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Rest</p>
             <p className="font-mono text-5xl tabular-nums">{formatClock(rest)}</p>
-            <Button onClick={() => setState(nextSet(state, Date.now()))}>Start next set</Button>
+            <Button onClick={() => setState(nextBlock(state, Date.now()))}>
+              {`Start block ${state.block + 1}`}
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardContent className="space-y-4 py-6 text-center">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Repetitions</p>
+          <CardContent className="space-y-3 py-4 text-center">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate text-sm font-medium">{exercise?.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {exercise?.weight === undefined ? 'bodyweight' : `${formatNumber(exercise.weight)} kg`}
+              </span>
+            </div>
             <p className="font-mono text-6xl tabular-nums">{exercise?.counter ?? 0}</p>
             <div className="flex justify-center gap-3">
               <Button className="h-16 flex-1 text-lg" onClick={() => setState(countReps(state, 1))}>
@@ -437,40 +473,23 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             </div>
             <Button
               variant="secondary"
+              className="w-full"
               onClick={() => setState(pause(state, Date.now()))}
-              disabled={(exercise?.counter ?? 0) === 0}
+              disabled={open === 0}
             >
-              Pause and close the set
+              {open > 1 ? `Pause and close ${open} exercises` : 'Pause and close the set'}
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {remaining.length > 0 ? (
-        <p className="text-xs text-muted-foreground">{`Then: ${remaining.join(', ')}`}</p>
-      ) : null}
-
       <div className="space-y-2">
-        {!isLastExercise(state) ? (
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => setState(nextExercise(state))}
-            disabled={resting || (exercise?.sets.length ?? 0) === 0}
-          >
-            Next exercise
-          </Button>
-        ) : null}
-        <Button
-          className="w-full"
-          onClick={finish}
-          disabled={!hasWork(state) || saving || resting}
-        >
+        <Button className="w-full" onClick={finish} disabled={!hasWork(state) || saving || resting}>
           {saving ? 'Saving…' : 'Finish workout'}
         </Button>
         {resting ? (
           <p className="text-xs text-muted-foreground">
-            The workout cannot end during a rest: start the next set first.
+            A rest cannot be skipped by finishing: start the next block first.
           </p>
         ) : null}
         {error ? <p className="text-xs text-destructive">{error}</p> : null}

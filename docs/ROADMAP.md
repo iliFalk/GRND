@@ -58,6 +58,13 @@ screen walks them one at a time: a set closes on the pause, the rest counts up, 
 moves on once the current one has a set. Everything else in this section holds unchanged — the weight
 is chosen once per exercise, a warm-up is not recorded, and the workout saves once at the end.
 
+**Change (Ilja, 2026-11-19): the workout is a list of blocks.** Every exercise keeps its own counter
+and its own set count; the panel at the bottom counts on the selected row, and one pause closes every
+open counter as one **block**. A block of two exercises is a superset, of three a giant set — the app
+needs no mode for it and no pairing: it follows from how many rows were counted before the pause. The
+rest follows the block, and the next block starts on the exercise the last one started with. The
+session stores the block of each set and marks the exercises that shared one as `superset`.
+
 **Built (2026-11-19).** `web/src/lib/workout.ts` holds the state as plain data, `web/src/lib/session.ts`
 builds the one POST body, and `web/src/components/workout/WorkoutScreen.tsx` is the screen. Proved by
 `web/src/lib/workout.test.tsx` (16 checks) and by a session posted through the public address:

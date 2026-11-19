@@ -12,7 +12,9 @@ export interface SessionPayload {
   completedExercises: Array<{
     exerciseId: string;
     name: string;
-    sets: Array<{ reps: number; weight?: number }>;
+    /** The exercise shared a block with another one: a superset or a giant set. */
+    superset?: boolean;
+    sets: Array<{ reps: number; weight?: number; block?: number }>;
   }>;
 }
 
@@ -26,8 +28,24 @@ export interface SavedSession {
 }
 
 /**
- * The body of one save: every exercise that has a closed set, each with its own weight.
- * An exercise that was picked but never done is not in the session.
+ * How many exercises wrote a set in each block. A block of two is a superset, of three a giant set.
+ */
+function exercisesPerBlock(exercises: WorkoutState['exercises']): Map<number, number> {
+  const perBlock = new Map<number, number>();
+
+  for (const exercise of exercises) {
+    const blocks = new Set(exercise.sets.map((set) => set.block ?? 0));
+    for (const block of blocks) {
+      perBlock.set(block, (perBlock.get(block) ?? 0) + 1);
+    }
+  }
+
+  return perBlock;
+}
+
+/**
+ * The body of one save: every exercise that has a closed set, each with its own weight, and the block
+ * each set belonged to. An exercise that was picked but never done is not in the session.
  */
 export function buildSessionPayload(
   state: WorkoutState,
@@ -39,20 +57,27 @@ export function buildSessionPayload(
   const done = state.exercises.filter((exercise) => exercise.sets.length > 0);
   if (done.length === 0) return null;
 
+  const perBlock = exercisesPerBlock(done);
+
   return {
     userId,
     date: now.toISOString(),
     dayType: 'STANDARD',
     duration: Math.max(0, Math.round((now.getTime() - state.startedAt) / 1000)),
     rest_seconds: state.restSeconds,
-    completedExercises: done.map((exercise) => ({
-      exerciseId: exercise.id,
-      name: exercise.name,
-      sets: exercise.sets.map((set) => ({
-        reps: set.reps,
-        ...(set.weight === undefined ? {} : { weight: set.weight })
-      }))
-    }))
+    completedExercises: done.map((exercise) => {
+      const sharesABlock = exercise.sets.some((set) => (perBlock.get(set.block ?? 0) ?? 0) > 1);
+      return {
+        exerciseId: exercise.id,
+        name: exercise.name,
+        ...(sharesABlock ? { superset: true } : {}),
+        sets: exercise.sets.map((set) => ({
+          reps: set.reps,
+          ...(set.weight === undefined ? {} : { weight: set.weight }),
+          ...(set.block === undefined ? {} : { block: set.block })
+        }))
+      };
+    })
   };
 }
 

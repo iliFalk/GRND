@@ -354,7 +354,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
           <CardContent className="space-y-3 py-6 text-center">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Rest</p>
             <p className="font-mono text-5xl tabular-nums">{formatClock(rest)}</p>
-            <Button onClick={() => setState(nextSet(state))}>Start next set</Button>
+            <Button onClick={() => setState(nextSet(state, Date.now()))}>Start next set</Button>
           </CardContent>
         </Card>
       ) : (

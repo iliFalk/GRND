@@ -220,7 +220,20 @@
         "biceps"
       ],
       "movement": "core",
-      "role": "base"
+      "role": "support",
+      "note": "The regression of the hanging leg raise."
+    },
+    {
+      "id": "hanging-leg-raise",
+      "name": "Hanging leg raise",
+      "equipment": "pull-up-bar",
+      "primary": [
+        "core"
+      ],
+      "secondary": [],
+      "movement": "core",
+      "role": "base",
+      "note": "The core base, like the pull-up is the pull base: the legs go up straight and the body stays still. Progression: knee raise, leg raise, toes to bar, L-sit."
     },
     {
       "id": "jump-onto-chair",

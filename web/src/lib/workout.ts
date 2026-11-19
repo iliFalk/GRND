@@ -37,6 +37,8 @@ export interface WorkoutState {
   /** Index of the exercise being done. */
   active: number;
   startedAt: number;
+  /** Seconds spent resting so far, accumulated when a rest ends. */
+  restSeconds: number;
 }
 
 function optionalWeight(weight: number | undefined): number | undefined {
@@ -56,7 +58,7 @@ export function startWorkout(choices: WorkoutChoice[], now: number): WorkoutStat
     };
   });
 
-  return { exercises, active: 0, startedAt: now };
+  return { exercises, active: 0, startedAt: now, restSeconds: 0 };
 }
 
 export function activeExercise(state: WorkoutState): WorkoutExercise | undefined {
@@ -111,11 +113,17 @@ export function pause(state: WorkoutState, now: number): WorkoutState {
   }));
 }
 
-/** Tapping the timer stops the rest and opens the next set. */
-export function nextSet(state: WorkoutState): WorkoutState {
+/**
+ * Tapping the timer stops the rest and opens the next set. The rest is added to the total, so the
+ * history can say how long the pauses took.
+ */
+export function nextSet(state: WorkoutState, now: number): WorkoutState {
   const exercise = activeExercise(state);
   if (!exercise || exercise.restingSince === null) return state;
-  return withActive(state, (current) => ({ ...current, restingSince: null, counter: 0 }));
+
+  const spent = Math.max(0, Math.floor((now - exercise.restingSince) / 1000));
+  const next = withActive(state, (current) => ({ ...current, restingSince: null, counter: 0 }));
+  return { ...next, restSeconds: state.restSeconds + spent };
 }
 
 /** Moving on needs one closed set on the current exercise; the last one has nowhere to go. */
@@ -135,6 +143,11 @@ export function restSeconds(state: WorkoutState, now: number): number {
   const restingSince = activeExercise(state)?.restingSince;
   if (restingSince === null || restingSince === undefined) return 0;
   return Math.max(0, Math.floor((now - restingSince) / 1000));
+}
+
+/** Seconds spent resting, as the pauses were closed. */
+export function totalRestSeconds(state: WorkoutState): number {
+  return state.restSeconds;
 }
 
 export function totalSets(state: WorkoutState): number {

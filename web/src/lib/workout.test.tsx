@@ -48,15 +48,23 @@ it('test_the_rest_starts_at_the_pause_and_counts_up', () => {
 
 it('test_the_next_set_starts_from_a_zeroed_counter', () => {
   const resting = pause(counted(10), start);
-  const next = nextSet(resting);
+  const next = nextSet(resting, start + 30_000);
   expect(isResting(next)).toBe(false);
   expect(activeExercise(next)?.counter).toBe(0);
   expect(activeExercise(next)?.sets).toEqual([{ reps: 10, weight: 16 }]);
 });
 
+it('test_the_pauses_are_timed_apart_from_the_work', () => {
+  const first = pause(counted(10), start);
+  const afterRest = nextSet(first, start + 45_000);
+  const second = pause(countReps(afterRest, 8), start + 60_000);
+
+  expect(second.restSeconds).toBe(45);
+});
+
 it('test_one_weight_for_the_whole_exercise', () => {
   const first = pause(counted(10), start);
-  const second = pause(countReps(nextSet(first), 8), start + 60_000);
+  const second = pause(countReps(nextSet(first, start + 30_000), 8), start + 60_000);
   expect(activeExercise(second)?.sets).toEqual([
     { reps: 10, weight: 16 },
     { reps: 8, weight: 16 }
@@ -88,7 +96,7 @@ it('test_next_exercise_needs_a_closed_set', () => {
 
 it('test_next_exercise_moves_on_and_keeps_the_first_exercise', () => {
   const first = pause(counted(10, [swing, pushUps]), start);
-  const moved = nextExercise(nextSet(first));
+  const moved = nextExercise(nextSet(first, start + 20_000));
 
   expect(moved.active).toBe(1);
   expect(moved.exercises[0].sets).toEqual([{ reps: 10, weight: 16 }]);
@@ -97,7 +105,7 @@ it('test_next_exercise_moves_on_and_keeps_the_first_exercise', () => {
 });
 
 it('test_the_last_exercise_has_nowhere_to_go', () => {
-  const onLast = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start)));
+  const onLast = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start), start + 20_000));
   expect(nextExercise(onLast)).toBe(onLast);
 });
 
@@ -106,7 +114,7 @@ it('test_no_closed_set_is_nothing_to_save', () => {
 });
 
 it('test_the_payload_carries_every_exercise_that_was_done', () => {
-  const first = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start)));
+  const first = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start), start + 30_000));
   const done = pause(countReps(first, 12), start + 120_000);
   const payload = buildSessionPayload(done, '931142831', new Date(start + 180_000));
 
@@ -120,7 +128,7 @@ it('test_the_payload_carries_every_exercise_that_was_done', () => {
 });
 
 it('test_an_exercise_picked_but_never_done_is_not_in_the_payload', () => {
-  const onlyFirst = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start)));
+  const onlyFirst = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start), start + 30_000));
   const payload = buildSessionPayload(onlyFirst, '931142831');
 
   expect(payload?.completedExercises).toHaveLength(1);

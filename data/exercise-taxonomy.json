@@ -189,6 +189,13 @@
         "core"
       ],
       "equipment": "kettlebell"
+    },
+    "Hanging leg raise": {
+      "primary": [
+        "core"
+      ],
+      "secondary": [],
+      "equipment": "pull-up-bar"
     }
   },
   "fallback": [

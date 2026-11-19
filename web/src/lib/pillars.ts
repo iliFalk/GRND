@@ -4,10 +4,10 @@ import type { CatalogueEntry } from './catalogue';
 export type PillarStatus = 'below' | 'in' | 'above' | 'high' | 'unknown';
 
 export interface PillarTarget {
-  min?: number;
-  target_low?: number;
-  target_high?: number;
-  max?: number;
+  min?: number | null;
+  target_low?: number | null;
+  target_high?: number | null;
+  max?: number | null;
 }
 
 export interface PillarExercise {

@@ -64,14 +64,16 @@ function PillarTile({ row }: { row: PillarRow }) {
           {row.label}
         </p>
         <p className="font-mono text-3xl leading-none tabular-nums">{formatNumber(row.sets)}</p>
-        <p className="text-[11px] text-muted-foreground">{`of ${formatNumber(floor)} sets`}</p>
+        <p className="text-[11px] text-muted-foreground">sets this week</p>
         <Progress
           value={percent}
           indicatorStyle={{ backgroundColor: colour }}
-          aria-label={`${row.label}: ${formatNumber(row.sets)} sets against a floor of ${formatNumber(floor)}`}
+          aria-label={`${row.label}: ${formatNumber(row.sets)} sets this week, ${formatNumber(floor)} needed`}
         />
         <p className="text-[11px] font-semibold" style={{ color: colour }}>
-          {row.status === 'below' ? `${formatNumber(row.short)} short` : STATUS_LABEL[row.status]}
+          {row.status === 'below'
+            ? `${formatNumber(row.short)} more to ${formatNumber(floor)}`
+            : STATUS_LABEL[row.status]}
         </p>
         <p className="min-h-[14px] text-[11px] text-muted-foreground">
           {parts.length > 0 ? parts.join(' · ') : ''}

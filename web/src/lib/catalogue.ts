@@ -19,6 +19,8 @@ export interface CatalogueEntry {
   excluded?: boolean;
   /** Only the AMRAP list shows it; the Sets list never does. */
   amrap_only?: boolean;
+  /** Position inside its pillar, as Ilja ordered it. */
+  order?: number;
   bodyweight_factor?: number;
 }
 
@@ -86,6 +88,7 @@ function normalizeEntry(raw: unknown): CatalogueEntry | null {
     ...(record.is_circuit === true ? { is_circuit: true } : {}),
     ...(record.excluded === true ? { excluded: true } : {}),
     ...(record.amrap_only === true ? { amrap_only: true } : {}),
+    ...(typeof record.order === 'number' && Number.isFinite(record.order) ? { order: record.order } : {}),
     ...(typeof factor === 'number' && Number.isFinite(factor)
       ? { bodyweight_factor: factor }
       : {})

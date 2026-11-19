@@ -21,25 +21,36 @@ it('test_a_primary_group_weighs_more_than_a_secondary', () => {
   expect(impactOn(pullUp, PULL)).toBe(2);
 });
 
-it('test_the_base_comes_first_whatever_its_impact', () => {
-  const row = entry('row', { primary: ['back', 'biceps'], secondary: ['core'] });
-  const chinUp = entry('chin-up', { primary: ['back'], role: 'base' });
+it('test_the_order_he_chose_wins', () => {
+  // His Push: dips, thruster, snatch, push-ups — the impact score does not reorder it.
+  const dips = entry('dips', { order: 1, primary: ['chest'] });
+  const snatch = entry('snatch', { order: 3, primary: ['shoulders', 'chest', 'triceps'] });
+  const pushUps = entry('push-ups', { order: 4, primary: ['chest'] });
 
-  expect(orderForPillar([row, chinUp], PULL).map((row) => row.id)).toEqual(['chin-up', 'row']);
+  expect(orderForPillar([pushUps, snatch, dips], PULL).map((row) => row.id)).toEqual([
+    'dips',
+    'snatch',
+    'push-ups'
+  ]);
 });
 
-it('test_the_stronger_impact_comes_next', () => {
+it('test_what_he_has_not_placed_falls_in_behind_the_placed_ones', () => {
+  const placed = entry('placed', { order: 9, primary: [] });
+  const unplaced = entry('unplaced', { primary: ['back', 'biceps'] });
+
+  expect(orderForPillar([unplaced, placed], PULL).map((row) => row.id)).toEqual(['placed', 'unplaced']);
+});
+
+it('test_unplaced_exercises_order_by_impact_then_name', () => {
   const weak = entry('weak', { primary: ['biceps'] });
   const strong = entry('strong', { primary: ['back', 'biceps'] });
+  const alsoWeak = entry('also-weak', { primary: ['core'] });
 
-  expect(orderForPillar([weak, strong], PULL).map((row) => row.id)).toEqual(['strong', 'weak']);
-});
-
-it('test_equal_impact_falls_back_to_the_name', () => {
-  const b = entry('b', { primary: ['back'] });
-  const a = entry('a', { primary: ['back'] });
-
-  expect(orderForPillar([b, a], PULL).map((row) => row.id)).toEqual(['a', 'b']);
+  expect(orderForPillar([weak, strong, alsoWeak], PULL).map((row) => row.id)).toEqual([
+    'strong',
+    'also-weak',
+    'weak'
+  ]);
 });
 
 it('test_an_exercise_outside_the_pillar_scores_nothing', () => {

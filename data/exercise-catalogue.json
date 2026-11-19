@@ -81,7 +81,8 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "is_circuit": true
+      "is_circuit": true,
+      "order": 7
     },
     {
       "id": "burpees",
@@ -117,7 +118,8 @@
       "bodyweight_factor": 1.0,
       "is_heavy_basic": true,
       "movement": "pull",
-      "role": "base"
+      "role": "base",
+      "order": 1
     },
     {
       "id": "dips",
@@ -133,7 +135,8 @@
       "bodyweight_factor": 0.8,
       "is_heavy_basic": true,
       "movement": "push",
-      "role": "base"
+      "role": "base",
+      "order": 1
     },
     {
       "id": "double-kettlebell-goblet-squat",
@@ -149,7 +152,8 @@
       "is_heavy_basic": true,
       "note": "Two bells held in the front rack; his name for it.",
       "movement": "squat",
-      "role": "base"
+      "role": "base",
+      "order": 1
     },
     {
       "id": "double-kettlebell-thruster",
@@ -166,7 +170,8 @@
       ],
       "is_heavy_basic": true,
       "movement": "push",
-      "role": "base"
+      "role": "base",
+      "order": 2
     },
     {
       "id": "dumbbell-flyes",
@@ -203,7 +208,8 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "is_circuit": true
+      "is_circuit": true,
+      "order": 6
     },
     {
       "id": "jump-back-leg-up",
@@ -223,7 +229,8 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "is_circuit": true
+      "is_circuit": true,
+      "order": 5
     },
     {
       "id": "hanging-knee-raises",
@@ -238,7 +245,8 @@
       "movement": "core",
       "role": "support",
       "note": "The regression of the hanging leg raise.",
-      "bodyweight_factor": 0.4
+      "bodyweight_factor": 0.4,
+      "order": 2
     },
     {
       "id": "hanging-leg-raise",
@@ -251,7 +259,8 @@
       "movement": "core",
       "role": "base",
       "note": "The core base, like the pull-up is the pull base: the legs go up straight and the body stays still. Progression: knee raise, leg raise, toes to bar, L-sit.",
-      "bodyweight_factor": 0.5
+      "bodyweight_factor": 0.5,
+      "order": 1
     },
     {
       "id": "jump-onto-chair",
@@ -270,7 +279,8 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "is_circuit": true
+      "is_circuit": true,
+      "order": 4
     },
     {
       "id": "kettlebell-snatch",
@@ -289,7 +299,8 @@
       "role": "support",
       "power": true,
       "per_side": true,
-      "note": "Ilja, 2026-11-19: a pull that ends in a lockout. It counts once, in Push, because the lockout is where it fails."
+      "note": "Ilja, 2026-11-19: a pull that ends in a lockout. It counts once, in Push, because the lockout is where it fails.",
+      "order": 3
     },
     {
       "id": "kettlebell-swing",
@@ -308,7 +319,8 @@
       "movement": "hinge",
       "role": "support",
       "power": true,
-      "is_circuit": true
+      "is_circuit": true,
+      "order": 3
     },
     {
       "id": "one-arm-kettlebell-row",
@@ -323,7 +335,8 @@
       "movement": "pull",
       "per_side": true,
       "note": "A rep of 10 means 10 on each arm.",
-      "role": "support"
+      "role": "support",
+      "order": 3
     },
     {
       "id": "pull-ups",
@@ -337,7 +350,8 @@
       ],
       "bodyweight_factor": 1.0,
       "movement": "pull",
-      "role": "base"
+      "role": "base",
+      "order": 2
     },
     {
       "id": "push-ups",
@@ -353,7 +367,8 @@
       "bodyweight_factor": 0.75,
       "movement": "push",
       "role": "support",
-      "is_circuit": true
+      "is_circuit": true,
+      "order": 4
     },
     {
       "id": "rdl-one-leg",
@@ -368,7 +383,8 @@
       ],
       "is_heavy_basic": true,
       "movement": "hinge",
-      "role": "support"
+      "role": "support",
+      "order": 2
     }
   ]
 }

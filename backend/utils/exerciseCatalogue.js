@@ -8,9 +8,24 @@ const path = require('path');
 const FILE = path.join(__dirname, '..', '..', 'data', 'exercise-catalogue.json');
 
 let cache = null;
+let cacheStamp = null;
+
+/**
+ * The file's own stamp. A copied catalogue must reach a running process: keying the cache by the
+ * mtime covered it, the copy alone did not — the container answered the old factors.
+ */
+function stamp() {
+  try {
+    const stat = fs.statSync(FILE);
+    return `${stat.mtimeMs}:${stat.size}`;
+  } catch {
+    return 'missing';
+  }
+}
 
 function load() {
-  if (cache) return cache;
+  const current = stamp();
+  if (cache && cacheStamp === current) return cache;
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, 'utf8'));
     cache = Array.isArray(raw) ? raw : raw.exercises || [];
@@ -18,12 +33,14 @@ function load() {
     console.warn(`exerciseCatalogue: cannot read the catalogue: ${error.message}`);
     cache = [];
   }
+  cacheStamp = current;
   return cache;
 }
 
-/** Drops the cache; tests and a re-read after a deploy use it. */
+/** Drops the cache; a test or a forced re-read uses it. */
 function reset() {
   cache = null;
+  cacheStamp = null;
 }
 
 function normalize(value) {

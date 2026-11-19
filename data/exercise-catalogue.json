@@ -58,7 +58,9 @@
       "movement": "squat",
       "role": "support",
       "bodyweight_factor": 0.85,
-      "is_circuit": true
+      "is_circuit": true,
+      "excluded": true,
+      "note": "Ilja, 2026-11-19: not counted in Legs. It stays pickable and it stays in the AMRAP list."
     },
     {
       "id": "spring-front-leg",

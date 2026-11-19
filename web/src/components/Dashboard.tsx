@@ -34,6 +34,7 @@ function formatClock(seconds: number): string {
 function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3): string[] {
   const wanted = movements.map((movement) => movement.toLowerCase());
   return entries
+    .filter((entry) => entry.excluded !== true)
     .filter((entry) => wanted.includes(String(entry.movement ?? '').toLowerCase()))
     // The base first: it is what the pillar rests on, the rest completes it.
     .sort((a, b) => {

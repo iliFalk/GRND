@@ -15,6 +15,8 @@ export interface CatalogueEntry {
   power?: boolean;
   /** May be used in an AMRAP circuit. */
   is_circuit?: boolean;
+  /** Stays pickable but is not counted in its pillar. */
+  excluded?: boolean;
   bodyweight_factor?: number;
 }
 
@@ -80,6 +82,7 @@ function normalizeEntry(raw: unknown): CatalogueEntry | null {
     ...(record.role === 'base' || record.role === 'support' ? { role: record.role } : {}),
     ...(record.power === true ? { power: true } : {}),
     ...(record.is_circuit === true ? { is_circuit: true } : {}),
+    ...(record.excluded === true ? { excluded: true } : {}),
     ...(typeof factor === 'number' && Number.isFinite(factor)
       ? { bodyweight_factor: factor }
       : {})

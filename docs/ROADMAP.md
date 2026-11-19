@@ -119,6 +119,30 @@ Decided 2026-11-18:
 Open: whether the circuit's exercises carry per-round target reps (as the jump session does: 2×10, 40,
 40, 40), or whether the user enters the reps of the round as it goes.
 
+### The circuit flow, and the pairing
+
+Decided 2026-11-18:
+
+1. Choose the **total time**.
+2. Choose **up to three exercises**.
+3. Give the **reps of each**. No weight in a circuit.
+
+`data/exercise-catalogue.json` carries a `movement` axis (`push`, `pull`, `squat`, `hinge`, `core`,
+`carry`, `power`, `conditioning`), and `per_side` where one rep means one rep on each side — his one-arm
+kettlebell row is such a movement.
+
+**The pairing.** For every chosen exercise the app suggests partners, ranked by two rules:
+
+- an **antagonist first**: a pull wants a push, a push wants a pull, a squat wants a hinge or core work;
+- **never an exercise that trains a primary group the chosen one already trained**, so a circuit does not
+  burn one muscle three times.
+
+It also names an **alternative** when a chosen exercise needs equipment he does not own. Everything it
+says is advice: any exercise in the catalogue can be picked.
+
+Verified: eight tests over the pairing, the whole suite 32 green; `POST /api/pairings` answers for his
+catalogue and his kit.
+
 ## 2. The React UI
 
 The vanilla frontend (`frontend/js/**`, 6 782 lines of components) is replaced by a React app in `web/`.

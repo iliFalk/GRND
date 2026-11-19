@@ -198,3 +198,29 @@ curl -s "http://127.0.0.1:3055/api/muscle-volume/<userId>?week=2026-11-18"
 
 The dashboard panel `#muscle-volume` stays hidden when the endpoint answers nothing, so an older
 server and a newer panel still render a screen.
+
+## Where it runs
+
+The app runs on **falknest**, as a container in the same compose stack as the other apps:
+
+| | |
+|---|---|
+| Source on the host | `/opt/falknest/grnd/app` |
+| Live data | `/opt/falknest/grnd/data` (bind-mounted to `/app/data`) |
+| Service | `grnd` in `/home/ilja/falknest/apps.yml`, image `grnd:latest` |
+| Port | `127.0.0.1:3070` on the host, `3000` inside the container |
+| Public address | `https://falknest.tailbae8be.ts.net:8443` through `tailscale serve` |
+| Secrets | `/opt/falknest/grnd/grnd.env` (mode 600), read by `env_file` |
+
+Deploy a change from the agent machine:
+
+```sh
+rsync -a --delete --exclude node_modules --exclude web/node_modules --exclude .git \
+  --exclude .worktrees --exclude uploads --exclude data ~/work/GRND/ falknest:/opt/falknest/grnd/app/
+ssh falknest 'cd /home/ilja/falknest && docker compose -f apps.yml build grnd && docker compose -f apps.yml up -d grnd'
+```
+
+The `data` directory travels separately: the image carries a seed, the volume carries the live files. A
+deploy never overwrites what the app wrote.
+
+The old copy on the agent machine is stopped and disabled; two live copies would drift.

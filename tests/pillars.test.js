@@ -28,7 +28,7 @@ test('test_legs_take_squat_hinge_and_power', () => {
   const report = weeklyPillars(
     [
       session('2026-03-03T10:00:00', [
-        { name: 'Air squats', completed_sets: [{ reps: 10 }, { reps: 10 }] },
+        { name: 'Double kettlebell goblet squat', completed_sets: [{ reps: 8 }, { reps: 8 }] },
         { name: 'Kettlebell Swing', completed_sets: [{ reps: 15 }] },
         { name: 'Jump onto chair', completed_sets: [{ reps: 5 }, { reps: 5 }] }
       ])
@@ -89,6 +89,17 @@ test('test_conditioning_stays_outside_the_pillars', () => {
   assert.deepEqual(byPillar(report), { pull: 0, push: 0, legs: 0, core: 0 });
   assert.deepEqual(report.outside, [{ name: 'Burpees', sets: 2 }]);
   assert.equal(report.sessions, 0);
+});
+
+test('test_an_excluded_exercise_is_not_counted_in_its_pillar', () => {
+  // Air squats stay in the catalogue and in the list, but Ilja does not count them as legs.
+  const report = weeklyPillars(
+    [session('2026-03-03T10:00:00', [{ name: 'Air squats', completed_sets: [{ reps: 15 }, { reps: 15 }] }])],
+    { week: '2026-03-03' }
+  );
+
+  assert.equal(byPillar(report).legs, 0);
+  assert.deepEqual(report.outside, [{ name: 'Air squats', sets: 2 }]);
 });
 
 test('test_a_circuit_session_stays_out_of_the_pillars', () => {

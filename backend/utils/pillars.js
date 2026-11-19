@@ -102,7 +102,8 @@ function weeklyPillars(sessions, options = {}) {
         continue;
       }
 
-      const pillar = pillarForMovement(entry.movement, rows);
+      // An exercise the catalogue excludes is not counted in a pillar, though it stays pickable.
+      const pillar = entry.excluded === true ? null : pillarForMovement(entry.movement, rows);
       if (!pillar) {
         outside[name || '(unnamed)'] = (outside[name || '(unnamed)'] || 0) + sets;
         continue;

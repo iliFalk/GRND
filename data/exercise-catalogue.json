@@ -1,5 +1,5 @@
 {
-  "note": "The fixed list a plan picks from. An id never changes; a name may be corrected. `is_heavy_basic` marks the movements with a rep range and a weight suggestion; `is_power` marks ballistic work; `is_circuit` marks what an AMRAP circuit may use.",
+  "note": "The fixed list a plan picks from. An id never changes; a name may be corrected. `is_heavy_basic` marks the movements with a rep range and a weight suggestion; `is_power` marks ballistic work; `movement` is the axis a circuit pairing reads; `per_side` means one rep counts on each side.",
   "version": 1,
   "equipment": [
     {
@@ -45,6 +45,19 @@
   ],
   "exercises": [
     {
+      "id": "air-squats",
+      "name": "Air squats",
+      "equipment": "bodyweight",
+      "primary": [
+        "quads",
+        "glutes"
+      ],
+      "secondary": [
+        "core"
+      ],
+      "movement": "squat"
+    },
+    {
       "id": "spring-front-leg",
       "name": "Back foot on chair — light jumps on front leg",
       "equipment": "chair",
@@ -58,7 +71,7 @@
       ],
       "is_power": true,
       "typical": "по 40 на ногу",
-      "is_circuit": true
+      "movement": "power"
     },
     {
       "id": "bench-press",
@@ -71,7 +84,7 @@
         "triceps",
         "shoulders"
       ],
-      "is_circuit": true
+      "movement": "push"
     },
     {
       "id": "biceps-curl",
@@ -81,7 +94,7 @@
         "biceps"
       ],
       "secondary": [],
-      "is_circuit": true
+      "movement": "pull"
     },
     {
       "id": "bodyweight-rows",
@@ -94,7 +107,7 @@
         "biceps"
       ],
       "bodyweight_factor": 0.9,
-      "is_circuit": true
+      "movement": "pull"
     },
     {
       "id": "burpees",
@@ -109,7 +122,7 @@
         "shoulders"
       ],
       "bodyweight_factor": 1.0,
-      "is_circuit": true
+      "movement": "conditioning"
     },
     {
       "id": "calf-raise",
@@ -120,7 +133,7 @@
       ],
       "secondary": [],
       "bodyweight_factor": 1.0,
-      "is_circuit": true
+      "movement": "calves"
     },
     {
       "id": "calisthenics",
@@ -134,7 +147,7 @@
         "core"
       ],
       "bodyweight_factor": 0.8,
-      "is_circuit": true
+      "movement": "push"
     },
     {
       "id": "chin-ups-rings",
@@ -149,7 +162,7 @@
       ],
       "bodyweight_factor": 1.0,
       "is_heavy_basic": true,
-      "is_circuit": false
+      "movement": "pull"
     },
     {
       "id": "dips",
@@ -164,7 +177,7 @@
       ],
       "bodyweight_factor": 0.8,
       "is_heavy_basic": true,
-      "is_circuit": false
+      "movement": "push"
     },
     {
       "id": "double-kettlebell-goblet-squat",
@@ -179,7 +192,7 @@
       ],
       "is_heavy_basic": true,
       "note": "Two bells held in the front rack; his name for it.",
-      "is_circuit": false
+      "movement": "squat"
     },
     {
       "id": "double-kettlebell-thruster",
@@ -195,7 +208,19 @@
         "core"
       ],
       "is_heavy_basic": true,
-      "is_circuit": false
+      "movement": "push"
+    },
+    {
+      "id": "dumbbell-flyes",
+      "name": "Dumbbell flyes",
+      "equipment": "dumbbell",
+      "primary": [
+        "chest"
+      ],
+      "secondary": [
+        "shoulders"
+      ],
+      "movement": "push"
     },
     {
       "id": "farmer-carry",
@@ -207,7 +232,7 @@
       "secondary": [
         "back"
       ],
-      "is_circuit": true
+      "movement": "carry"
     },
     {
       "id": "jump-back-leg-side",
@@ -223,7 +248,7 @@
       ],
       "is_power": true,
       "typical": "по 40 на ногу",
-      "is_circuit": true
+      "movement": "power"
     },
     {
       "id": "jump-back-leg-up",
@@ -239,7 +264,19 @@
       ],
       "is_power": true,
       "typical": "по 40 на ногу",
-      "is_circuit": true
+      "movement": "power"
+    },
+    {
+      "id": "hanging-knee-raises",
+      "name": "Hanging knee raises",
+      "equipment": "pull-up-bar",
+      "primary": [
+        "core"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "movement": "core"
     },
     {
       "id": "jump-onto-chair",
@@ -254,7 +291,7 @@
       ],
       "is_power": true,
       "typical": "2×10",
-      "is_circuit": true
+      "movement": "power"
     },
     {
       "id": "kettlebell-clean",
@@ -268,7 +305,7 @@
         "back",
         "shoulders"
       ],
-      "is_circuit": true
+      "movement": "hinge"
     },
     {
       "id": "kettlebell-deadlift",
@@ -281,7 +318,7 @@
       "secondary": [
         "back"
       ],
-      "is_circuit": true
+      "movement": "hinge"
     },
     {
       "id": "kettlebell-front-rack-carry",
@@ -294,7 +331,7 @@
         "shoulders",
         "quads"
       ],
-      "is_circuit": true
+      "movement": "carry"
     },
     {
       "id": "kettlebell-goblet-squat",
@@ -307,7 +344,7 @@
       "secondary": [
         "core"
       ],
-      "is_circuit": true
+      "movement": "squat"
     },
     {
       "id": "kettlebell-press",
@@ -320,7 +357,7 @@
         "triceps",
         "core"
       ],
-      "is_circuit": true
+      "movement": "push"
     },
     {
       "id": "kettlebell-row",
@@ -332,7 +369,7 @@
       "secondary": [
         "biceps"
       ],
-      "is_circuit": true
+      "movement": "pull"
     },
     {
       "id": "kettlebell-snatch",
@@ -347,7 +384,7 @@
         "back"
       ],
       "is_power": true,
-      "is_circuit": true
+      "movement": "hinge"
     },
     {
       "id": "kettlebell-swing",
@@ -363,7 +400,7 @@
       ],
       "is_power": true,
       "is_heavy_basic": false,
-      "is_circuit": true
+      "movement": "hinge"
     },
     {
       "id": "lunges",
@@ -377,7 +414,7 @@
         "hamstrings"
       ],
       "bodyweight_factor": 0.7,
-      "is_circuit": true
+      "movement": "squat"
     },
     {
       "id": "mountain-climbers",
@@ -391,7 +428,21 @@
         "quads"
       ],
       "bodyweight_factor": 0.6,
-      "is_circuit": true
+      "movement": "core"
+    },
+    {
+      "id": "one-arm-kettlebell-row",
+      "name": "One-arm kettlebell row",
+      "equipment": "kettlebell",
+      "primary": [
+        "back"
+      ],
+      "secondary": [
+        "biceps"
+      ],
+      "movement": "pull",
+      "per_side": true,
+      "note": "A rep of 10 means 10 on each arm."
     },
     {
       "id": "overhead-press",
@@ -404,7 +455,7 @@
         "triceps",
         "core"
       ],
-      "is_circuit": true
+      "movement": "push"
     },
     {
       "id": "plank",
@@ -415,7 +466,7 @@
       ],
       "secondary": [],
       "bodyweight_factor": 0.5,
-      "is_circuit": true
+      "movement": "core"
     },
     {
       "id": "pull-ups",
@@ -428,7 +479,7 @@
         "biceps"
       ],
       "bodyweight_factor": 1.0,
-      "is_circuit": true
+      "movement": "pull"
     },
     {
       "id": "push-ups",
@@ -442,7 +493,7 @@
         "shoulders"
       ],
       "bodyweight_factor": 0.75,
-      "is_circuit": true
+      "movement": "push"
     },
     {
       "id": "rdl-one-leg",
@@ -456,7 +507,7 @@
         "core"
       ],
       "is_heavy_basic": true,
-      "is_circuit": false
+      "movement": "hinge"
     },
     {
       "id": "rows",
@@ -468,7 +519,7 @@
       "secondary": [
         "biceps"
       ],
-      "is_circuit": true
+      "movement": "pull"
     },
     {
       "id": "squats",
@@ -482,7 +533,7 @@
         "core"
       ],
       "bodyweight_factor": 0.85,
-      "is_circuit": true
+      "movement": "squat"
     },
     {
       "id": "triceps-extension",
@@ -492,7 +543,7 @@
         "triceps"
       ],
       "secondary": [],
-      "is_circuit": true
+      "movement": "push"
     },
     {
       "id": "turkish-get-up",
@@ -506,7 +557,7 @@
         "glutes",
         "quads"
       ],
-      "is_circuit": true
+      "movement": "core"
     }
   ]
 }

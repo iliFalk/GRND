@@ -40,7 +40,12 @@
     {
       "id": "dumbbell",
       "label": "Гантели",
-      "available": false
+      "available": true
+    },
+    {
+      "id": "chair",
+      "label": "Стул",
+      "available": true
     }
   ]
 }

@@ -54,4 +54,26 @@
     margin: 0;
     min-height: 100dvh;
   }
+
+  /* The app is a screen, not a document: no pinch or double-tap zoom, and no rubber band when the
+     list runs out. The viewport meta stops the zoom; these two stop the page moving under a drag. */
+  html,
+  body {
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  /* A drag on the frame moves nothing: the layout holds the viewport it was given. */
+  body {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
 }

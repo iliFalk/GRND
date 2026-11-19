@@ -53,10 +53,21 @@ Consequences, written down so the code matches:
 - **A warm-up is not recorded at all** — not in history, not in the volume.
 - The rest timer counts up, and the next set starts on a tap, so the mode never guesses when rest ended.
 
+**Change (Ilja, 2026-11-19):** a workout holds **several exercises**, each with its own weight. The
+screen walks them one at a time: a set closes on the pause, the rest counts up, and "next exercise"
+moves on once the current one has a set. Everything else in this section holds unchanged — the weight
+is chosen once per exercise, a warm-up is not recorded, and the workout saves once at the end.
+
 **Built (2026-11-19).** `web/src/lib/workout.ts` holds the state as plain data, `web/src/lib/session.ts`
 builds the one POST body, and `web/src/components/workout/WorkoutScreen.tsx` is the screen. Proved by
-`web/src/lib/workout.test.tsx` (nine checks) and by a session posted through the public address:
+`web/src/lib/workout.test.tsx` (16 checks) and by a session posted through the public address:
 2×15 at 16 kg plus 2×12 push-ups stored as 1 740 kg, four sets.
+
+The exercise list is **one flat list**: grouping by a primary group listed Chin-ups under back and
+again under biceps, and the picker could hold one id at a time.
+
+The screen does not move: the viewport forbids zoom, the body is fixed to the frame, and
+`disableVerticalSwipes()` keeps Telegram from closing the Mini App on a downward drag.
 
 ### How a set counts in a circuit
 

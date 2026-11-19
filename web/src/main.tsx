@@ -8,10 +8,12 @@ const root = document.getElementById('root');
 if (!root) throw new Error('The root element is missing from index.html');
 
 // Inside Telegram the client waits for `ready` and gives the app the full height on `expand`.
-// Outside Telegram the object is absent and both calls do nothing.
+// `disableVerticalSwipes` keeps the sheet where it is: the app closes with its own button, never
+// by dragging it down. Outside Telegram the object is absent and the calls do nothing.
 const telegram = window.Telegram?.WebApp;
 telegram?.ready?.();
 telegram?.expand?.();
+telegram?.disableVerticalSwipes?.();
 
 createRoot(root).render(
   <StrictMode>

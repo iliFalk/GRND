@@ -3,55 +3,61 @@ import { renderToString } from 'react-dom/server';
 import { WorkoutScreen } from '../components/workout/WorkoutScreen';
 import { buildSessionPayload } from './session';
 import {
+  activeExercise,
   countReps,
   hasWork,
+  isLastExercise,
   isResting,
+  nextExercise,
   nextSet,
   pause,
   restSeconds,
   startWorkout,
   totalReps,
+  totalSets,
+  type WorkoutChoice,
   type WorkoutState
 } from './workout';
 
-const entry = { id: 'kettlebell-swing', name: 'Kettlebell Swing' };
+const swing: WorkoutChoice = { id: 'kettlebell-swing', name: 'Kettlebell Swing', weight: 16 };
+const pushUps: WorkoutChoice = { id: 'push-ups', name: 'Push-ups' };
 const start = 1_700_000_000_000;
 
-function counted(reps: number, weight?: number): WorkoutState {
-  return countReps(startWorkout(entry, weight, start), reps);
+function counted(reps: number, choices: WorkoutChoice[] = [swing]): WorkoutState {
+  return countReps(startWorkout(choices, start), reps);
 }
 
 it('test_a_pause_closes_the_set_with_the_reps_counted', () => {
-  const closed = pause(counted(12, 16), start + 30_000);
-  expect(closed.sets).toEqual([{ reps: 12, weight: 16 }]);
-  expect(closed.counter).toBe(0);
+  const closed = pause(counted(12), start + 30_000);
+  expect(activeExercise(closed)?.sets).toEqual([{ reps: 12, weight: 16 }]);
+  expect(activeExercise(closed)?.counter).toBe(0);
 });
 
 it('test_a_pause_with_no_reps_closes_nothing', () => {
-  const state = startWorkout(entry, 16, start);
+  const state = startWorkout([swing], start);
   expect(pause(state, start + 5_000)).toBe(state);
   expect(hasWork(pause(state, start + 5_000))).toBe(false);
 });
 
 it('test_the_rest_starts_at_the_pause_and_counts_up', () => {
-  const resting = pause(counted(10, 16), start);
+  const resting = pause(counted(10), start);
   expect(isResting(resting)).toBe(true);
   expect(restSeconds(resting, start)).toBe(0);
   expect(restSeconds(resting, start + 45_000)).toBe(45);
 });
 
 it('test_the_next_set_starts_from_a_zeroed_counter', () => {
-  const resting = pause(counted(10, 16), start);
+  const resting = pause(counted(10), start);
   const next = nextSet(resting);
   expect(isResting(next)).toBe(false);
-  expect(next.counter).toBe(0);
-  expect(next.sets).toEqual([{ reps: 10, weight: 16 }]);
+  expect(activeExercise(next)?.counter).toBe(0);
+  expect(activeExercise(next)?.sets).toEqual([{ reps: 10, weight: 16 }]);
 });
 
-it('test_one_weight_for_the_whole_workout', () => {
-  const first = pause(counted(10, 16), start);
+it('test_one_weight_for_the_whole_exercise', () => {
+  const first = pause(counted(10), start);
   const second = pause(countReps(nextSet(first), 8), start + 60_000);
-  expect(second.sets).toEqual([
+  expect(activeExercise(second)?.sets).toEqual([
     { reps: 10, weight: 16 },
     { reps: 8, weight: 16 }
   ]);
@@ -59,37 +65,71 @@ it('test_one_weight_for_the_whole_workout', () => {
 });
 
 it('test_a_count_of_zero_or_below_adds_nothing', () => {
-  expect(countReps(counted(5), 0).counter).toBe(5);
-  expect(countReps(counted(5), -3).counter).toBe(5);
+  expect(activeExercise(counted(5))?.counter).toBe(5);
+  expect(activeExercise(countReps(counted(5), 0))?.counter).toBe(5);
+  expect(activeExercise(countReps(counted(5), -3))?.counter).toBe(5);
 });
 
-it('test_a_bodyweight_workout_carries_no_weight_on_its_sets', () => {
-  const closed = pause(counted(15), start);
-  expect(closed.weight).toBeUndefined();
-  expect(closed.sets).toEqual([{ reps: 15 }]);
+it('test_a_bodyweight_exercise_carries_no_weight_on_its_sets', () => {
+  const closed = pause(counted(15, [pushUps]), start);
+  expect(activeExercise(closed)?.weight).toBeUndefined();
+  expect(activeExercise(closed)?.sets).toEqual([{ reps: 15 }]);
+});
+
+it('test_each_exercise_keeps_its_own_weight', () => {
+  const state = startWorkout([swing, pushUps], start);
+  expect(state.exercises.map((exercise) => exercise.weight)).toEqual([16, undefined]);
+});
+
+it('test_next_exercise_needs_a_closed_set', () => {
+  const state = startWorkout([swing, pushUps], start);
+  expect(nextExercise(state)).toBe(state);
+});
+
+it('test_next_exercise_moves_on_and_keeps_the_first_exercise', () => {
+  const first = pause(counted(10, [swing, pushUps]), start);
+  const moved = nextExercise(nextSet(first));
+
+  expect(moved.active).toBe(1);
+  expect(moved.exercises[0].sets).toEqual([{ reps: 10, weight: 16 }]);
+  expect(isLastExercise(moved)).toBe(true);
+  expect(activeExercise(moved)?.name).toBe('Push-ups');
+});
+
+it('test_the_last_exercise_has_nowhere_to_go', () => {
+  const onLast = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start)));
+  expect(nextExercise(onLast)).toBe(onLast);
 });
 
 it('test_no_closed_set_is_nothing_to_save', () => {
-  const state = startWorkout(entry, 16, start);
-  expect(buildSessionPayload(state, '931142831')).toBeNull();
+  expect(buildSessionPayload(startWorkout([swing, pushUps], start), '931142831')).toBeNull();
+});
+
+it('test_the_payload_carries_every_exercise_that_was_done', () => {
+  const first = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start)));
+  const done = pause(countReps(first, 12), start + 120_000);
+  const payload = buildSessionPayload(done, '931142831', new Date(start + 180_000));
+
+  expect(payload?.duration).toBe(180);
+  expect(payload?.dayType).toBe('STANDARD');
+  expect(totalSets(done)).toBe(2);
+  expect(payload?.completedExercises).toEqual([
+    { exerciseId: 'kettlebell-swing', name: 'Kettlebell Swing', sets: [{ reps: 10, weight: 16 }] },
+    { exerciseId: 'push-ups', name: 'Push-ups', sets: [{ reps: 12 }] }
+  ]);
+});
+
+it('test_an_exercise_picked_but_never_done_is_not_in_the_payload', () => {
+  const onlyFirst = nextExercise(nextSet(pause(counted(10, [swing, pushUps]), start)));
+  const payload = buildSessionPayload(onlyFirst, '931142831');
+
+  expect(payload?.completedExercises).toHaveLength(1);
+  expect(payload?.completedExercises[0].exerciseId).toBe('kettlebell-swing');
 });
 
 it('test_the_workout_screen_opens_on_its_setup_step', () => {
-  // The screen has no exercise yet, so it asks for one instead of showing a counter.
+  // No exercise chosen yet, so the screen asks for several instead of showing a counter.
   const html = renderToString(<WorkoutScreen userId="931142831" onSaved={() => {}} />);
   expect(html).toContain('Start a workout');
-  expect(html).toContain('One exercise, one weight');
-});
-
-it('test_the_payload_carries_the_catalogue_id_the_name_and_the_sets', () => {
-  const closed = pause(counted(12, 16), start + 120_000);
-  const payload = buildSessionPayload(closed, '931142831', new Date(start + 180_000));
-
-  expect(payload).not.toBeNull();
-  expect(payload?.userId).toBe('931142831');
-  expect(payload?.dayType).toBe('STANDARD');
-  expect(payload?.duration).toBe(180);
-  expect(payload?.completedExercises).toEqual([
-    { exerciseId: 'kettlebell-swing', name: 'Kettlebell Swing', sets: [{ reps: 12, weight: 16 }] }
-  ]);
+  expect(html).toContain('Choose the exercises');
 });

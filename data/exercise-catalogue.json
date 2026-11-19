@@ -45,6 +45,21 @@
   ],
   "exercises": [
     {
+      "id": "spring-front-leg",
+      "name": "Back foot on chair — light jumps on front leg",
+      "equipment": "chair",
+      "primary": [
+        "quads",
+        "calves"
+      ],
+      "secondary": [
+        "glutes",
+        "core"
+      ],
+      "is_power": true,
+      "typical": "по 40 на ногу"
+    },
+    {
       "id": "bench-press",
       "name": "Bench Press",
       "equipment": "barbell",
@@ -183,9 +198,9 @@
       ]
     },
     {
-      "id": "jumps",
-      "name": "Jumps",
-      "equipment": "bodyweight",
+      "id": "jump-back-leg-side",
+      "name": "Front foot on chair — jump on back leg, side to side",
+      "equipment": "chair",
       "primary": [
         "quads",
         "calves"
@@ -195,7 +210,36 @@
         "core"
       ],
       "is_power": true,
-      "note": "Which jump is still open: squat jump, box jump or broad jump."
+      "typical": "по 80 на ногу"
+    },
+    {
+      "id": "jump-back-leg-up",
+      "name": "Front foot on chair — jump on back leg, up",
+      "equipment": "chair",
+      "primary": [
+        "quads",
+        "calves"
+      ],
+      "secondary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "is_power": true,
+      "typical": "по 80 на ногу"
+    },
+    {
+      "id": "jump-onto-chair",
+      "name": "Jump onto chair",
+      "equipment": "chair",
+      "primary": [
+        "quads",
+        "calves"
+      ],
+      "secondary": [
+        "glutes"
+      ],
+      "is_power": true,
+      "typical": "2×10"
     },
     {
       "id": "kettlebell-clean",

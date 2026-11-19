@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 export interface HistorySet {
   reps: number;
   weight?: number;
+  /** The block the set belonged to. */
+  block?: number;
 }
 
 export interface HistoryExercise {
@@ -10,6 +12,8 @@ export interface HistoryExercise {
   exerciseId?: string;
   exerciseType?: string;
   volume?: number;
+  /** The exercise shared a block with another one. */
+  superset?: boolean;
   sets?: HistorySet[];
   completed_sets?: HistorySet[];
 }

@@ -109,7 +109,14 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
             {(open.completedExercises ?? []).map((exercise, index) => (
               <div key={`${exercise.name}-${index}`} className="space-y-1 py-3">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-sm font-medium">{exercise.name}</span>
+                  <span className="min-w-0 truncate text-sm font-medium">
+                    {exercise.name}
+                    {exercise.superset ? (
+                      <span className="ml-1.5 rounded-pill border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        superset
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {`${formatNumber(exercise.volume ?? 0)} kg`}
                   </span>

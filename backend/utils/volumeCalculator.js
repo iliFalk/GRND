@@ -1,7 +1,16 @@
 /**
  * Volume Calculator Utility for Backend
- * Provides functions for calculating workout volume according to PRD requirements
+ *
+ *   WEIGHTED    volume = weight × reps
+ *   BODYWEIGHT  volume = (user_bodyweight × factor + added_weight) × reps
+ *
+ * The factor is the catalogue's `bodyweight_factor` — one source, `data/exercise-catalogue.json`.
+ * The calculator used to carry its own table of names, and `calculateTotalVolume` preferred that
+ * table over the factor an exercise carried, so two answers existed for one question. An exercise
+ * the catalogue does not name has no factor: the call refuses instead of guessing 1.0.
  */
+const catalogue = require('./exerciseCatalogue');
+
 class VolumeCalculator {
   /**
    * Calculate volume for a single exercise according to PRD
@@ -66,15 +75,14 @@ class VolumeCalculator {
         throw new Error('user bodyweight is required for a bodyweight exercise');
       } else if (exercise.exercise_type === 'BODYWEIGHT') {
         // Bodyweight exercise: a load ADDED to the body counts with it.
-        //   volume = (user_bodyweight × percentage + added_weight) × reps
-        // A chin-up on rings at 80 kg with a 13 kg backpack is 93 kg per rep, not 80.
-        // The factor comes from the exercise, else from the table by name, else 1.
-        // Reading only the explicit field made a direct call count the whole bodyweight for Push-ups.
+        // The factor comes from the exercise, else from the catalogue, else there is no answer.
         const name = exercise.exercise_name || exercise.name || '';
-        const table = VolumeCalculator.getDefaultBodyweightLoadPercentages();
-        const loadPercentage = exercise.bodyweight_load_percentage !== undefined
+        const factor = exercise.bodyweight_load_percentage !== undefined
           ? exercise.bodyweight_load_percentage
-          : (table[name] !== undefined ? table[name] : 1);
+          : catalogue.bodyweightFactor(exercise);
+        if (factor === undefined) {
+          throw new Error(`no bodyweight factor for "${name || '(unnamed)'}": it is not in the catalogue`);
+        }
         const added = typeof set.weight === 'number' && !isNaN(set.weight) && set.weight > 0 ? set.weight : 0;
         if (set.reps !== undefined) {
           // Validate reps
@@ -85,7 +93,7 @@ class VolumeCalculator {
             throw new Error('Reps cannot be negative');
           }
           
-          totalVolume += (userBodyweight * loadPercentage + added) * set.reps;
+          totalVolume += (userBodyweight * factor + added) * set.reps;
         }
       }
     });
@@ -94,10 +102,8 @@ class VolumeCalculator {
   }
 
   /**
-   * Calculate total volume for multiple exercises
-   * @param {Array} exercises - Array of exercise objects
-   * @param {number} userBodyweight - User's bodyweight in kg
-   * @returns {number} - Total volume for all exercises in kg
+   * The volume of several exercises. Each one keeps the factor it carries or the catalogue gives it;
+   * this method never substitutes a table of its own.
    */
   static calculateTotalVolume(exercises, userBodyweight) {
     if (!Array.isArray(exercises)) {
@@ -107,40 +113,10 @@ class VolumeCalculator {
     let totalVolume = 0;
 
     exercises.forEach(exercise => {
-      // Get bodyweight load percentage from the hardcoded table
-      const exerciseName = exercise.exercise_name || exercise.name || '';
-      const bodyweightLoadPercentages = this.getDefaultBodyweightLoadPercentages();
-      const loadPercentage = bodyweightLoadPercentages[exerciseName] || 1.0;
-
-      // Update exercise to include the load percentage for calculation
-      const exerciseWithLoadPercentage = {
-        ...exercise,
-        bodyweight_load_percentage: loadPercentage
-      };
-
-      totalVolume += this.calculateExerciseVolume(exerciseWithLoadPercentage, userBodyweight);
+      totalVolume += this.calculateExerciseVolume(exercise, userBodyweight);
     });
 
     return totalVolume;
-  }
-
-  /**
-   * Get default bodyweight load percentages for common exercises
-   * @returns {Object} - Object mapping exercise names to default load percentages
-   */
-  static getDefaultBodyweightLoadPercentages() {
-    return {
-      'Push-ups': 0.75, // 75% bodyweight
-      'Pull-ups': 1.0,  // 100% bodyweight
-      'Squats': 0.85,   // 85% bodyweight
-      'Lunges': 0.7,    // 70% bodyweight
-      'Dips': 0.8,      // 80% bodyweight
-      'Plank': 0.5,     // 50% bodyweight (approximation)
-      'Burpees': 1.0,   // 100% bodyweight
-      'Mountain Climbers': 0.6, // 60% bodyweight
-      'Bodyweight Rows': 0.9, // 90% bodyweight
-      'Calisthenics': 0.8 // 80% bodyweight
-    };
   }
 }
 

@@ -10,17 +10,26 @@ test('test_weighted_sets', () => {
   assert.equal(volume, 1300);
 });
 
-test('test_bodyweight_uses_the_table_factor', () => {
+test('test_the_factor_comes_from_the_catalogue', () => {
   const volume = VolumeCalculator.calculateExerciseVolume({
     exercise_type: 'BODYWEIGHT',
     exercise_name: 'Push-ups',
     completed_sets: [{ reps: 10 }, { reps: 10 }]
   }, 80);
-  // Push-ups: 0.75 of the body, so 80 × 0.75 × 20
+  // Push-ups: 0.75 of the body in the catalogue, so 80 × 0.75 × 20
   assert.equal(volume, 1200);
 });
 
-test('test_an_explicit_factor_wins_over_the_table', () => {
+test('test_the_catalogue_is_found_by_id_as_well_as_by_name', () => {
+  const byId = VolumeCalculator.calculateExerciseVolume({
+    exercise_type: 'BODYWEIGHT',
+    exerciseId: 'dips',
+    completed_sets: [{ reps: 5 }]
+  }, 80);
+  assert.equal(byId, 320);
+});
+
+test('test_an_explicit_factor_wins_over_the_catalogue', () => {
   const volume = VolumeCalculator.calculateExerciseVolume({
     exercise_type: 'BODYWEIGHT',
     exercise_name: 'Push-ups',
@@ -28,6 +37,30 @@ test('test_an_explicit_factor_wins_over_the_table', () => {
     completed_sets: [{ reps: 20 }]
   }, 80);
   assert.equal(volume, 800);
+});
+
+test('test_total_volume_honours_an_explicit_factor', () => {
+  // The sum used to overwrite the factor with its own table: 0.5 became 0.75.
+  const total = VolumeCalculator.calculateTotalVolume([
+    {
+      exercise_type: 'BODYWEIGHT',
+      exercise_name: 'Push-ups',
+      bodyweight_load_percentage: 0.5,
+      completed_sets: [{ reps: 20 }]
+    }
+  ], 80);
+  assert.equal(total, 800);
+});
+
+test('test_an_exercise_outside_the_catalogue_has_no_factor', () => {
+  assert.throws(
+    () => VolumeCalculator.calculateExerciseVolume({
+      exercise_type: 'BODYWEIGHT',
+      exercise_name: 'Zercher squat',
+      completed_sets: [{ reps: 5 }]
+    }, 80),
+    /catalogue/
+  );
 });
 
 test('test_load_added_to_the_body_counts', () => {

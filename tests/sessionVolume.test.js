@@ -47,7 +47,8 @@ test('test_a_bodyweight_exercise_without_a_bodyweight_is_refused', () => {
 
 test('test_the_type_comes_from_the_catalogue', () => {
   assert.equal(exerciseType({ exerciseId: 'dips', name: 'Dips' }), 'BODYWEIGHT');
-  assert.equal(exerciseType({ exerciseId: 'air-squats', name: 'Air squats' }), 'WEIGHTED');
+  // A kettlebell exercise is measured by the bell, never as bodyweight work.
+  assert.equal(exerciseType({ exerciseId: 'kettlebell-swing', name: 'Kettlebell Swing' }), 'WEIGHTED');
 });
 
 test('test_an_explicit_type_wins_over_the_catalogue', () => {
@@ -60,14 +61,29 @@ test('test_an_explicit_type_wins_over_the_catalogue', () => {
   assert.equal(done.totalVolume, 0);
 });
 
-test('test_a_set_without_a_weight_adds_no_volume_to_a_weighted_exercise', () => {
+test('test_a_weighted_set_without_a_weight_adds_no_volume', () => {
   const done = computeSessionVolume(
-    [{ exerciseId: 'air-squats', name: 'Air squats', sets: [{ reps: 10 }, { reps: 10 }, { reps: 10 }] }],
+    [{ exerciseId: 'kettlebell-swing', name: 'Kettlebell Swing', sets: [{ reps: 15 }, { reps: 15 }, { reps: 15 }] }],
     bodyweight
   );
 
   assert.equal(done.totalVolume, 0);
   assert.equal(done.totalSets, 3);
+});
+
+test('test_a_bodyweight_exercise_with_a_factor_counts_the_body', () => {
+  // A jump moves the whole body; air squats carry 0.85 of it.
+  const jumps = computeSessionVolume(
+    [{ exerciseId: 'jump-onto-chair', name: 'Jump onto chair', sets: [{ reps: 5 }] }],
+    bodyweight
+  );
+  const squats = computeSessionVolume(
+    [{ exerciseId: 'air-squats', name: 'Air squats', sets: [{ reps: 10 }] }],
+    bodyweight
+  );
+
+  assert.equal(jumps.totalVolume, 350);
+  assert.equal(squats.totalVolume, 595);
 });
 
 test('test_an_empty_session_is_zero_and_counts_nothing', () => {

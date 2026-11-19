@@ -8,6 +8,20 @@
   --app-radius-card: var(--radius-card);
   --app-radius-control: var(--radius-control);
   --app-radius-pill: var(--radius-pill);
+
+  /* One colour per pillar, taken from the CP1 palette by name: blue, orange, green, magenta.
+     A pillar's id names its colour, so the ring and the day column of Pull are the same blue. */
+  --pillar-pull: #0762b4;
+  --pillar-push: #9c4a16;
+  --pillar-legs: #237f52;
+  --pillar-core: #6929c4;
+}
+
+[data-theme='dark'] {
+  --pillar-pull: #4694ea;
+  --pillar-push: #d27b4b;
+  --pillar-legs: #4aa172;
+  --pillar-core: #a775ff;
 }
 
 @theme inline {

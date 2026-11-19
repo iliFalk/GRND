@@ -17,6 +17,8 @@ export interface CatalogueEntry {
   is_circuit?: boolean;
   /** Stays pickable but is not counted in its pillar. */
   excluded?: boolean;
+  /** Only the AMRAP list shows it; the Sets list never does. */
+  amrap_only?: boolean;
   bodyweight_factor?: number;
 }
 
@@ -83,6 +85,7 @@ function normalizeEntry(raw: unknown): CatalogueEntry | null {
     ...(record.power === true ? { power: true } : {}),
     ...(record.is_circuit === true ? { is_circuit: true } : {}),
     ...(record.excluded === true ? { excluded: true } : {}),
+    ...(record.amrap_only === true ? { amrap_only: true } : {}),
     ...(typeof factor === 'number' && Number.isFinite(factor)
       ? { bodyweight_factor: factor }
       : {})
@@ -140,6 +143,16 @@ function normalizeName(name: string): string {
  * A plan written before the catalogue carries only a name. This finds the catalogue entry for it so
  * the view can show which id it would be saved as; it never makes an id up.
  */
+/** What the Sets mode offers: every exercise except the ones kept for AMRAP alone. */
+export function setsEntries(entries: CatalogueEntry[]): CatalogueEntry[] {
+  return entries.filter((entry) => entry.amrap_only !== true);
+}
+
+/** What a circuit may use. */
+export function amrapEntries(entries: CatalogueEntry[]): CatalogueEntry[] {
+  return entries.filter((entry) => entry.is_circuit === true);
+}
+
 export function resolveCatalogueEntryByName(
   entries: CatalogueEntry[],
   name: string

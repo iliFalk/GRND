@@ -84,7 +84,7 @@ test('test_the_base_is_counted_inside_its_pillar', () => {
 
 test('test_a_support_exercise_is_not_base', () => {
   const report = weeklyPillars(
-    [session('2026-03-03T10:00:00', [{ name: 'Dumbbell flyes', completed_sets: [{ reps: 10 }, { reps: 10 }] }])],
+    [session('2026-03-03T10:00:00', [{ name: 'Push-ups', completed_sets: [{ reps: 10 }, { reps: 10 }] }])],
     { week: '2026-03-03' }
   );
   const push = report.pillars.find((row) => row.id === 'push');
@@ -92,6 +92,16 @@ test('test_a_support_exercise_is_not_base', () => {
   assert.equal(push.sets, 2);
   assert.equal(push.base_sets, 0);
   assert.equal(push.exercises[0].role, 'support');
+});
+
+test('test_a_fly_is_kept_for_the_circuit_and_not_counted', () => {
+  const report = weeklyPillars(
+    [session('2026-03-03T10:00:00', [{ name: 'Dumbbell flyes', completed_sets: [{ reps: 12 }] }])],
+    { week: '2026-03-03' }
+  );
+
+  assert.equal(byPillar(report).push, 0);
+  assert.deepEqual(report.outside, [{ name: 'Dumbbell flyes', sets: 1 }]);
 });
 
 test('test_conditioning_stays_outside_the_pillars', () => {

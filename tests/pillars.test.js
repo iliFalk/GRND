@@ -53,6 +53,24 @@ test('test_a_snatch_counts_once_in_push', () => {
   assert.equal(byPillar(report).pull, 0);
 });
 
+test('test_the_week_by_day_counts_each_day', () => {
+  const report = weeklyPillars(
+    [
+      session('2026-03-03T10:00:00', [{ name: 'Push-ups', completed_sets: [{ reps: 10 }, { reps: 10 }] }]),
+      session('2026-03-05T10:00:00', [{ name: 'Pull-ups', completed_sets: [{ reps: 5 }] }])
+    ],
+    { week: '2026-03-03' }
+  );
+
+  assert.equal(report.days.length, 7);
+  const byDate = Object.fromEntries(report.days.map((day) => [day.date, day.sets]));
+
+  assert.equal(byDate['2026-03-02'], 0);
+  assert.equal(byDate['2026-03-03'], 2);
+  assert.equal(byDate['2026-03-05'], 1);
+  assert.deepEqual(report.days.find((day) => day.date === '2026-03-03').pillars, { push: 2 });
+});
+
 test('test_core_is_its_own_pillar', () => {
   // Ilja, 2026-11-19: the core is separate and it matters.
   const report = weeklyPillars(

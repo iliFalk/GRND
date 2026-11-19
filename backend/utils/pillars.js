@@ -66,6 +66,14 @@ function weeklyPillars(sessions, options = {}) {
   const circuits = [];
   let counted = 0;
 
+  // The week by day, so the dashboard can draw what each day carried.
+  const days = [];
+  for (let offset = 0; offset < 7; offset += 1) {
+    const day = new Date(bounds.start.getFullYear(), bounds.start.getMonth(), bounds.start.getDate() + offset);
+    days.push({ date: day.toISOString().slice(0, 10), sets: 0, pillars: {} });
+  }
+  const dayOf = new Map(days.map((day) => [day.date, day]));
+
   for (const session of MuscleVolume.sessionList(sessions)) {
     if (wantedUser && session.userId && String(session.userId) !== wantedUser) continue;
     const date = MuscleVolume.sessionDate(session);
@@ -111,6 +119,13 @@ function weeklyPillars(sessions, options = {}) {
 
       const row = totals.get(pillar.id);
       row.sets += sets;
+
+      const day = dayOf.get(date.toISOString().slice(0, 10));
+      if (day) {
+        day.sets += sets;
+        day.pillars[pillar.id] = (day.pillars[pillar.id] || 0) + sets;
+      }
+
       if (entry.role === 'base') row.base_sets += sets;
       if (entry.power === true) row.power_sets += sets;
       row.exercises.push({
@@ -157,6 +172,7 @@ function weeklyPillars(sessions, options = {}) {
     week_end: new Date(bounds.end.getTime() - 1).toISOString().slice(0, 10),
     sessions: counted,
     pillars,
+    days,
     circuits,
     circuit_rounds: circuits.reduce((sum, circuit) => sum + circuit.rounds, 0),
     outside: Object.entries(outside).map(([name, sets]) => ({ name, sets })),

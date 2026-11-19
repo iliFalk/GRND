@@ -26,7 +26,6 @@ import { ExercisePicker } from '../plan/ExercisePicker';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Progress } from '../ui/progress';
 
 interface WorkoutScreenProps {
   userId: string;
@@ -241,45 +240,27 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
         </div>
 
         {plan.data ? (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Plan · tap a pillar to filter</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {plan.data.pillars.map((row) => {
-                const floor = typeof row.target.min === 'number' ? row.target.min : 0;
-                const percent = floor > 0 ? Math.min(100, (row.sets / floor) * 100) : 0;
-                const active = pillarFilter === row.id;
-
-                return (
-                  <button
-                    key={row.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setPillarFilter(active ? null : row.id)}
-                    className={
-                      active
-                        ? 'w-full space-y-1.5 rounded-control border border-primary bg-accent px-2 py-1.5 text-left'
-                        : 'w-full space-y-1.5 rounded-control border border-transparent px-2 py-1.5 text-left hover:bg-accent'
-                    }
-                  >
-                    <span className="flex items-baseline justify-between gap-2 text-sm">
-                      <span className="font-medium">{row.label}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {row.status === 'below'
-                          ? `${formatNumber(row.sets)} sets · ${formatNumber(row.short)} more`
-                          : `${formatNumber(row.sets)} sets · OK`}
-                      </span>
-                    </span>
-                    <Progress
-                      value={percent}
-                      aria-label={`${row.label}: ${formatNumber(row.sets)} sets this week, ${formatNumber(floor)} needed`}
-                    />
-                  </button>
-                );
-              })}
-            </CardContent>
-          </Card>
+          <div className="flex flex-wrap gap-1.5">
+            {plan.data.pillars.map((row) => {
+              const active = pillarFilter === row.id;
+              return (
+                <button
+                  key={row.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setPillarFilter(active ? null : row.id)}
+                  className={
+                    active
+                      ? 'rounded-pill border border-primary bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-foreground'
+                      : 'rounded-pill border border-border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground'
+                  }
+                >
+                  {row.status === 'below' ? <span aria-hidden="true">• </span> : null}
+                  {row.label}
+                </button>
+              );
+            })}
+          </div>
         ) : null}
 
         {chosen.length > 0 ? (

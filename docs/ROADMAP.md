@@ -20,21 +20,19 @@ A plan step is: pick an exercise, then give its sets, reps and weight.
 
 ## 1a. Workout modes
 
-### The circuit mode stays, and gets finished
+### The circuit mode is gone with the old front end
 
-`CIRCUIT` already runs: each round takes reps and weight per exercise, log round writes the round into
-`completed_sets` with a `round` field, the rest timer starts and the next round follows. Three things are
-open, all verified in the code:
+The vanilla circuit flow (round dialog, cancel, skipped rounds) was deleted with `frontend/` on
+2026-11-19. `CIRCUIT` survives where it matters: `POST /api/workout-session` stores `dayType`, and the
+weekly report measures a circuit in rounds and time under load, apart from the strength band.
 
-- **The dialog's cancel button does nothing** (`handleLogRoundCancel` has an empty body), so a user who
-  changes their mind loses the round without a word. Cancel must either keep the inputs and close, or
-  write the round as zero and say so.
-- **Skipping a round is silent** (`handleSkipRound` only advances the index). A skipped round must be
-  recorded as skipped, so history and the weekly volume do not read as if it never existed.
-- **History does not show rounds.** A finished circuit is a flat list of sets; the `round` field is
-  ignored by the readers. The circuit needs its round number visible, at least as a group header.
+What is left is the screen. It is rebuilt in React from the decisions in §1c, and three things the old
+flow got wrong are requirements, not open questions:
 
-The round index survives a reload: it is part of the session state the app persists.
+- Cancel closes the round dialog without a word and keeps the inputs.
+- A skipped round is written as skipped, so history and the weekly volume do not read as if it never
+  existed.
+- History shows the round number of a circuit set, at least as a group header.
 
 ### A new mode: reps on the fly
 
@@ -54,6 +52,11 @@ Consequences, written down so the code matches:
 - A weight is chosen once per exercise and does not change between sets.
 - **A warm-up is not recorded at all** — not in history, not in the volume.
 - The rest timer counts up, and the next set starts on a tap, so the mode never guesses when rest ended.
+
+**Built (2026-11-19).** `web/src/lib/workout.ts` holds the state as plain data, `web/src/lib/session.ts`
+builds the one POST body, and `web/src/components/workout/WorkoutScreen.tsx` is the screen. Proved by
+`web/src/lib/workout.test.tsx` (nine checks) and by a session posted through the public address:
+2×15 at 16 kg plus 2×12 push-ups stored as 1 740 kg, four sets.
 
 ### How a set counts in a circuit
 
@@ -147,7 +150,8 @@ and a movement on the same axis last (`same`). A blocked list would make him hun
 already has in mind. The circuit builder stays strict: that one still refuses a repeat except on the
 back.
 
-Verified: eight tests over the pairing, the whole suite 32 green; `POST /api/pairings` answers for his
+Verified: fifteen tests over the pairing (13 in `tests/pairings.test.js`, 2 on the limit), the whole
+suite 61 green on 2026-11-19; `POST /api/pairings` answers for his
 catalogue and his kit.
 
 ### Three refinements, 2026-11-19
@@ -184,21 +188,23 @@ answers it; the dashboard draws it. 13 holdout checks, 8 unit tests.
 
 `backend/utils/muscleSuggestions.js` answers, per short group, the exercises his own equipment can
 cover. `GET /api/suggestions/:userId`. Only a primary group counts; an empty list says that nothing at
-home closes the gap. 16 unit tests, 13 holdout checks.
+home closes the gap. 8 unit tests in `tests/muscleSuggestions.test.js`, 13 holdout checks.
 
 ## 5. A finished workout reaches the server — done
 
 `saveWorkoutSession()` posts once, keeps the returned id, and updates after that. The queue keeps the
 several saves of one completion from racing. `tests/session-write.test.js` boots the server and proves
-the write.
+the write, the volume and the refusal of bodyweight work without a bodyweight.
 
 ## 6. Not started
 
-- **The volume panel and the suggestion list on the new dashboard** — the shell draws the groups; the
-  chips need the same pass after the port.
+- **The circuit screen** in React, from §1a and §1c: total time, up to three exercises with the ranked
+  pairing, reps per exercise, partial rounds written. The API answers (`POST /api/pairings`), the screen
+  does not exist. No component calls `/api/pairings` today.
+- **History.** The tab is a placeholder; a finished session reaches the store, not the screen.
 - **`initData` check on the API.** The Mini App sends Telegram's `initData`; the server does not verify
   it, so any caller can read any user's data. Turn it on behind an environment flag, prove the app still
   opens from the phone, then make it the default.
-- **A warm-up set is not counted.** The counting rule says a completed set is work; the app has no way
-  to mark a set as warm-up yet.
+- **A warm-up set cannot be marked yet.** The report already skips a set that carries `warmup: true`;
+  the screen has no control that sets it, and the reps-on-the-fly mode records no warm-up at all.
 - **The keyboard of the plan editor** on a phone: sets, reps and weight are three inputs per row.

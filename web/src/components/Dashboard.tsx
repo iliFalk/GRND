@@ -24,6 +24,12 @@ function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
+function formatClock(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  return `${minutes}:${String(rest).padStart(2, '0')}`;
+}
+
 function GroupCard({ group }: { group: DashboardGroup }) {
   const color = STATUS_COLOR[group.status];
   const max =
@@ -102,16 +108,34 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
     );
   }
 
-  if (data.groups.length === 0) {
-    return (
+  // Circuit work is endurance work: rounds and time under load, reported beside the band.
+  const circuitCard =
+    data.circuit_rounds > 0 ? (
       <Card>
-        <CardContent className="py-10 text-center">
-          <p className="text-sm font-medium">Nothing is short this week.</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Every muscle group has reached its band.
-          </p>
+        <CardHeader className="pb-2">
+          <CardTitle>Circuit work</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          {`${formatNumber(data.circuit_rounds)} rounds · ${formatClock(
+            data.circuits.reduce((sum, circuit) => sum + circuit.time_under_load, 0)
+          )} under load · outside the strength band`}
         </CardContent>
       </Card>
+    ) : null;
+
+  if (data.groups.length === 0) {
+    return (
+      <section className="space-y-3">
+        {circuitCard}
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="text-sm font-medium">Nothing is short this week.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Every muscle group has reached its band.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
     );
   }
 
@@ -130,6 +154,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
           {data.groups.length} to close
         </span>
       </div>
+      {circuitCard}
       <div className="grid gap-3 sm:grid-cols-2">
         {data.groups.map((group) => (
           <GroupCard key={group.group} group={group} />

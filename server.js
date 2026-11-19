@@ -464,6 +464,9 @@ app.get('/api/suggestions/:userId', async (req, res) => {
       week_end: report.week_end,
       sessions: report.sessions,
       groups: suggestions,
+      // Circuit work sits beside the band, never inside it: rounds and time under load.
+      circuits: report.circuits,
+      circuit_rounds: report.circuit_rounds,
       unmapped: report.unmapped
     });
   } catch (error) {

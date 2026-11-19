@@ -18,6 +18,7 @@ import {
   type WorkoutState
 } from '../../lib/workout';
 import { usePillars } from '../../lib/pillars';
+import { AmrapScreen } from './AmrapScreen';
 import { useUserProfile } from '../../lib/profile';
 import { ExercisePicker } from '../plan/ExercisePicker';
 import { Badge } from '../ui/badge';
@@ -35,6 +36,36 @@ function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
+type Mode = 'sets' | 'amrap';
+
+/** Two ways to train: counted sets, or fixed time with as many rounds as possible. */
+function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
+  const modes: Array<{ id: Mode; label: string }> = [
+    { id: 'sets', label: 'Sets' },
+    { id: 'amrap', label: 'AMRAP' }
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-1 rounded-control border border-border p-1">
+      {modes.map((entry) => (
+        <button
+          key={entry.id}
+          type="button"
+          aria-pressed={mode === entry.id}
+          onClick={() => onChange(entry.id)}
+          className={
+            mode === entry.id
+              ? 'rounded-control bg-primary px-2 py-1.5 text-sm font-semibold text-primary-foreground'
+              : 'rounded-control px-2 py-1.5 text-sm font-medium text-muted-foreground'
+          }
+        >
+          {entry.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function formatClock(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
@@ -49,6 +80,8 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const profile = useUserProfile(userId);
   const [editingWeight, setEditingWeight] = useState(false);
   const [pillarFilter, setPillarFilter] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>('sets');
+  const [amrapBusy, setAmrapBusy] = useState(false);
   const [weightDraft, setWeightDraft] = useState('');
   const [weightError, setWeightError] = useState<string | null>(null);
   const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
@@ -185,6 +218,12 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   if (!state) {
     return (
       <section aria-labelledby="workout-setup-title" className="space-y-4">
+        {amrapBusy ? null : <ModeSwitch mode={mode} onChange={setMode} />}
+
+        {mode === 'amrap' ? (
+          <AmrapScreen userId={userId} onSaved={onSaved} onBusyChange={setAmrapBusy} />
+        ) : (
+          <>
         <div>
           <div className="flex items-baseline justify-between gap-2">
             <h2 id="workout-setup-title" className="text-lg font-semibold">
@@ -325,6 +364,8 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             </CardContent>
           </Card>
         ) : null}
+          </>
+        )}
       </section>
     );
   }

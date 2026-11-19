@@ -57,7 +57,8 @@
       ],
       "movement": "squat",
       "role": "support",
-      "bodyweight_factor": 0.85
+      "bodyweight_factor": 0.85,
+      "is_circuit": true
     },
     {
       "id": "spring-front-leg",
@@ -76,7 +77,8 @@
       "movement": "power",
       "role": "support",
       "power": true,
-      "bodyweight_factor": 1.0
+      "bodyweight_factor": 1.0,
+      "is_circuit": true
     },
     {
       "id": "burpees",
@@ -95,7 +97,8 @@
       "solo": true,
       "note": "Almost always a circuit on its own; it has no antagonist pair.",
       "role": "support",
-      "power": true
+      "power": true,
+      "is_circuit": true
     },
     {
       "id": "chin-ups-rings",
@@ -192,7 +195,8 @@
       "movement": "power",
       "role": "support",
       "power": true,
-      "bodyweight_factor": 1.0
+      "bodyweight_factor": 1.0,
+      "is_circuit": true
     },
     {
       "id": "jump-back-leg-up",
@@ -211,7 +215,8 @@
       "movement": "power",
       "role": "support",
       "power": true,
-      "bodyweight_factor": 1.0
+      "bodyweight_factor": 1.0,
+      "is_circuit": true
     },
     {
       "id": "hanging-knee-raises",
@@ -257,7 +262,8 @@
       "movement": "power",
       "role": "support",
       "power": true,
-      "bodyweight_factor": 1.0
+      "bodyweight_factor": 1.0,
+      "is_circuit": true
     },
     {
       "id": "kettlebell-swing",
@@ -275,7 +281,8 @@
       "is_heavy_basic": false,
       "movement": "hinge",
       "role": "support",
-      "power": true
+      "power": true,
+      "is_circuit": true
     },
     {
       "id": "one-arm-kettlebell-row",
@@ -319,7 +326,8 @@
       ],
       "bodyweight_factor": 0.75,
       "movement": "push",
-      "role": "support"
+      "role": "support",
+      "is_circuit": true
     },
     {
       "id": "rdl-one-leg",

@@ -210,7 +210,7 @@
         "core"
       ],
       "is_power": true,
-      "typical": "по 80 на ногу"
+      "typical": "по 40 на ногу"
     },
     {
       "id": "jump-back-leg-up",
@@ -225,7 +225,7 @@
         "hamstrings"
       ],
       "is_power": true,
-      "typical": "по 80 на ногу"
+      "typical": "по 40 на ногу"
     },
     {
       "id": "jump-onto-chair",

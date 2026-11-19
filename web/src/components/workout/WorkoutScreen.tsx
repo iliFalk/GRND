@@ -17,6 +17,7 @@ import {
   type WorkoutChoice,
   type WorkoutState
 } from '../../lib/workout';
+import { useUserProfile } from '../../lib/profile';
 import { useDashboardData } from '../../lib/useDashboardData';
 import { ExercisePicker } from '../plan/ExercisePicker';
 import { Badge } from '../ui/badge';
@@ -44,6 +45,11 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const catalogue = useExerciseCatalogue();
   // The plan is not the next workout: it is what the week is short of, with the progress so far.
   const plan = useDashboardData(userId);
+  // The body that moves during bodyweight work: the volume needs it, so it is editable here.
+  const profile = useUserProfile(userId);
+  const [editingWeight, setEditingWeight] = useState(false);
+  const [weightDraft, setWeightDraft] = useState('');
+  const [weightError, setWeightError] = useState<string | null>(null);
   const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
   const [state, setState] = useState<WorkoutState | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -148,9 +154,67 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     );
   }
 
+  const saveBodyweight = async () => {
+    const kg = Number(weightDraft);
+    if (!Number.isFinite(kg) || kg < 30 || kg > 300) {
+      setWeightError('Between 30 and 300 kg.');
+      return;
+    }
+    try {
+      await profile.saveBodyweight(kg);
+      setEditingWeight(false);
+      setWeightError(null);
+    } catch (cause: unknown) {
+      setWeightError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
   if (!state) {
     return (
       <section aria-labelledby="workout-setup-title" className="space-y-4">
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="text-muted-foreground">Bodyweight</span>
+          {editingWeight ? (
+            <span className="flex items-center gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                min="30"
+                max="300"
+                step="0.5"
+                value={weightDraft}
+                onChange={(event) => setWeightDraft(event.target.value)}
+                aria-label="Bodyweight in kg"
+                className="w-20 rounded-control border border-border bg-background px-2 py-1 text-right text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <span className="text-xs text-muted-foreground">kg</span>
+              <Button size="sm" onClick={saveBodyweight}>
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditingWeight(false)}>
+                Cancel
+              </Button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setWeightDraft(profile.profile?.bodyweight ? String(profile.profile.bodyweight) : '');
+                setWeightError(null);
+                setEditingWeight(true);
+              }}
+              className="rounded-control px-2 py-1 text-sm font-medium text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {profile.loading
+                ? '…'
+                : profile.profile?.bodyweight
+                  ? `${formatNumber(profile.profile.bodyweight)} kg · change`
+                  : 'set your weight'}
+            </button>
+          )}
+        </div>
+        {weightError ? <p className="text-xs text-destructive">{weightError}</p> : null}
+
         <div>
           <h2 id="workout-setup-title" className="text-lg font-semibold">
             Start a workout

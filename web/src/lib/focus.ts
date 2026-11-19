@@ -7,9 +7,13 @@
  */
 export function revealInput(input: HTMLInputElement | null): void {
   if (!input || typeof window === 'undefined') return;
-  window.setTimeout(() => {
-    input.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }, 300);
+
+  // The keyboard animates: ask again while it moves, so the field lands in the visible half.
+  for (const delay of [60, 300, 600]) {
+    window.setTimeout(() => {
+      input.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, delay);
+  }
 }
 
 export function selectAllOnFocus(event: { currentTarget: HTMLInputElement }): void {

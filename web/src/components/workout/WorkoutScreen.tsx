@@ -279,21 +279,6 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
           </Card>
         ) : null}
 
-        {catalogue.loading ? (
-          <Card>
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              Loading the catalogue…
-            </CardContent>
-          </Card>
-        ) : (
-          <ExercisePicker
-            entries={visibleEntries}
-            selectedIds={chosen.map((choice) => choice.id)}
-            onToggle={toggle}
-            ordered={filteredPillar !== undefined}
-          />
-        )}
-
         {chosen.length > 0 ? (
           <Card>
             <CardHeader className="pb-2">
@@ -385,6 +370,21 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
             </CardContent>
           </Card>
         ) : null}
+
+        {catalogue.loading ? (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              Loading the catalogue…
+            </CardContent>
+          </Card>
+        ) : (
+          <ExercisePicker
+            entries={visibleEntries}
+            selectedIds={chosen.map((choice) => choice.id)}
+            onToggle={toggle}
+            ordered={filteredPillar !== undefined}
+          />
+        )}
           </>
         )}
       </section>

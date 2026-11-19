@@ -70,10 +70,16 @@
     overflow: hidden;
   }
 
+  /* The height of what is actually visible: the keyboard shrinks it, and the content follows. */
   #root {
-    height: 100%;
+    height: var(--app-height, 100%);
     overflow-y: auto;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* With the keyboard up the footer would sit under it and eat the room a field needs. */
+  body[data-keyboard='open'] .app-footer {
+    display: none;
   }
 }

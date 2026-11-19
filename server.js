@@ -7,7 +7,7 @@ const path = require('path');
 const VolumeCalculator = require('./backend/utils/volumeCalculator');
 const MuscleVolume = require('./backend/utils/muscleVolume');
 const { suggestForReport } = require('./backend/utils/muscleSuggestions');
-const { suggestPairs, alternativesForMissingEquipment } = require('./backend/utils/pairings');
+const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('./backend/utils/pairings');
 require('dotenv').config();
 
 const app = express();
@@ -422,7 +422,9 @@ app.post('/api/pairings', async (req, res) => {
     const limit = Number.isFinite(body.limit) ? body.limit : 3;
     res.json({
       pairs: suggestPairs(catalogue, selected, { limit, equipment: owned }),
-      alternatives: alternativesForMissingEquipment(catalogue, selected, owned)
+      alternatives: alternativesForMissingEquipment(catalogue, selected, owned),
+      // One ready circuit per chosen exercise, built so no primary group repeats.
+      circuits: selected.map((item) => suggestCircuit(catalogue, item, { size: 3, equipment: owned }))
     });
   } catch (error) {
     console.error('Error building pairings:', error);

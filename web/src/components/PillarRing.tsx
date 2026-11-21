@@ -48,8 +48,15 @@ export function PillarRing({ id, label, sets, floor, size = 'md' }: PillarRingPr
             transform="rotate(-90 18 18)"
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-semibold tabular-nums">
-          {formatNumber(sets)}
+        {/* The arc carries its letter as well as its hue: a reader who cannot separate two colours still
+            tells the pillars apart, which is what the system asks of a category (D10). */}
+        <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+          <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
+            {formatNumber(sets)}
+          </span>
+          <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: colour }} aria-hidden="true">
+            {label.slice(0, 1)}
+          </span>
         </span>
       </div>
       <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: colour }}>

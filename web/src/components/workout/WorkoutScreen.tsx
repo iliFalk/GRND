@@ -427,15 +427,15 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
       </ul>
 
       {resting ? (
-        <Card>
-          <CardContent className="space-y-3 py-5 text-center">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Rest</p>
-            <p className="font-mono text-5xl tabular-nums">{formatClock(rest)}</p>
-            <Button onClick={() => setState(nextBlock(state, Date.now()))}>
+        <div className="arc-panel">
+          <div className="arc-readout arc-readout--attention">
+            <span className="arc-readout__label">Rest</span>
+            <span className="arc-readout__value">{formatClock(rest)}</span>
+          </div>
+            <button type="button" className="arc-btn arc-btn--primary" onClick={() => setState(nextBlock(state, Date.now()))}>
               {`Start block ${state.block + 1}`}
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+        </div>
       ) : (
         <Card>
           <CardContent className="space-y-3 py-4 text-center">
@@ -445,7 +445,10 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                 {exercise?.weight === undefined ? 'bodyweight' : `${formatNumber(exercise.weight)} kg`}
               </span>
             </div>
-            <p className="font-mono text-6xl tabular-nums">{exercise?.counter ?? 0}</p>
+            <div className="arc-readout">
+              <span className="arc-readout__label">Sets</span>
+              <span className="arc-readout__value">{exercise?.counter ?? 0}</span>
+            </div>
             <div className="flex justify-center gap-3">
               <Button className="h-16 flex-1 text-lg" onClick={() => setState(countReps(state, 1))}>
                 +1

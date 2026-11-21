@@ -10,6 +10,7 @@ const { suggestForReport } = require('./backend/utils/muscleSuggestions');
 const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('./backend/utils/pairings');
 const { computeSessionVolume } = require('./backend/utils/sessionVolume');
 const { weeklyPillars } = require('./backend/utils/pillars');
+const { getDraft, putDraft, removeDraft } = require('./backend/utils/drafts');
 const { mergePlanWeeks } = require('./backend/utils/planMerge');
 require('dotenv').config();
 
@@ -410,6 +411,48 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error building the weekly muscle report:', error);
     res.status(500).json({ error: 'Failed to build the weekly muscle report' });
+  }
+});
+
+// The running workout, so a killed app resumes where it stopped.
+const draftFile = () => path.join(__dirname, 'data', 'workout-drafts.json');
+
+app.get('/api/workout-draft/:userId', async (req, res) => {
+  try {
+    const draft = await getDraft(draftFile(), req.params.userId);
+    if (!draft) return res.status(404).json({ error: 'No draft' });
+    res.json({ draft });
+  } catch (error) {
+    console.error('Error reading the workout draft:', error);
+    res.status(500).json({ error: 'Failed to read the workout draft' });
+  }
+});
+
+app.put('/api/workout-draft/:userId', async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!body.state || typeof body.state !== 'object') {
+      return res.status(400).json({ error: 'A draft carries a state object' });
+    }
+    const draft = await putDraft(draftFile(), req.params.userId, {
+      mode: body.mode === 'amrap' ? 'amrap' : 'sets',
+      elapsed: Number(body.elapsed) || 0,
+      state: body.state
+    });
+    res.json({ draft });
+  } catch (error) {
+    console.error('Error writing the workout draft:', error);
+    res.status(500).json({ error: 'Failed to write the workout draft' });
+  }
+});
+
+app.delete('/api/workout-draft/:userId', async (req, res) => {
+  try {
+    await removeDraft(draftFile(), req.params.userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error removing the workout draft:', error);
+    res.status(500).json({ error: 'Failed to remove the workout draft' });
   }
 });
 

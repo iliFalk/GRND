@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { setsEntries, useExerciseCatalogue } from '../../lib/catalogue';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
-import { clearSaved, readSaved, writeSaved } from '../../lib/persistence';
+import { clearDraft, loadDraft, useDraftSync } from '../../lib/draft';
+import { STALE_AFTER_MS, clearSaved, readSaved, writeSaved } from '../../lib/persistence';
 import { orderForPillar, usePillars } from '../../lib/pillars';
 import { useUserProfile } from '../../lib/profile';
 import {
@@ -93,12 +94,29 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const [weightDraft, setWeightDraft] = useState('');
   const [weightError, setWeightError] = useState<string | null>(null);
   const storageKey = `grnd-workout-${userId}`;
+  const localStamp = useRef(0);
   const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
   const [state, setState] = useState<WorkoutState | null>(() => {
     // A workout that was running when the app closed comes back where it stopped.
     const saved = readSaved<WorkoutState>(storageKey, Date.now());
-    return saved ? resumeWorkout(saved.value, saved.elapsed, Date.now()) : null;
+    if (!saved) return null;
+    localStamp.current = saved.savedAt;
+    return resumeWorkout(saved.value, saved.elapsed, Date.now());
   });
+
+  // The server draft outlives the WebView store, so it wins when it is the newer one.
+  useEffect(() => {
+    let active = true;
+    void loadDraft<WorkoutState>(userId).then((draft) => {
+      if (!active || !draft || draft.mode !== 'sets') return;
+      if (Date.now() - (draft.savedAt ?? 0) > STALE_AFTER_MS) return;
+      if (localStamp.current >= (draft.savedAt ?? 0)) return;
+      setState(resumeWorkout(draft.state, draft.elapsed, Date.now()));
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
   const [saving, setSaving] = useState(false);
@@ -111,12 +129,19 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     return () => clearInterval(handle);
   }, [state]);
 
-  // Every counted repetition is written, so closing the app costs nothing.
+  // Every counted repetition is written twice: to the phone and, half a second later, to the server.
   useEffect(() => {
     if (!state) return;
     const at = Date.now();
     writeSaved(storageKey, state, elapsedSeconds(state, at), at);
   }, [state, storageKey]);
+
+  useDraftSync(
+    userId,
+    'sets',
+    state,
+    state ? elapsedSeconds(state, Date.now()) : 0
+  );
 
   const entries = catalogue.data ?? [];
 
@@ -183,6 +208,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     try {
       const session = await saveWorkoutSession(payload);
       clearSaved(storageKey);
+      void clearDraft(userId);
       setSaved(session);
       setState(null);
       onSaved();

@@ -97,7 +97,10 @@ export function writeTheme(theme: string): void {
 }
 
 /** What was written, or `null` when nothing is there, it is another version, or it is too old. */
-export function readSaved<T>(key: string, now: number): { value: T; elapsed: number } | null {
+export function readSaved<T>(
+  key: string,
+  now: number
+): { value: T; elapsed: number; savedAt: number } | null {
   const store = storage();
   if (!store) return null;
 
@@ -110,7 +113,11 @@ export function readSaved<T>(key: string, now: number): { value: T; elapsed: num
       store.removeItem(key);
       return null;
     }
-    return { value: saved.value as T, elapsed: Math.max(0, Number(saved.elapsed) || 0) };
+    return {
+      value: saved.value as T,
+      elapsed: Math.max(0, Number(saved.elapsed) || 0),
+      savedAt: Number(saved.savedAt) || 0
+    };
   } catch {
     return null;
   }

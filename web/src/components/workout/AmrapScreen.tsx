@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   MAX_CHOICES,
   buildAmrapPayload,
@@ -14,7 +14,8 @@ import {
   type AmrapState
 } from '../../lib/amrap';
 import { amrapEntries, useExerciseCatalogue } from '../../lib/catalogue';
-import { clearSaved, readSaved, writeSaved } from '../../lib/persistence';
+import { clearDraft, loadDraft, useDraftSync } from '../../lib/draft';
+import { STALE_AFTER_MS, clearSaved, readSaved, writeSaved } from '../../lib/persistence';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { saveWorkoutSession, type SavedSession } from '../../lib/session';
 import { Button } from '../ui/button';
@@ -44,11 +45,28 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
   const [minutes, setMinutes] = useState('12');
   const [choices, setChoices] = useState<AmrapChoice[]>([]);
   const storageKey = `grnd-amrap-${userId}`;
+  const localStamp = useRef(0);
   const [state, setState] = useState<AmrapState | null>(() => {
     // A circuit that was running when the app closed picks up its clock.
     const saved = readSaved<AmrapState>(storageKey, Date.now());
-    return saved ? resumeAmrap(saved.value, saved.elapsed, Date.now()) : null;
+    if (!saved) return null;
+    localStamp.current = saved.savedAt;
+    return resumeAmrap(saved.value, saved.elapsed, Date.now());
   });
+
+  // The server draft survives a killed client, so it wins when it is the newer one.
+  useEffect(() => {
+    let active = true;
+    void loadDraft<AmrapState>(userId).then((draft) => {
+      if (!active || !draft || draft.mode !== 'amrap') return;
+      if (Date.now() - (draft.savedAt ?? 0) > STALE_AFTER_MS) return;
+      if (localStamp.current >= (draft.savedAt ?? 0)) return;
+      setState(resumeAmrap(draft.state, draft.elapsed, Date.now()));
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
   const [saving, setSaving] = useState(false);
@@ -60,12 +78,19 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
     onBusyChange(state !== null);
   }, [onBusyChange, state]);
 
-  // The rounds are written as they happen, so a closed app does not cost the circuit.
+  // The rounds are written as they happen, to the phone and to the server.
   useEffect(() => {
     if (!state) return;
     const at = Date.now();
     writeSaved(storageKey, state, elapsedSeconds(state, at), at);
   }, [state, storageKey]);
+
+  useDraftSync(
+    userId,
+    'amrap',
+    state,
+    state ? elapsedSeconds(state, Date.now()) : 0
+  );
 
   useEffect(() => {
     if (!state || isTimeUp(state, now)) return;
@@ -131,6 +156,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
     try {
       const session = await saveWorkoutSession(payload);
       clearSaved(storageKey);
+      void clearDraft(userId);
       setSaved(session);
       setState(null);
       setChoices([]);

@@ -59,6 +59,13 @@
       "sides": [
         "left"
       ]
+    },
+    {
+      "selector": ".arc-appbar",
+      "min": "--arc-space-4",
+      "sides": [
+        "left"
+      ]
     }
   ]
 }

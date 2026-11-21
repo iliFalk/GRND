@@ -108,10 +108,13 @@ html[data-theme='arc'] .font-mono {
 
 /* The product's own shell: the system draws the bar and the app bar, the page places them. Positioning is
    layout, not a design value, so it lives here and not in the element. */
-.app-bar {
+/* The element's own padding is a shorthand and it is loaded after this sheet, so the inset needs the
+   element's selector as well as the product's. */
+.app-bar.arc-appbar {
   position: sticky;
   top: 0;
   z-index: 10;
+  padding-inline: var(--arc-space-4);
   background: var(--background);
 }
 

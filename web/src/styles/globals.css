@@ -62,6 +62,12 @@
   --app-radius-control: var(--arc-radius-none);
   --app-radius-pill: var(--arc-radius-pill);
   --on-solid: var(--arc-fg-invert);
+  /* Ilja, 2026-11-21: the pillars take the system's own hues in this theme, so a category and a status
+     speak one language. The product palette stays for the light and dark themes. */
+  --pillar-pull: var(--arc-accent-primary);
+  --pillar-push: var(--arc-status-attention);
+  --pillar-legs: var(--arc-status-ok);
+  --pillar-core: var(--arc-status-critical);
 }
 
 html[data-theme='arc'] {

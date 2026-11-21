@@ -253,11 +253,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setPillarFilter(active ? null : row.id)}
-                  className={
-                    active
-                      ? 'rounded-pill border border-primary bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-foreground'
-                      : 'inline-flex min-h-11 items-center rounded-pill border border-border px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground'
-                  }
+                  className={active ? 'arc-chip arc-chip--selected' : 'arc-chip'}
                 >
                   {row.status === 'below' ? <span aria-hidden="true">• </span> : null}
                   {row.label}

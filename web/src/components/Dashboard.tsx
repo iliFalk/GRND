@@ -46,7 +46,7 @@ function WeekBars({ days, pillars }: { days: DayRow[]; pillars: PillarRow[] }) {
               <span className="text-[10px] tabular-nums text-muted-foreground">
                 {day.sets > 0 ? day.sets : ''}
               </span>
-              <div className="flex h-16 w-full flex-col justify-end overflow-hidden rounded-t">
+              <div className="flex h-16 w-full flex-col justify-end overflow-hidden">
                 {pillars.map((pillar) => {
                   const sets = day.pillars[pillar.id] ?? 0;
                   if (sets <= 0) return null;

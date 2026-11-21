@@ -87,14 +87,7 @@ export function ExercisePicker({
                         .join(' · ')}
                     </span>
                   </span>
-                  <span
-                    className={cn(
-                      'shrink-0 rounded-pill border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-                      chosen
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border text-muted-foreground'
-                    )}
-                  >
+                  <span className={chosen ? 'shrink-0 arc-chip arc-chip--selected' : 'shrink-0 arc-chip'}>
                     {chosen ? 'chosen' : 'add'}
                   </span>
                 </button>

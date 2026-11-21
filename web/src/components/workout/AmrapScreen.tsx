@@ -238,11 +238,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                   key={value}
                   type="button"
                   onClick={() => setMinutes(String(value))}
-                  className={
-                    minutes === String(value)
-                      ? 'rounded-pill border border-primary bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground'
-                      : 'rounded-pill border border-border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'
-                  }
+                  className={minutes === String(value) ? 'arc-chip arc-chip--selected' : 'arc-chip'}
                 >
                   {`${value} min`}
                 </button>
@@ -258,7 +254,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                   revealInput(event.currentTarget);
                 }}
                 aria-label="Total time in minutes"
-                className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="arc-input w-14 text-right"
               />
             </span>
           </div>
@@ -286,7 +282,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                       revealInput(event.currentTarget);
                     }}
                     aria-label={`Repetitions of ${choice.name} per round`}
-                    className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="arc-input w-14 text-right"
                   />
                   <span className="text-[11px] text-muted-foreground">reps</span>
                   <input
@@ -337,7 +333,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                   className={
                     picked
                       ? 'flex w-full items-center justify-between gap-3 rounded-control border border-primary bg-accent px-3 py-2 text-left text-sm'
-                      : 'flex w-full items-center justify-between gap-3 rounded-control border border-border px-3 py-2 text-left text-sm disabled:opacity-50'
+                      : 'flex min-h-11 w-full items-center justify-between gap-3 rounded-control border border-border px-3 py-2 text-left text-sm disabled:opacity-50'
                   }
                 >
                   <span className="min-w-0 truncate font-medium">{entry.name}</span>

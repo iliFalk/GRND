@@ -81,7 +81,11 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const profile = useUserProfile(userId);
   const [editingWeight, setEditingWeight] = useState(false);
   const [pillarFilter, setPillarFilter] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>('sets');
+  // ?mode=amrap renders the circuit state: a headless render cannot press a switch it cannot reach.
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof location === 'undefined') return 'sets';
+    return new URLSearchParams(location.search).get('mode') === 'amrap' ? 'amrap' : 'sets';
+  });
   const [amrapBusy, setAmrapBusy] = useState(false);
   const [weightDraft, setWeightDraft] = useState('');
   const [weightError, setWeightError] = useState<string | null>(null);
@@ -269,10 +273,10 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               <CardTitle>{`Chosen · ${chosen.length}`}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-muted-foreground">Bodyweight</span>
+              <div className="arc-row">
+                <span className="arc-kv__key">Bodyweight</span>
                 {editingWeight ? (
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-2">
                     <input
                       type="number"
                       inputMode="decimal"
@@ -287,24 +291,24 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                         revealInput(event.currentTarget);
                       }}
                       aria-label="Bodyweight in kg"
-                      className="w-16 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="arc-input w-20 text-right"
                     />
-                    <span className="text-[11px] text-muted-foreground">kg</span>
-                    <Button size="sm" className="h-6 px-2 text-[11px]" onClick={saveBodyweight}>
+                    <span className="arc-kv__value">kg</span>
+                    <button type="button" className="arc-btn arc-btn--primary" onClick={saveBodyweight}>
                       Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-[11px]"
+                    </button>
+                    <button
+                      type="button"
+                      className="arc-btn arc-btn--ghost"
                       onClick={() => setEditingWeight(false)}
                     >
                       Cancel
-                    </Button>
+                    </button>
                   </span>
                 ) : (
                   <button
                     type="button"
+                    className="arc-btn arc-btn--ghost"
                     onClick={() => {
                       setWeightDraft(
                         profile.profile?.bodyweight ? String(profile.profile.bodyweight) : ''
@@ -312,7 +316,6 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                       setWeightError(null);
                       setEditingWeight(true);
                     }}
-                    className="rounded-control px-1 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {profile.loading
                       ? '…'
@@ -322,7 +325,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                   </button>
                 )}
               </div>
-              {weightError ? <p className="text-xs text-destructive">{weightError}</p> : null}
+              {weightError ? <div className="arc-alert arc-alert--error">{weightError}</div> : null}
               <div className="h-px bg-border" aria-hidden="true" />
 
               {chosen.map((choice) => (

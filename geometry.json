@@ -32,6 +32,10 @@
     {
       "container": ".arc-panel",
       "child": ".arc-item"
+    },
+    {
+      "container": ".arc-listbox",
+      "child": ".arc-listbox__option"
     }
   ],
   "columns": [
@@ -46,6 +50,13 @@
       "min": "--arc-space-4",
       "sides": [
         "top",
+        "left"
+      ]
+    },
+    {
+      "selector": ".arc-sheet",
+      "min": "--arc-space-4",
+      "sides": [
         "left"
       ]
     }

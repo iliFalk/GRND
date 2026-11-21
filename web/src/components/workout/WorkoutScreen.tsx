@@ -431,7 +431,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
 
       {resting ? (
         <div className="arc-panel">
-          <div className="arc-readout arc-readout--attention">
+          <div className="arc-readout arc-readout--center arc-readout--attention">
             <span className="arc-readout__label">Rest</span>
             <span className="arc-readout__value">{formatClock(rest)}</span>
           </div>
@@ -448,16 +448,16 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                 {exercise?.weight === undefined ? 'bodyweight' : `${formatNumber(exercise.weight)} kg`}
               </span>
             </div>
-            <div className="arc-readout">
+            <div className="arc-readout arc-readout--center">
               <span className="arc-readout__label">Sets</span>
               <span className="arc-readout__value">{exercise?.counter ?? 0}</span>
             </div>
             <div className="flex justify-center gap-3">
-              <Button className="h-16 flex-1 text-lg" onClick={() => setState(countReps(state, 1))}>
-                +1
+              <Button className="h-16 flex-1" onClick={() => setState(countReps(state, 1))}>
+                <span className="arc-h1">+1</span>
               </Button>
-              <Button className="h-16 flex-1 text-lg" onClick={() => setState(countReps(state, 3))}>
-                +3
+              <Button className="h-16 flex-1" onClick={() => setState(countReps(state, 3))}>
+                <span className="arc-h1">+3</span>
               </Button>
             </div>
             <Button

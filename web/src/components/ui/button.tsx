@@ -1,18 +1,20 @@
 import type * as React from 'react';
 import { cn } from '../../lib/utils';
 
+/** The product's button is the system's: one action, 44 px floor, a variant per weight. `sm` and `icon`
+ *  keep the floor; the system has no smaller size, and a 32 px control was measured failing the hand. */
 const variants = {
-  default: 'bg-primary text-primary-foreground hover:opacity-90',
-  secondary: 'bg-secondary text-secondary-foreground hover:bg-accent',
-  outline: 'border border-border bg-background text-foreground hover:bg-accent',
-  ghost: 'text-foreground hover:bg-accent'
+  default: 'arc-btn arc-btn--primary',
+  secondary: 'arc-btn arc-btn--secondary',
+  outline: 'arc-btn arc-btn--secondary',
+  ghost: 'arc-btn arc-btn--ghost',
+  danger: 'arc-btn arc-btn--danger'
 } as const;
 
 const sizes = {
-  default: 'h-10 px-4 py-2 text-sm',
-  // The touch floor is physical: a 32 px control fails the hand even when it looks right.
-  sm: 'h-11 min-w-11 px-3 text-xs',
-  icon: 'h-9 w-9'
+  default: '',
+  sm: '',
+  icon: 'arc-icon-btn'
 } as const;
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -30,14 +32,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-control font-medium uppercase tracking-wide transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-        'disabled:pointer-events-none disabled:opacity-50',
-        variants[variant],
-        sizes[size],
-        className
-      )}
+      className={cn(variants[variant] ?? variants.default, sizes[size] ?? '', className)}
       {...props}
     />
   );

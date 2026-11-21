@@ -1,5 +1,5 @@
 {
-  "_note": "The relations a page must satisfy. tools/geometry.mjs checks exactly these and nothing else: a relation that is not declared is not judged, because a guess prints false positives and a gate with false positives gets switched off. inset = block siblings share both edges; centre = a centred stack shares its centre; columns = rows of one grid agree on column edges; rows = one list's rows share a height; padding = a named container carries at least its declared inner padding; rhythm = every padding and gap is a step or the sum of two.",
+  "_note": "The relations a page must satisfy. tools/geometry.mjs checks exactly these and nothing else: a relation that is not declared is not judged, because a guess prints false positives and a gate with false positives gets switched off. inset = block siblings share both edges; centre = a centred stack shares its centre; columns = rows of one grid agree on column edges; rows = one list's rows share a height; padding = a named container carries at least its declared inner padding; rhythm = every padding and gap is a step or the sum of two. truncate = a text leaf is not cut by its own ellipsis; overlap = two declared groups share no painted box; snapshot = the boxes a baseline records.",
   "steps": [
     "--arc-space-1",
     "--arc-space-2",
@@ -61,5 +61,23 @@
         "left"
       ]
     }
-  ]
+  ],
+  "truncate": [
+    {
+      "scope": ".arc-shell .arc-item__title, .arc-shell .arc-chip, .arc-shell .arc-h1, .arc-shell .arc-micro"
+    }
+  ],
+  "overlap": [
+    {
+      "a": ".arc-toast",
+      "b": ".arc-bar"
+    },
+    {
+      "a": ".arc-dialog",
+      "b": ".arc-bar"
+    }
+  ],
+  "snapshot": {
+    "scope": ".arc-panel, .arc-item, .arc-bar__item, .arc-readout, .arc-chip"
+  }
 }

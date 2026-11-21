@@ -367,6 +367,10 @@ the pair inside the reactor panel, the phrase row in the `Lanes` panel — so th
 imagined. Measured: the phrase takes 212 px in a 212 px slot at the h3 step — it fits with nothing to spare, and
 a word more goes to the ellipsis — and its row stands at 62.3 px with the rows above it.
 
+**The frame the phrase fits is 390.** Measured across four widths: the setting phrase reads in full at 390, 430
+and 768, and is cut at 320 (`212 > 193 px`), which is the first number to check before a consumer decides to
+support a smaller phone. The gate measures 390 and 768; 320 is a documented limit, not a promise.
+
 **Refusal — the title is one line.** `.arc-item__title` carries `white-space: nowrap` and an ellipsis, because
 a list row is scanned and not read. A phrase that outgrows the row is a sentence: it goes into the body text
 above the list, and the row keeps the short name of the thing it switches. Keep a setting label to one line:

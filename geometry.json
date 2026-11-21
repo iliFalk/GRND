@@ -67,5 +67,13 @@
         "left"
       ]
     }
-  ]
+  ],
+  "truncate": [
+    {
+      "scope": "main .arc-item__title, main .arc-chip, main .arc-micro"
+    }
+  ],
+  "snapshot": {
+    "scope": ".arc-panel, .arc-item, .arc-bar__item, .arc-readout, .arc-chip"
+  }
 }

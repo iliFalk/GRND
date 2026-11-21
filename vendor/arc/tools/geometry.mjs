@@ -1,25 +1,24 @@
-// Measure the geometry a layout claims: insets, rhythm, columns, equal rows.
+// Measure the geometry a layout claims: insets, rhythm, columns, rows, centring, truncation, overlap,
+// and whether anything moved since a baseline.
 //
-//   node tools/geometry.mjs --url http://127.0.0.1:8099/index.html --scheme dark
-//   node tools/geometry.mjs --url http://127.0.0.1:3122/?page=workout \
-//        --space-vars --arc-space-1 --arc-space-2 ... --allow 112
-//   node tools/geometry.mjs --url ... --json            # machine-readable findings
+//   node geometry.mjs --url http://127.0.0.1:8099/index.html --scheme dark --contract tokens/geometry.json
+//   node geometry.mjs --url ... --widths 320,390,430,768 --click "#tab-2"
+//   node geometry.mjs --url ... --save base.json          # record boxes and findings
+//   node geometry.mjs --url ... --compare base.json       # what moved since then
+//   node geometry.mjs --url ... --explain                 # how many elements each rule reached
 //
 // The frame audit answers "does anything leave the frame, is a target too small". It says nothing about
-// whether the parts sit on their places: a 20 px inset beside a 16 px one, a 112 px foot, a table row
-// whose fourth cell wrapped. This tool answers exactly that, and every finding names the number and the
-// token it should have been.
+// whether the parts sit on their places: a 20 px inset beside a 16 px one, a 112 px foot, a table row whose
+// fourth cell wrapped. This tool answers that, and every finding names the number and the token it should
+// have been.
 //
-// It is system-agnostic on purpose: give it the custom properties that hold the scale (--arc-space-* by
-// default) and it judges any page by the same four predicate classes:
+// It is system-agnostic: name the custom properties that hold the scale and declare the relations the page
+// must keep. A sweep without a contract is advisory only — measured on one showcase it printed 45 findings,
+// 39 of them legal relations.
 //
-//   inset    block-level siblings share one left and one right edge
-//   rhythm   every padding, margin and gap is 0 or a declared step
-//   columns  rows of one grid agree on their column edges
-//   rows     siblings with the same classes have the same height
-//
-// Exit code 1 when a predicate fails, so it can stand in a gate.
+// Exit codes: 0 clean, 1 findings (or drift in --compare), 2 usage error.
 import { spawn } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 const argv = process.argv.slice(2);
@@ -31,7 +30,7 @@ const flag = (name) => argv.includes(`--${name}`);
 const list = (name) => {
   const out = [];
   argv.forEach((item, i) => {
-    if (item === `--${name}`) out.push(argv[i + 1]);
+    if (item === `--${name}` && argv[i + 1] && !String(argv[i + 1]).startsWith('--')) out.push(argv[i + 1]);
   });
   return out;
 };
@@ -41,7 +40,12 @@ if (!url) {
   console.error('geometry: --url is required');
   process.exit(2);
 }
-const width = Number(arg('width', 390));
+
+const widthList = String(arg('widths', ''))
+  .split(',')
+  .map((value) => Number(value.trim()))
+  .filter((value) => Number.isFinite(value) && value > 0);
+const sizes = widthList.length ? widthList : [Number(arg('width', 390))];
 const height = Number(arg('height', 844));
 const dpr = Number(arg('dpr', 2));
 const scheme = arg('scheme', '');
@@ -49,11 +53,26 @@ const port = Number(arg('port', 9334));
 const chrome = arg('chrome', `${homedir()}/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome`);
 const spaceVars = list('space-var');
 const allow = list('allow').map(Number);
+const clicks = list('click');
 const tolerance = Number(arg('tolerance', 0.6));
+const explain = flag('explain');
+const savePath = arg('save', '');
+const comparePath = arg('compare', '');
+const settle = Number(arg('settle', 700));
+
 const contractPath = arg('contract', '');
-const contractJSON = contractPath
-  ? JSON.stringify(JSON.parse((await import('node:fs')).readFileSync(String(contractPath), 'utf8')))
-  : 'null';
+const contract = contractPath ? JSON.parse(readFileSync(String(contractPath), 'utf8')) : null;
+
+const KNOWN_RULES = ['inset', 'centre', 'padding', 'columns', 'rows', 'rhythm', 'truncate', 'overlap', 'snapshot'];
+if (contract) {
+  for (const key of Object.keys(contract)) {
+    if (key.startsWith('_') || key === 'steps' || key === 'allow') continue;
+    if (!KNOWN_RULES.includes(key)) {
+      console.error(`geometry: the contract declares an unknown rule "${key}" — known: ${KNOWN_RULES.join(', ')}`);
+      process.exit(2);
+    }
+  }
+}
 
 const child = spawn(
   chrome,
@@ -69,7 +88,7 @@ const child = spawn(
   { stdio: 'ignore' }
 );
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function page() {
   for (let i = 0; i < 50; i++) {
@@ -113,30 +132,35 @@ const send = session(ws);
 await send('Page.enable');
 await send('Network.enable');
 await send('Network.setCacheDisabled', { cacheDisabled: true });
-await send('Emulation.setDeviceMetricsOverride', {
-  width,
-  height,
-  deviceScaleFactor: dpr,
-  mobile: width < 900,
-});
 if (scheme) {
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: String(scheme) }] });
 }
-const targetURL = new URL(url);
-if (scheme) targetURL.searchParams.set('scheme', String(scheme));
-await send('Page.navigate', { url: targetURL.toString() });
-await sleep(700);
 
 const probe = `(() => {
   const TOKENS = ${JSON.stringify(spaceVars)};
   const ALLOW = ${JSON.stringify(allow)};
   const TOL = ${tolerance};
-  const CONTRACT = ${contractJSON};
+  const CONTRACT = ${JSON.stringify(contract)};
+  const EXPLAIN = ${explain};
   const findings = [];
+  const notes = [];
+  const reached = {};
   const name = (el) => {
     const raw = (el.className || '').toString();
-    const cls = typeof raw === 'string' ? raw.trim().split(/\s+/).filter(Boolean).slice(0, 2).join('.') : '';
+    const cls = typeof raw === 'string' ? raw.trim().split(/\\s+/).filter(Boolean).slice(0, 2).join('.') : '';
     return el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+  };
+  const path = (el) => {
+    const parts = [];
+    let node = el;
+    while (node && node.nodeType === 1 && parts.length < 8) {
+      const parent = node.parentElement;
+      const index = parent ? [...parent.children].indexOf(node) : 0;
+      const cls = (node.className || '').toString().trim().split(/\\s+/).filter(Boolean)[0] || '';
+      parts.unshift(node.tagName.toLowerCase() + (cls ? '.' + cls : '') + '[' + index + ']');
+      node = parent;
+    }
+    return parts.join('>');
   };
   const resolve = (prop) => {
     const el = document.createElement('span');
@@ -146,17 +170,22 @@ const probe = `(() => {
     el.remove();
     return +px.toFixed(2);
   };
-  const vars = TOKENS.length ? TOKENS : (CONTRACT && CONTRACT.steps) || ['--arc-space-1','--arc-space-2','--arc-space-3','--arc-space-4','--arc-space-5','--arc-space-6','--arc-space-7','--arc-space-8'];
+  const vars = TOKENS.length ? TOKENS : (CONTRACT && CONTRACT.steps) || ['--arc-space-1','--arc-space-2','--arc-space-3','--arc-space-4','--arc-space-5','--arc-space-6','--arc-space-8'];
   const steps = new Set([0, 1, 2, ...ALLOW]);
   for (const v of vars) {
     const px = resolve(v);
     if (px > 0) steps.add(+px.toFixed(2));
   }
-  const pairs = new Set();
-  for (const a of steps) for (const b of steps) if (a && b) pairs.add(+(a + b).toFixed(2));
+  // A field reserves its leading mark as space + glyph + space: a sum of three steps is legal too.
+  const sums = new Set();
+  const values = [...steps].filter((v) => v > 0);
+  for (const a of values) for (const b of values) {
+    sums.add(+(a + b).toFixed(2));
+    for (const c of values) sums.add(+(a + b + c).toFixed(2));
+  }
   const near = (value) => {
     for (const step of steps) if (Math.abs(step - value) <= TOL) return true;
-    for (const step of pairs) if (Math.abs(step - value) <= TOL) return true;
+    for (const step of sums) if (Math.abs(step - value) <= TOL) return true;
     return false;
   };
   const RHYTHM = ['paddingTop','paddingRight','paddingBottom','paddingLeft','rowGap','columnGap'];
@@ -166,6 +195,7 @@ const probe = `(() => {
     return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
   };
   const isSystem = (el) => [...el.classList].some((c) => c.startsWith('arc-'));
+  const mark = (rule, n) => { reached[rule] = (reached[rule] || 0) + (n || 0); };
 
   const rhythm = (el) => {
     const s = getComputedStyle(el);
@@ -179,8 +209,10 @@ const probe = `(() => {
 
   const insetRule = (rule) => {
     for (const container of document.querySelectorAll(rule.container)) {
+      mark('inset', 1);
+      const style = getComputedStyle(container);
       const box = container.getBoundingClientRect();
-      const content = box.width - parseFloat(getComputedStyle(container).paddingLeft) - parseFloat(getComputedStyle(container).paddingRight);
+      const content = box.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
       const kids = [...container.querySelectorAll(rule.child)].filter((el) => {
         if (!painted(el)) return false;
         if (rule.fill === false) return true;
@@ -197,12 +229,13 @@ const probe = `(() => {
   const paddingRule = (rule) => {
     const min = resolve(rule.min);
     for (const el of document.querySelectorAll(rule.selector)) {
+      mark('padding', 1);
       if (!painted(el)) continue;
-      const box = el.getBoundingClientRect();
-      if (box.width < 60) continue;
+      if (el.getBoundingClientRect().width < 60) continue;
       const style = getComputedStyle(el);
       for (const side of rule.sides || ['top', 'left']) {
-        const value = parseFloat(style['padding' + side[0].toUpperCase() + side.slice(1)]);
+        const key = 'padding' + side[0].toUpperCase() + side.slice(1);
+        const value = parseFloat(style[key]);
         if (Number.isFinite(value) && value + TOL < min) {
           findings.push({ rule: 'padding', at: name(el), detail: side + ' ' + value.toFixed(2) + 'px is under ' + rule.min + ' (' + min.toFixed(2) + 'px)' });
         }
@@ -212,6 +245,7 @@ const probe = `(() => {
 
   const centreRule = (rule) => {
     for (const container of document.querySelectorAll(rule.container)) {
+      mark('centre', 1);
       const kids = [...container.querySelectorAll(rule.child)].filter(painted);
       if (kids.length < 2) continue;
       const centres = new Set(kids.map((el) => {
@@ -224,58 +258,219 @@ const probe = `(() => {
 
   const columnsRule = (rule) => {
     for (const grid of document.querySelectorAll(rule.grid)) {
-      const rows = [...grid.querySelectorAll(rule.row)];
+      mark('columns', 1);
+      const rows = [...grid.querySelectorAll(rule.row)].filter(painted);
       if (rows.length < 2) continue;
-      const signature = (row) => [...row.children].map((c) => +c.getBoundingClientRect().right.toFixed(1)).join(',');
-      const seen = new Map();
-      for (const row of rows) seen.set(signature(row), (seen.get(signature(row)) || 0) + 1);
-      if (seen.size > 1) findings.push({ rule: 'columns', at: name(grid), detail: 'row column edges differ: ' + [...seen.entries()].map(([sig, n]) => sig + ' ×' + n).join(' | ') });
+      const counts = new Set(rows.map((row) => row.children.length));
+      if (counts.size > 1) {
+        notes.push('columns: ' + name(grid) + ' holds rows of ' + [...counts].join(' / ') + ' cells — compared per count');
+      }
+      const byCount = new Map();
+      for (const row of rows) {
+        const n = row.children.length;
+        byCount.set(n, [...(byCount.get(n) || []), row]);
+      }
+      for (const [n, group] of byCount) {
+        if (group.length < 2) continue;
+        const signature = (row) => [...row.children].map((c) => +c.getBoundingClientRect().right.toFixed(1)).join(',');
+        const seen = new Map();
+        for (const row of group) seen.set(signature(row), (seen.get(signature(row)) || 0) + 1);
+        if (seen.size > 1) {
+          findings.push({ rule: 'columns', at: name(grid), detail: 'rows of ' + n + ' cells disagree: ' + [...seen.entries()].map(([sig, k]) => sig + ' x' + k).join(' | ') });
+        }
+      }
     }
   };
 
   const rowsRule = (rule) => {
     for (const container of document.querySelectorAll(rule.container)) {
+      mark('rows', 1);
       const group = [...container.querySelectorAll(rule.child)].filter(painted);
       if (group.length < 3) continue;
       const heights = group.map((el) => +el.getBoundingClientRect().height.toFixed(1));
-      if (Math.max(...heights) - Math.min(...heights) > 1.1) {
-        findings.push({ rule: 'rows', at: name(group[0]), detail: 'heights differ by ' + (Math.max(...heights) - Math.min(...heights)).toFixed(1) + 'px: ' + heights.join(' / ') });
+      const spread = Math.max(...heights) - Math.min(...heights);
+      if (spread > 1.1) {
+        findings.push({ rule: 'rows', at: name(group[0]), detail: 'heights differ by ' + spread.toFixed(1) + 'px: ' + heights.join(' / ') });
       }
     }
   };
 
+  const truncateRule = (rule) => {
+    for (const el of document.querySelectorAll(rule.scope)) {
+      mark('truncate', 1);
+      if (!painted(el)) continue;
+      if (el.children.length > 0) continue;
+      const text = (el.textContent || '').trim();
+      if (text.length < 4) continue;
+      const style = getComputedStyle(el);
+      if (style.overflow !== 'hidden' && style.overflowX !== 'hidden' && style.textOverflow !== 'ellipsis') continue;
+      if (el.scrollWidth > el.clientWidth + 1) {
+        findings.push({ rule: 'truncate', at: name(el), detail: 'text cut: ' + el.scrollWidth + ' > ' + el.clientWidth + ' px — "' + text.slice(0, 40) + '"' });
+      }
+    }
+  };
+
+  const overlapRule = (rule) => {
+    const a = [...document.querySelectorAll(rule.a)].filter(painted);
+    const b = [...document.querySelectorAll(rule.b)].filter(painted);
+    mark('overlap', a.length * b.length);
+    for (const one of a) {
+      const r1 = one.getBoundingClientRect();
+      for (const two of b) {
+        if (one.contains(two) || two.contains(one)) continue;
+        const r2 = two.getBoundingClientRect();
+        const dx = Math.min(r1.right, r2.right) - Math.max(r1.left, r2.left);
+        const dy = Math.min(r1.bottom, r2.bottom) - Math.max(r1.top, r2.top);
+        if (dx > 1 && dy > 1) {
+          findings.push({ rule: 'overlap', at: name(one) + ' x ' + name(two), detail: 'boxes overlap by ' + dx.toFixed(1) + ' x ' + dy.toFixed(1) + ' px' });
+        }
+      }
+    }
+  };
+
+  const snapshotScope = (CONTRACT && CONTRACT.snapshot && CONTRACT.snapshot.scope) || null;
+  const snapshot = () => {
+    const map = {};
+    if (!snapshotScope) return map;
+    for (const el of document.querySelectorAll(snapshotScope)) {
+      if (!painted(el)) continue;
+      const b = el.getBoundingClientRect();
+      map[path(el)] = { x: +b.left.toFixed(1), y: +(b.top + scrollY).toFixed(1), w: +b.width.toFixed(1), h: +b.height.toFixed(1) };
+    }
+    return map;
+  };
+
   if (CONTRACT) {
-    // Declared relations only: the page says which blocks must line up, and the tool checks exactly that.
-    for (const el of document.querySelectorAll(CONTRACT.rhythm.scope)) {
+    const scope = (CONTRACT.rhythm && CONTRACT.rhythm.scope) || '.arc-shell *';
+    for (const el of document.querySelectorAll(scope)) {
       if (!painted(el) || el.closest('#geometry')) continue;
+      mark('rhythm', 1);
       const bad = rhythm(el);
       if (bad) findings.push({ rule: 'rhythm', at: name(el), detail: bad });
     }
-    for (const rule of CONTRACT.inset || []) insetRule(rule);
     for (const rule of CONTRACT.padding || []) paddingRule(rule);
+    for (const rule of CONTRACT.inset || []) insetRule(rule);
     for (const rule of CONTRACT.centre || []) centreRule(rule);
     for (const rule of CONTRACT.columns || []) columnsRule(rule);
     for (const rule of CONTRACT.rows || []) rowsRule(rule);
+    for (const rule of CONTRACT.truncate || []) truncateRule(rule);
+    for (const rule of CONTRACT.overlap || []) overlapRule(rule);
   } else {
-    const all = [...document.querySelectorAll('*')].filter((el) => painted(el) && !el.closest('#geometry') && isSystem(el));
-    for (const el of all) {
+    notes.push('sweep mode: no contract, so only rhythm and truncation are judged — advisory');
+    for (const el of [...document.querySelectorAll('*')].filter((el) => painted(el) && !el.closest('#geometry') && isSystem(el))) {
       const bad = rhythm(el);
       if (bad) findings.push({ rule: 'rhythm', at: name(el), detail: bad });
+      if (el.children.length === 0 && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1) {
+        findings.push({ rule: 'truncate', at: name(el), detail: 'text cut: ' + el.scrollWidth + ' > ' + el.clientWidth + ' px' });
+      }
     }
   }
 
-  return JSON.stringify({ viewport: [innerWidth, innerHeight], mode: CONTRACT ? 'contract' : 'sweep', steps: [...steps].filter((v) => v > 0).sort((a, b) => a - b), findings }, null, 1);
+  const inset = document.createElement('div');
+  inset.style.cssText = 'position:fixed;left:0;bottom:0;height:env(safe-area-inset-bottom)';
+  document.body.append(inset);
+  const safe = inset.getBoundingClientRect().height;
+  inset.remove();
+  if (safe === 0) notes.push('safe-area-inset-bottom resolves to 0 here — a device check is not replaced by this run');
+
+  return JSON.stringify({
+    viewport: [innerWidth, innerHeight],
+    mode: CONTRACT ? 'contract' : 'sweep',
+    steps: [...steps].filter((v) => v > 0).sort((a, b) => a - b),
+    findings,
+    notes,
+    reached: EXPLAIN ? reached : undefined,
+    snapshot: snapshotScope ? snapshot() : undefined,
+  });
 })()`;
 
-const { result } = await send('Runtime.evaluate', { expression: probe, returnByValue: true });
-const report = JSON.parse(result.value);
-if (flag('json')) {
-  console.log(JSON.stringify(report, null, 1));
-} else {
-  console.log(`geometry — ${width}×${height} · ${report.findings.length} finding(s)`);
-  console.log(`steps: ${report.steps.join(' / ')}`);
-  for (const f of report.findings) console.log(`  ${f.rule.padEnd(8)} ${f.at.padEnd(34)} ${f.detail}`);
+async function measure(width) {
+  await send('Emulation.setDeviceMetricsOverride', {
+    width,
+    height,
+    deviceScaleFactor: dpr,
+    mobile: width < 900,
+  });
+  const targetURL = new URL(url);
+  if (scheme) targetURL.searchParams.set('scheme', String(scheme));
+  await send('Page.navigate', { url: targetURL.toString() });
+  await sleep(settle);
+  for (const selector of clicks) {
+    const click = `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return 'missing'; el.click(); return 'clicked'; })()`;
+    const { result } = await send('Runtime.evaluate', { expression: click, returnByValue: true });
+    if (result.value === 'missing') console.error(`geometry: --click ${selector} found nothing`);
+    await sleep(250);
+  }
+  const { result } = await send('Runtime.evaluate', { expression: probe, returnByValue: true });
+  return JSON.parse(result.value);
 }
+
+const report = { url, scheme: scheme || null, widths: {} };
+for (const width of sizes) {
+  report.widths[width] = await measure(width);
+}
+
+let failed = false;
+for (const width of sizes) {
+  const run = report.widths[width];
+  console.log(`geometry — ${width}×${height} · ${run.findings.length} finding(s) · ${run.notes.length} note(s) · ${run.mode}`);
+  if (width === sizes[0]) console.log(`steps: ${run.steps.join(' / ')}`);
+  for (const finding of run.findings) {
+    console.log(`  ${finding.rule.padEnd(8)} ${String(finding.at).padEnd(34)} ${finding.detail}`);
+  }
+  for (const note of run.notes) console.log(`  note     ${note}`);
+  if (explain && run.reached) {
+    console.log('  reached: ' + Object.entries(run.reached).map(([rule, n]) => rule + ' ' + n).join(' · '));
+  }
+  if (run.findings.length) failed = true;
+}
+
+if (savePath) {
+  writeFileSync(String(savePath), JSON.stringify(report, null, 1));
+  console.log(`geometry: baseline written to ${savePath}`);
+}
+
+if (comparePath) {
+  const base = JSON.parse(readFileSync(String(comparePath), 'utf8'));
+  let drift = 0;
+  for (const width of sizes) {
+    const now = report.widths[width];
+    const then = base.widths?.[width];
+    if (!then) {
+      console.log(`compare ${width}: no baseline at this width`);
+      continue;
+    }
+    const moved = [];
+    for (const [key, box] of Object.entries(now.snapshot || {})) {
+      const was = then.snapshot?.[key];
+      if (!was) {
+        moved.push(`${key}: appeared`);
+        continue;
+      }
+      const dx = +(box.x - was.x).toFixed(1);
+      const dy = +(box.y - was.y).toFixed(1);
+      const dw = +(box.w - was.w).toFixed(1);
+      const dh = +(box.h - was.h).toFixed(1);
+      if (Math.abs(dx) > 0.6 || Math.abs(dy) > 0.6 || Math.abs(dw) > 0.6 || Math.abs(dh) > 0.6) {
+        moved.push(`${key}: x ${dx} y ${dy} w ${dw} h ${dh}`);
+      }
+    }
+    for (const key of Object.keys(then.snapshot || {})) {
+      if (!(now.snapshot || {})[key]) moved.push(`${key}: gone`);
+    }
+    const wasFindings = new Set((then.findings || []).map((f) => f.rule + '|' + f.at + '|' + f.detail));
+    const isFindings = new Set((now.findings || []).map((f) => f.rule + '|' + f.at + '|' + f.detail));
+    const fresh = [...isFindings].filter((f) => !wasFindings.has(f));
+    const gone = [...wasFindings].filter((f) => !isFindings.has(f));
+    console.log(`compare ${width}: ${moved.length} element(s) moved · ${fresh.length} new finding(s) · ${gone.length} gone`);
+    for (const line of moved) console.log('  moved    ' + line);
+    for (const line of fresh) console.log('  new      ' + line);
+    for (const line of gone) console.log('  gone     ' + line);
+    drift += moved.length + fresh.length;
+  }
+  if (drift) failed = true;
+}
+
 ws.close();
 child.kill();
-process.exit(report.findings.length ? 1 : 0);
+process.exit(failed ? 1 : 0);

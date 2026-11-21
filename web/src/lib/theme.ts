@@ -48,6 +48,36 @@ function preferredTheme(): Theme {
   return 'light';
 }
 
+/**
+ * The colour of the page itself, resolved: an ARC token reads `var(--arc-bg-base)` out of the custom
+ * property, so the used background colour of `body` is the only reliable answer.
+ */
+function backgroundHex(): string | null {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return null;
+
+  const rgb = window.getComputedStyle(document.body).backgroundColor;
+  const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return null;
+
+  const hex = (value: string) => Number(value).toString(16).padStart(2, '0');
+  return `#${hex(match[1])}${hex(match[2])}${hex(match[3])}`;
+}
+
+/**
+ * The service bar above the page is drawn by Telegram, not by CSS. Ilja, 2026-11-21: it should carry
+ * the theme's own colour, so the app and its chrome read as one surface.
+ */
+function paintServiceBar(): void {
+  const app = telegramWebApp();
+  if (!app?.setHeaderColor) return;
+
+  const colour = backgroundHex();
+  if (!colour) return;
+
+  app.setHeaderColor(colour);
+  app.setBottomBarColor?.(colour);
+}
+
 export function applyTheme(theme: Theme): void {
   if (typeof document !== 'undefined') {
     document.documentElement.dataset.theme = theme;
@@ -65,6 +95,7 @@ export function useTheme(): { theme: Theme; setTheme: (theme: Theme) => void; to
   // never saw him pick one keeps following Telegram.
   useEffect(() => {
     applyTheme(theme);
+    paintServiceBar();
   }, [theme]);
 
   useEffect(() => {

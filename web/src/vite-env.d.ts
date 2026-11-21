@@ -17,6 +17,11 @@ interface TelegramWebApp {
   expand?: () => void;
   disableVerticalSwipes?: () => void;
   isVerticalSwipesEnabled?: boolean;
+  /** Colours the header Telegram draws above the page: 'bg_color', 'secondary_bg_color' or a hex. */
+  setHeaderColor?: (color: string) => void;
+  /** Colours the bar Telegram draws below the page (Bot API 7.10+). */
+  setBottomBarColor?: (color: string) => void;
+  setBackgroundColor?: (color: string) => void;
 }
 
 interface Window {

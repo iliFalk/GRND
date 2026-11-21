@@ -1,0 +1,313 @@
+/* ARC — base layer: fonts, page ground, fluid shell, type scale, focus, motion guard. */
+
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("../assets/fonts/barlow-semi-condensed-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("../assets/fonts/barlow-semi-condensed-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("../assets/fonts/barlow-semi-condensed-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../assets/fonts/jetbrains-mono-var.woff2") format("woff2-variations");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--arc-bg-void);
+  color-scheme: dark light;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--arc-bg-ambient);
+  color: var(--arc-fg-high);
+  font-family: var(--arc-font-ui);
+  font-size: var(--arc-fs);
+  font-weight: 500;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The shell is the measured frame. 390x844 is the master; a wider viewport adds space only. */
+.arc-shell {
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: max(env(safe-area-inset-left), var(--arc-space-4));
+  padding-right: max(env(safe-area-inset-right), var(--arc-space-4));
+  overflow-x: clip;
+}
+
+/* App variant: the shell keeps the frame and the bar, the middle scrolls. A root screen uses it. */
+.arc-shell--app {
+  height: 100svh;
+  overflow: hidden;
+}
+
+.arc-screen {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: var(--arc-space-6);
+}
+
+/* The phone paints no scrollbar; a desktop bar is chrome the product does not have. */
+.arc-shell--app .arc-screen {
+  scrollbar-width: none;
+}
+.arc-shell--app .arc-screen::-webkit-scrollbar {
+  display: none;
+}
+
+.arc-shell--app .arc-bar {
+  flex: none;
+  margin-inline: calc(var(--arc-space-4) * -1);
+}
+
+/* The screen head: a meta line, a title row, an action at the trailing edge. */
+.arc-appbar {
+  display: grid;
+  gap: var(--arc-space-1);
+  padding: var(--arc-space-4) 0 var(--arc-space-3);
+}
+
+.arc-appbar__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+}
+
+/* Layer 0 — ambient. Never interactive, never carries information. */
+.arc-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to bottom, var(--arc-line-soft) 0 var(--arc-stroke-hair), transparent var(--arc-stroke-hair) var(--arc-effect-grid-period)),
+    repeating-linear-gradient(to right, var(--arc-line-soft) 0 var(--arc-stroke-hair), transparent var(--arc-stroke-hair) var(--arc-effect-grid-period));
+  opacity: var(--arc-opacity-ambient, 0.55);
+}
+
+/* 4 CSS px period, integer: a fractional period moires on DPR 2 and 3. */
+.arc-scan {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--arc-effect-scan) 0 var(--arc-stroke-hair),
+    transparent var(--arc-stroke-hair) var(--arc-effect-scan-period)
+  );
+}
+
+.arc-shell > * {
+  position: relative;
+  /* the content band of §6 (10–49), above the ambient layers at 0 and 1 */
+  z-index: 10;
+}
+
+/* The `hidden` attribute outranks a component's own display. Measured on the showcase: the toast carried
+   hidden and painted anyway (display flex, 46 px tall), because an author display rule beats the UA rule.
+   `!important` is the one honest use of it here — the attribute is the platform's "do not render". */
+[hidden] {
+  display: none !important;
+}
+
+/* Type scale. Caps and tracking belong to labels of two words or fewer, never to a sentence. */
+.arc-display,
+.arc-h1,
+.arc-h2,
+.arc-h3,
+.arc-label,
+.arc-micro {
+  font-family: var(--arc-font-ui);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.arc-display {
+  font-size: var(--arc-fs-display);
+  font-weight: 700;
+  letter-spacing: var(--arc-tracking-display);
+  line-height: 1;
+}
+.arc-h1 {
+  font-size: var(--arc-fs-h1);
+  letter-spacing: var(--arc-tracking-display);
+  line-height: 1.05;
+}
+.arc-h2 {
+  font-size: var(--arc-fs-h2);
+  line-height: 1.15;
+}
+.arc-h3 {
+  font-size: var(--arc-fs-h3);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.arc-label {
+  font-size: var(--arc-fs-label);
+  letter-spacing: var(--arc-tracking-label);
+  font-weight: 600;
+}
+.arc-micro {
+  font-size: var(--arc-fs-micro);
+  letter-spacing: var(--arc-tracking-micro);
+  font-weight: 500;
+  color: var(--arc-fg-low);
+}
+.arc-body {
+  font-size: var(--arc-fs-body);
+  font-weight: 400;
+  line-height: 1.5;
+  font-family: var(--arc-font-ui);
+  text-transform: none;
+  letter-spacing: 0;
+  margin: 0;
+}
+.arc-small {
+  font-size: var(--arc-fs-small);
+  font-weight: 400;
+  line-height: 1.45;
+}
+.arc-data {
+  font-family: var(--arc-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--arc-fs-body);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.arc-muted {
+  color: var(--arc-fg-medium);
+}
+.arc-faint {
+  color: var(--arc-fg-low);
+}
+.arc-accent {
+  color: var(--arc-accent-primary);
+}
+
+/*
+  Focus lives on the element, never on a clipped child: a clip-path cuts the outline at the
+  notch. 2 CSS px plus 3:1 is the WCAG 2.4.13 shape.
+*/
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: var(--arc-stroke-focus) solid var(--arc-accent-strong);
+  outline-offset: var(--arc-stroke-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .arc-scan {
+    display: none;
+  }
+}
+
+/* ---------- the seal: nothing a parent declares reaches an element ----------
+   Every property that inherits is declared on the element itself, so a chip inside a heading is the same chip
+   as a chip inside a paragraph. Measured before this block: in a parent with line-height 3, serif, letter-spacing
+   4 px and lowercase, a chip's line-height went 19 → 39 and its face serif, while a button stayed identical —
+   the button declares its stack, the chip declared only part of one.
+   This block sits at the end of base.css, so src/elements.css still overrides any value an element owns; it sets
+   what an element must not inherit, not what it looks like. */
+
+.arc-appbar,
+.arc-panel__head,
+.arc-btn,
+.arc-chip,
+.arc-badge,
+.arc-input,
+.arc-select,
+.arc-field__label,
+.arc-field__hint,
+.arc-field__error,
+.arc-count,
+.arc-check__text,
+.arc-check__meta,
+.arc-kv__key,
+.arc-kv__value,
+.arc-item__title,
+.arc-item__meta,
+.arc-section-label,
+.arc-code,
+.arc-code__title,
+.arc-code__word,
+.arc-readout__label,
+.arc-readout__value,
+.arc-readout__unit,
+.arc-table__cell,
+.arc-tabs__tab,
+.arc-bar__item,
+.arc-steps__label,
+.arc-chart__label,
+.arc-chart__peak,
+.arc-chart__x,
+.arc-chart__y,
+.arc-link,
+.arc-empty__text,
+.arc-alert,
+.arc-note,
+.arc-warning,
+.arc-disclosure__summary,
+.arc-disclosure__body,
+.arc-listbox__option,
+.arc-menu__item,
+.arc-tasks__title,
+.arc-tasks__meta,
+.arc-tasks__state,
+.arc-fault__head,
+.arc-fault__text,
+.arc-result__class,
+.arc-result__body,
+.arc-form__summary-title,
+.arc-form__summary-link,
+.arc-form__more,
+.arc-toast,
+.arc-dialog {
+  font-family: var(--arc-font-ui);
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-align: start;
+  text-transform: none;
+  white-space: normal;
+  word-spacing: normal;
+}

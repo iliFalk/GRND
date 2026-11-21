@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { readTheme, writeTheme } from './persistence';
 
 export type Theme = 'light' | 'dark' | 'arc';
 
@@ -11,18 +12,15 @@ function isTheme(value: unknown): value is Theme {
   return value === 'light' || value === 'dark' || value === 'arc';
 }
 
-const THEME_KEY = 'grnd-theme';
-
 /** The theme he picked himself, or `undefined` when he never picked one. */
 function storedTheme(): Theme | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const stored = window.localStorage.getItem(THEME_KEY);
-    if (isTheme(stored)) return stored;
-  } catch {
-    // A blocked storage must not stop the shell from choosing a theme.
-  }
-  return undefined;
+  const stored = readTheme();
+  return isTheme(stored) ? stored : undefined;
+}
+
+/** Written on every explicit choice — a chip, a toggle — never by the client's own event. */
+function storeTheme(theme: Theme): void {
+  writeTheme(theme);
 }
 
 /**
@@ -89,10 +87,10 @@ export function applyTheme(theme: Theme): void {
 }
 
 export function useTheme(): { theme: Theme; setTheme: (theme: Theme) => void; toggleTheme: () => void } {
-  const [theme, setTheme] = useState<Theme>(preferredTheme);
+  const [theme, setThemeState] = useState<Theme>(preferredTheme);
 
-  // Only the attribute follows the theme; the stored choice is written by a toggle, so an app that
-  // never saw him pick one keeps following Telegram.
+  // Only the attribute follows the theme here; the choice is stored by the setters below, so an app
+  // that never saw him pick one keeps following Telegram.
   useEffect(() => {
     applyTheme(theme);
     paintServiceBar();
@@ -105,21 +103,26 @@ export function useTheme(): { theme: Theme; setTheme: (theme: Theme) => void; to
     const followTelegram = () => {
       if (storedTheme()) return; // His own pick stands against the client.
       const scheme = appTelegram.colorScheme;
-      if (isTheme(scheme)) setTheme(scheme);
+      if (isTheme(scheme)) setThemeState(scheme);
     };
 
     appTelegram.onEvent('themeChanged', followTelegram);
     return () => appTelegram.offEvent?.('themeChanged', followTelegram);
   }, []);
 
+  /**
+   * Ilja, 2026-11-21: the chips are what he presses, so the write belongs here. Storing only in the
+   * toggle meant the choice was never written at all.
+   */
+  const setTheme = useCallback((next: Theme) => {
+    storeTheme(next);
+    setThemeState(next);
+  }, []);
+
   const toggleTheme = useCallback(() => {
-    setTheme((current) => {
+    setThemeState((current) => {
       const next: Theme = current === 'dark' ? 'light' : 'dark';
-      try {
-        window.localStorage.setItem(THEME_KEY, next);
-      } catch {
-        // The attribute is what matters; persistence is a convenience.
-      }
+      storeTheme(next);
       return next;
     });
   }, []);

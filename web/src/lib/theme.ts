@@ -33,6 +33,9 @@ function preferredTheme(): Theme {
 export function applyTheme(theme: Theme): void {
   if (typeof document !== 'undefined') {
     document.documentElement.dataset.theme = theme;
+    // The design system reads its own flag: without it the page renders ARC's dark tokens under the
+    // app's light ink, and a heading measured near-black on a near-black panel.
+    document.documentElement.dataset.scheme = theme;
   }
 }
 

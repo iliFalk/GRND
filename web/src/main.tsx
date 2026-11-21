@@ -4,6 +4,8 @@ import App from './App';
 import { trackVisualViewport } from './lib/viewport';
 import './styles/tokens.css';
 import './styles/globals.css';
+// ARC first-party look: the vendored release pack owns values, elements and the sprite.
+import '../../vendor/arc/dist/arc.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('The root element is missing from index.html');

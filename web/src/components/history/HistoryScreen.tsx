@@ -10,8 +10,6 @@ import {
   useHistory,
   type HistorySession
 } from '../../lib/history';
-import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 interface HistoryScreenProps {
   userId: string;
@@ -30,6 +28,15 @@ function rowLine(session: HistorySession): string {
   ].join(' · ');
 }
 
+/** One mark, drawn by the shipped sprite: the system draws every icon in one place. */
+function Mark({ name, className = 'arc-icon' }: { name: string; className?: string }) {
+  return (
+    <svg className={className} aria-hidden="true">
+      <use href={`/icons.svg#${name}`} />
+    </svg>
+  );
+}
+
 export function HistoryScreen({ userId }: HistoryScreenProps) {
   const history = useHistory(userId);
   const catalogue = useExerciseCatalogue();
@@ -45,96 +52,126 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
 
   if (history.error) {
     return (
-      <Card>
-        <CardContent className="space-y-3 py-8 text-center">
-          <p className="text-sm font-medium">The history could not be loaded.</p>
-          <p className="text-xs text-muted-foreground">{history.error}</p>
-          <Button size="sm" onClick={() => void history.reload()}>
+      <section aria-labelledby="history-title">
+        <p className="arc-section-label" id="history-title">
+          History
+        </p>
+        <div className="arc-panel">
+          <div className="arc-empty">
+            <p className="arc-h3">The history could not be loaded</p>
+            <p className="arc-empty__text">{history.error}</p>
+          </div>
+          <button type="button" className="arc-btn arc-btn--secondary" onClick={() => void history.reload()}>
             Try again
-          </Button>
-        </CardContent>
-      </Card>
+          </button>
+        </div>
+      </section>
     );
   }
 
   if (history.loading && history.sessions.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          Loading the sessions…
-        </CardContent>
-      </Card>
+      <section aria-labelledby="history-title">
+        <p className="arc-section-label" id="history-title">
+          History
+        </p>
+        <div className="arc-panel">
+          <span className="arc-skeleton" style={{ '--arc-skeleton-width': '70%' } as React.CSSProperties} />
+          <span className="arc-skeleton" style={{ '--arc-skeleton-width': '45%' } as React.CSSProperties} />
+        </div>
+      </section>
     );
   }
 
   if (history.sessions.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center">
-          <p className="text-sm font-medium">No sessions yet.</p>
-          <p className="mt-1 text-xs text-muted-foreground">A finished workout lands here.</p>
-        </CardContent>
-      </Card>
+      <section aria-labelledby="history-title">
+        <p className="arc-section-label" id="history-title">
+          History
+        </p>
+        <div className="arc-panel">
+          <div className="arc-empty">
+            <p className="arc-h3">No sessions yet</p>
+            <p className="arc-empty__text">A finished workout lands here.</p>
+          </div>
+        </div>
+      </section>
     );
   }
 
   if (open) {
+    const exercises = open.completedExercises ?? [];
     return (
-      <section className="space-y-3">
+      <section aria-labelledby="history-title">
+        <p className="arc-section-label" id="history-title">
+          History
+        </p>
+
         <button
           type="button"
+          className="arc-btn arc-btn--ghost"
           onClick={() => {
             setOpenId(null);
             setConfirmId(null);
           }}
-          className="rounded-control px-1 py-1 text-sm font-medium text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          ← All sessions
+          All sessions
         </button>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>{formatSessionDate(open.date)}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 text-sm">
-            <p className="text-muted-foreground">{rowLine(open)}</p>
-            {open.dayType === 'CIRCUIT' ? (
-              <p className="text-xs text-muted-foreground">Circuit · outside the pillars</p>
-            ) : null}
-          </CardContent>
-        </Card>
+        <div className="arc-panel">
+          <div className="arc-panel__head">
+            <h2 className="arc-h3">{formatSessionDate(open.date)}</h2>
+            {open.dayType === 'CIRCUIT' ? <span className="arc-chip">Circuit</span> : null}
+          </div>
+          <p className="arc-small arc-muted">{rowLine(open)}</p>
+          <div className="arc-row">
+            <span className="arc-kv__key">Sets</span>
+            <span className="arc-kv__value">{formatNumber(sessionSets(open))}</span>
+          </div>
+          <div className="arc-row">
+            <span className="arc-kv__key">Tonnage</span>
+            <span className="arc-kv__value">{`${formatNumber(tonne(open))} kg`}</span>
+          </div>
+          <div className="arc-row">
+            <span className="arc-kv__key">Duration</span>
+            <span className="arc-kv__value">{formatDuration(open.duration)}</span>
+          </div>
+          <div className="arc-row">
+            <span className="arc-kv__key">Rest</span>
+            <span className="arc-kv__value">{formatDuration(open.rest_seconds)}</span>
+          </div>
+          {open.dayType === 'CIRCUIT' ? (
+            <p className="arc-small arc-muted">A circuit is endurance work: it moves no pillar.</p>
+          ) : null}
+        </div>
 
-        <Card>
-          <CardContent className="divide-y divide-border py-0">
-            {(open.completedExercises ?? []).map((exercise, index) => (
-              <div key={`${exercise.name}-${index}`} className="space-y-1 py-3">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-sm font-medium">
-                    {exercise.name}
-                    {exercise.superset ? (
-                      <span className="ml-1.5 rounded-pill border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        superset
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {`${formatNumber(exercise.volume ?? 0)} kg`}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">{setSummary(exercise)}</p>
-              </div>
-            ))}
-            {(open.completedExercises ?? []).length === 0 ? (
-              <p className="py-3 text-xs text-muted-foreground">No exercise was recorded.</p>
-            ) : null}
-          </CardContent>
-        </Card>
+        <div className="arc-panel arc-panel--flat">
+          <p className="arc-section-label">Exercises</p>
+          {exercises.map((exercise, index) => (
+            <div className="arc-item" key={`${exercise.name}-${index}`}>
+              <span className="arc-item__text">
+                <span className="arc-item__title">{exercise.name}</span>
+                <span className="arc-item__meta">{setSummary(exercise)}</span>
+              </span>
+              <span className="arc-item__end">
+                {exercise.superset ? <span className="arc-chip">Superset</span> : null}
+                <span className="arc-kv__value">{`${formatNumber(exercise.volume ?? 0)} kg`}</span>
+              </span>
+            </div>
+          ))}
+          {exercises.length === 0 ? <p className="arc-empty__text">No exercise was recorded.</p> : null}
+        </div>
 
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {error ? (
+          <div className="arc-alert arc-alert--error">
+            <Mark name="circle-alert" className="arc-icon arc-alert__icon" />
+            <span>{error}</span>
+          </div>
+        ) : null}
 
-        <Button
-          variant={confirmId === open.id ? 'default' : 'outline'}
-          className="w-full"
+        <button
+          type="button"
+          className="arc-btn arc-btn--danger"
           onClick={async () => {
             if (confirmId !== open.id) {
               setConfirmId(open.id);
@@ -151,42 +188,36 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
           }}
         >
           {confirmId === open.id ? 'Tap again to delete this session' : 'Delete session'}
-        </Button>
+        </button>
       </section>
     );
   }
 
   return (
-    <section aria-labelledby="history-title" className="space-y-3">
-      <div>
-        <h2 id="history-title" className="text-lg font-semibold">
-          History
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {`${history.sessions.length} ${history.sessions.length === 1 ? 'session' : 'sessions'}`}
-        </p>
-      </div>
+    <section aria-labelledby="history-title">
+      <p className="arc-section-label" id="history-title">
+        History
+      </p>
+      <p className="arc-small arc-muted">
+        {`${history.sessions.length} ${history.sessions.length === 1 ? 'session' : 'sessions'}`}
+      </p>
 
-      <ul className="space-y-2">
+      <div className="arc-panel arc-panel--flat">
         {history.sessions.map((session) => (
-          <li key={session.id}>
-            <button
-              type="button"
-              onClick={() => setOpenId(session.id)}
-              className="w-full space-y-1 rounded-card border border-border bg-card px-3 py-2.5 text-left shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <span className="flex items-baseline justify-between gap-3">
-                <span className="text-sm font-semibold">{formatSessionDate(session.date)}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {`${formatNumber(tonne(session))} kg`}
-                </span>
+          <button type="button" className="arc-item" key={session.id} onClick={() => setOpenId(session.id)}>
+            <span className="arc-item__text">
+              <span className="arc-item__title">{formatSessionDate(session.date)}</span>
+              <span className="arc-item__meta">{mainExercise(session, baseIds)}</span>
+            </span>
+            <span className="arc-item__end">
+              <span className="arc-chip">{`${formatNumber(tonne(session))} kg`}</span>
+              <span className="arc-item__chevron" aria-hidden="true">
+                <Mark name="chevron-right" />
               </span>
-              <span className="block truncate text-sm">{mainExercise(session, baseIds)}</span>
-              <span className="block text-xs text-muted-foreground">{rowLine(session)}</span>
-            </button>
-          </li>
+            </span>
+          </button>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }

@@ -85,12 +85,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
     writeSaved(storageKey, state, elapsedSeconds(state, at), at);
   }, [state, storageKey]);
 
-  useDraftSync(
-    userId,
-    'amrap',
-    state,
-    state ? elapsedSeconds(state, Date.now()) : 0
-  );
+  useDraftSync(userId, 'amrap', state, (current, now) => elapsedSeconds(current, now));
 
   useEffect(() => {
     if (!state || isTimeUp(state, now)) return;

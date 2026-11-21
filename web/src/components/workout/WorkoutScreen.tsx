@@ -136,12 +136,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     writeSaved(storageKey, state, elapsedSeconds(state, at), at);
   }, [state, storageKey]);
 
-  useDraftSync(
-    userId,
-    'sets',
-    state,
-    state ? elapsedSeconds(state, Date.now()) : 0
-  );
+  useDraftSync(userId, 'sets', state, (current, now) => elapsedSeconds(current, now));
 
   const entries = catalogue.data ?? [];
 

@@ -9,6 +9,9 @@ import { useEffect, useRef } from 'react';
 
 export type DraftMode = 'sets' | 'amrap';
 
+/** Ilja, 2026-11-21: one write a minute while a workout runs — not one per pause in tapping. */
+export const DRAFT_INTERVAL_MS = 60_000;
+
 export interface Draft<T> {
   mode: DraftMode;
   /** Seconds the workout had already run. */
@@ -42,30 +45,36 @@ export async function saveDraft<T>(userId: string, draft: Draft<T>): Promise<voi
 }
 
 /**
- * Writes the draft half a second after the last change, and at once when the page hides: a workout
- * abandoned with a tap must still be on the server.
+ * Writes the draft once a minute while a workout runs, and at once when the page hides. The interval
+ * matters: a debounce would wait for him to stop tapping, so a long set could go an hour unwritten.
+ * Only a state that changed since the last write is sent.
  */
 export function useDraftSync<T>(
   userId: string,
   mode: DraftMode,
   state: T | null,
-  elapsed: number
+  elapsedAt: (state: T, now: number) => number
 ): void {
-  const elapsedRef = useRef(elapsed);
-  elapsedRef.current = elapsed;
+  const stateRef = useRef<T | null>(state);
+  stateRef.current = state;
+  const elapsedRef = useRef(elapsedAt);
+  elapsedRef.current = elapsedAt;
+
+  const running = state !== null;
 
   useEffect(() => {
-    if (!state) return;
+    if (!running) return;
 
-    let timer: number | undefined;
+    let written: T | null = null;
     const flush = () => {
-      if (timer !== undefined) window.clearTimeout(timer);
-      timer = undefined;
-      void saveDraft(userId, { mode, elapsed: elapsedRef.current, state });
+      const current = stateRef.current;
+      if (current === null || current === written) return;
+      written = current;
+      const now = Date.now();
+      void saveDraft(userId, { mode, elapsed: elapsedRef.current(current, now), state: current });
     };
 
-    timer = window.setTimeout(flush, 500);
-
+    const timer = window.setInterval(flush, DRAFT_INTERVAL_MS);
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') flush();
     };
@@ -73,11 +82,11 @@ export function useDraftSync<T>(
     window.addEventListener('pagehide', flush);
 
     return () => {
-      if (timer !== undefined) window.clearTimeout(timer);
+      window.clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', flush);
     };
-  }, [mode, state, userId]);
+  }, [mode, running, userId]);
 }
 
 export async function clearDraft(userId: string): Promise<void> {

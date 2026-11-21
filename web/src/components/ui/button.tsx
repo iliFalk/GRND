@@ -10,7 +10,8 @@ const variants = {
 
 const sizes = {
   default: 'h-10 px-4 py-2 text-sm',
-  sm: 'h-8 px-3 text-xs',
+  // The touch floor is physical: a 32 px control fails the hand even when it looks right.
+  sm: 'h-11 min-w-11 px-3 text-xs',
   icon: 'h-9 w-9'
 } as const;
 

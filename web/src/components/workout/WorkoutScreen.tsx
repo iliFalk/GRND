@@ -56,8 +56,8 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => 
           onClick={() => onChange(entry.id)}
           className={
             mode === entry.id
-              ? 'rounded-control bg-primary px-2 py-1.5 text-sm font-semibold text-primary-foreground'
-              : 'rounded-control px-2 py-1.5 text-sm font-medium text-muted-foreground'
+              ? 'inline-flex min-h-11 min-w-11 items-center justify-center rounded-control bg-primary px-2 text-sm font-semibold text-primary-foreground'
+              : 'inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-2 text-sm font-medium text-muted-foreground'
           }
         >
           {entry.label}
@@ -252,7 +252,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                   className={
                     active
                       ? 'rounded-pill border border-primary bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-foreground'
-                      : 'rounded-pill border border-border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground'
+                      : 'inline-flex min-h-11 items-center rounded-pill border border-border px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground'
                   }
                 >
                   {row.status === 'below' ? <span aria-hidden="true">• </span> : null}

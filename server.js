@@ -439,7 +439,8 @@ app.put('/api/workout-draft/:userId', async (req, res) => {
       elapsed: Number(body.elapsed) || 0,
       state: body.state
     });
-    res.json({ draft });
+    // The client ignores the body; echoing the whole draft doubled the traffic of every save.
+    res.json({ savedAt: draft.savedAt });
   } catch (error) {
     console.error('Error writing the workout draft:', error);
     res.status(500).json({ error: 'Failed to write the workout draft' });

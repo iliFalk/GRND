@@ -138,7 +138,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
       </p>
 
       <div className="arc-panel">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid gap-3">
           {data.pillars.map((row) => (
             <PillarRing
               key={row.id}

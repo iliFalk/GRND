@@ -20,14 +20,14 @@ function PlanScreen() {
 function initialPage(): PageId {
   // ?page=history renders a tab directly: a headless render cannot press a bar item it never sees,
   // and the port measures one screen at a time.
-  const asked = new URLSearchParams(location.search).get('page');
+  const asked = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('page');
   const known: PageId[] = ['dashboard', 'plan', 'workout', 'history'];
   return asked && known.includes(asked as PageId) ? (asked as PageId) : 'dashboard';
 }
 
 export default function App() {
   const [page, setPage] = useState<PageId>(initialPage);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const userId = resolveUserId();
   const { data, loading, error, reload } = usePillars(userId);
   const weekRange = data ? formatWeekRange(data.week_start, data.week_end) : null;
@@ -40,7 +40,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
-      <Header weekRange={weekRange} theme={theme} onToggleTheme={toggleTheme} />
+      <Header weekRange={weekRange} theme={theme} onTheme={setTheme} />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-5">
         {page === 'dashboard' ? (
           <Dashboard data={data} loading={loading} error={error} onRetry={reload} />

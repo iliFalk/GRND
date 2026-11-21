@@ -2,15 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { setsEntries, useExerciseCatalogue } from '../../lib/catalogue';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
+import { clearSaved, readSaved, writeSaved } from '../../lib/persistence';
+import { orderForPillar, usePillars } from '../../lib/pillars';
+import { useUserProfile } from '../../lib/profile';
 import {
   activeExercise,
   countReps,
+  elapsedSeconds,
   hasWork,
   isResting,
   nextBlock,
   openCounters,
   pause,
   restSeconds,
+  resumeWorkout,
   selectExercise,
   setsOf,
   startWorkout,
@@ -19,9 +24,7 @@ import {
   type WorkoutChoice,
   type WorkoutState
 } from '../../lib/workout';
-import { orderForPillar, usePillars } from '../../lib/pillars';
 import { AmrapScreen } from './AmrapScreen';
-import { useUserProfile } from '../../lib/profile';
 import { ExercisePicker } from '../plan/ExercisePicker';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -89,8 +92,13 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const [amrapBusy, setAmrapBusy] = useState(false);
   const [weightDraft, setWeightDraft] = useState('');
   const [weightError, setWeightError] = useState<string | null>(null);
+  const storageKey = `grnd-workout-${userId}`;
   const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
-  const [state, setState] = useState<WorkoutState | null>(null);
+  const [state, setState] = useState<WorkoutState | null>(() => {
+    // A workout that was running when the app closed comes back where it stopped.
+    const saved = readSaved<WorkoutState>(storageKey, Date.now());
+    return saved ? resumeWorkout(saved.value, saved.elapsed, Date.now()) : null;
+  });
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
   const [saving, setSaving] = useState(false);
@@ -102,6 +110,13 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     const handle = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(handle);
   }, [state]);
+
+  // Every counted repetition is written, so closing the app costs nothing.
+  useEffect(() => {
+    if (!state) return;
+    const at = Date.now();
+    writeSaved(storageKey, state, elapsedSeconds(state, at), at);
+  }, [state, storageKey]);
 
   const entries = catalogue.data ?? [];
 
@@ -167,6 +182,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     setError(null);
     try {
       const session = await saveWorkoutSession(payload);
+      clearSaved(storageKey);
       setSaved(session);
       setState(null);
       onSaved();
@@ -175,7 +191,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     } finally {
       setSaving(false);
     }
-  }, [onSaved, state, userId]);
+  }, [onSaved, state, storageKey, userId]);
 
   if (catalogue.error) {
     return (

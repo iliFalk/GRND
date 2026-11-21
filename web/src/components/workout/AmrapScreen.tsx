@@ -3,8 +3,10 @@ import {
   MAX_CHOICES,
   buildAmrapPayload,
   completeRound,
+  elapsedSeconds,
   isTimeUp,
   remainingSeconds,
+  resumeAmrap,
   setPartial,
   setsFor,
   startAmrap,
@@ -12,6 +14,7 @@ import {
   type AmrapState
 } from '../../lib/amrap';
 import { amrapEntries, useExerciseCatalogue } from '../../lib/catalogue';
+import { clearSaved, readSaved, writeSaved } from '../../lib/persistence';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { saveWorkoutSession, type SavedSession } from '../../lib/session';
 import { Button } from '../ui/button';
@@ -40,7 +43,12 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
   const catalogue = useExerciseCatalogue();
   const [minutes, setMinutes] = useState('12');
   const [choices, setChoices] = useState<AmrapChoice[]>([]);
-  const [state, setState] = useState<AmrapState | null>(null);
+  const storageKey = `grnd-amrap-${userId}`;
+  const [state, setState] = useState<AmrapState | null>(() => {
+    // A circuit that was running when the app closed picks up its clock.
+    const saved = readSaved<AmrapState>(storageKey, Date.now());
+    return saved ? resumeAmrap(saved.value, saved.elapsed, Date.now()) : null;
+  });
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
   const [saving, setSaving] = useState(false);
@@ -51,6 +59,13 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
   useEffect(() => {
     onBusyChange(state !== null);
   }, [onBusyChange, state]);
+
+  // The rounds are written as they happen, so a closed app does not cost the circuit.
+  useEffect(() => {
+    if (!state) return;
+    const at = Date.now();
+    writeSaved(storageKey, state, elapsedSeconds(state, at), at);
+  }, [state, storageKey]);
 
   useEffect(() => {
     if (!state || isTimeUp(state, now)) return;
@@ -115,6 +130,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
     setError(null);
     try {
       const session = await saveWorkoutSession(payload);
+      clearSaved(storageKey);
       setSaved(session);
       setState(null);
       setChoices([]);

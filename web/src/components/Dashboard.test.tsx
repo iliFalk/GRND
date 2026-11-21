@@ -50,11 +50,13 @@ const data: PillarsData = {
   unmapped: []
 };
 
-it('test_a_tile_shows_the_floor_and_says_ok_once_it_is_reached', () => {
+it('test_a_tile_names_the_floor_and_the_gap_to_it', () => {
   const html = renderToString(<Dashboard data={data} loading={false} onRetry={() => {}} />);
 
-  expect(html).toContain('OK');
+  // Five sets against a floor of four, and one set against the same floor.
+  expect(html).toContain('5 / 4');
+  expect(html).toContain('1 / 4');
+  expect(html).toContain('Floor met');
   expect(html).toContain('3 more');
   expect(html).toContain('Pull');
-  expect(html).toContain('stroke-dasharray');
 });

@@ -1,4 +1,4 @@
-import type { WorkoutState } from './workout';
+import { elapsedSeconds, type WorkoutState } from './workout';
 
 /** One session as `POST /api/workout-session` takes it. */
 export interface SessionPayload {
@@ -63,7 +63,7 @@ export function buildSessionPayload(
     userId,
     date: now.toISOString(),
     dayType: 'STANDARD',
-    duration: Math.max(0, Math.round((now.getTime() - state.startedAt) / 1000)),
+    duration: elapsedSeconds(state, now.getTime()),
     rest_seconds: state.restSeconds,
     completedExercises: done.map((exercise) => {
       const sharesABlock = exercise.sets.some((set) => (perBlock.get(set.block ?? 0) ?? 0) > 1);

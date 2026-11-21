@@ -6,11 +6,13 @@ import {
   activeExercise,
   countReps,
   hasWork,
+  elapsedSeconds,
   isResting,
   nextBlock,
   openCounters,
   pause,
   restSeconds,
+  resumeWorkout,
   selectExercise,
   startWorkout,
   totalReps,
@@ -147,6 +149,17 @@ it('test_a_block_of_one_is_not_a_superset', () => {
   const payload = buildSessionPayload(closed, '931142831');
 
   expect(payload?.completedExercises[0].superset).toBeUndefined();
+});
+
+it('test_a_closed_app_resumes_the_workout_where_it_stopped', () => {
+  const worked = pause(countReps(started(), 6), start + 60_000);
+  const reopened = start + 3_600_000; // an hour later
+  const resumed = resumeWorkout(worked, 90, reopened);
+
+  expect(resumed.exercises[0].sets).toEqual([{ reps: 6, weight: 20, block: 1 }]);
+  expect(elapsedSeconds(resumed, reopened)).toBe(90);
+  expect(isResting(resumed)).toBe(false);
+  expect(resumed.block).toBe(1);
 });
 
 it('test_the_workout_screen_opens_on_its_setup_step', () => {

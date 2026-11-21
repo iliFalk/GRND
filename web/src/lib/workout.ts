@@ -88,6 +88,22 @@ export function isResting(state: WorkoutState): boolean {
   return state.restingSince !== null;
 }
 
+export function elapsedSeconds(state: WorkoutState, now: number): number {
+  return Math.max(0, Math.floor((now - state.startedAt) / 1000));
+}
+
+/**
+ * A workout that survived a closed app: the seconds it already ran are kept, the clock continues from
+ * now, and a rest that was interrupted is over — nobody rests for the hours the app was shut.
+ */
+export function resumeWorkout(state: WorkoutState, elapsed: number, now: number): WorkoutState {
+  return {
+    ...state,
+    startedAt: now - Math.max(0, Math.round(elapsed)) * 1000,
+    restingSince: null
+  };
+}
+
 /** How many exercises the current block has written so far. */
 export function openCounters(state: WorkoutState): number {
   return state.exercises.filter((exercise) => exercise.counter > 0).length;

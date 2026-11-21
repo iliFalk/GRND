@@ -106,6 +106,24 @@ html[data-theme='arc'] .font-mono {
   --radius-pill: var(--app-radius-pill);
 }
 
+/* The product's own shell: the system draws the bar and the app bar, the page places them. Positioning is
+   layout, not a design value, so it lives here and not in the element. */
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--background);
+}
+
+.app-footer {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--background);
+}
+
 @layer base {
   html {
     font-family:

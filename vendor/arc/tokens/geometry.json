@@ -1,0 +1,65 @@
+{
+  "_note": "The relations a page must satisfy. tools/geometry.mjs checks exactly these and nothing else: a relation that is not declared is not judged, because a guess prints false positives and a gate with false positives gets switched off. inset = block siblings share both edges; centre = a centred stack shares its centre; columns = rows of one grid agree on column edges; rows = one list's rows share a height; padding = a named container carries at least its declared inner padding; rhythm = every padding and gap is a step or the sum of two.",
+  "steps": [
+    "--arc-space-1",
+    "--arc-space-2",
+    "--arc-space-3",
+    "--arc-space-4",
+    "--arc-space-5",
+    "--arc-space-6",
+    "--arc-space-7",
+    "--arc-space-8",
+    "--arc-space-10",
+    "--arc-space-12",
+    "--arc-control-height-m",
+    "--arc-control-height-l"
+  ],
+  "rhythm": {
+    "scope": ".arc-shell *"
+  },
+  "inset": [
+    {
+      "container": ".arc-screen",
+      "child": ":scope > *"
+    },
+    {
+      "container": ".arc-panel",
+      "child": ":scope > *"
+    },
+    {
+      "container": ".arc-form",
+      "child": ":scope > *"
+    }
+  ],
+  "columns": [
+    {
+      "grid": ".arc-table",
+      "row": ".arc-table__row"
+    }
+  ],
+  "rows": [
+    {
+      "container": ".arc-panel",
+      "child": ".arc-item"
+    },
+    {
+      "container": ".arc-bar",
+      "child": ".arc-bar__item"
+    },
+    {
+      "container": ".arc-tabs",
+      "child": ".arc-tabs__tab"
+    }
+  ],
+  "centre": [],
+  "padding": [
+    {
+      "selector": ".arc-panel",
+      "min": "--arc-space-4",
+      "sides": [
+        "top",
+        "left"
+      ]
+    }
+  ]
+}

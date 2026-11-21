@@ -3,6 +3,20 @@
 The version lives in `tokens/tokens.json`; this file says what changed between two of them. A project that
 takes the pack names the version it took, and this is where it reads what arrived afterwards.
 
+## 2.2.0 — 2026-11-21
+
+A gate for placement. The system could measure values, states and the frame, and nothing measured whether the
+parts stand on their places.
+
+### Added
+
+- **`tools/geometry.mjs`** — measures what a layout claims: block siblings share both edges, a centred stack
+  shares its centre, rows of one grid agree on their column edges, one list's rows share a height, and every
+  padding and gap is a step or the sum of two. Exit 1 on a finding, so it stands in a gate.
+- **`tokens/geometry.json`** — the contract. The tool judges only the relations a page declares; the first cut
+  swept everything and called 39 legal relations defects on this page's own showcase.
+- The gate runs it against `index.html` in both schemes; the pack ships the tool and its contract.
+
 ## 2.1.0 — 2026-11-21
 
 The canon stops describing anatomy and starts showing it, the audit learns to compare a state in the markup

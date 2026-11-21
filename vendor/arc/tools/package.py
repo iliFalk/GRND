@@ -40,6 +40,8 @@ INCLUDE = [
     "tools/icons_sprite.py",
     "tools/elements.py",
     "tools/markup.py",
+    "tools/geometry.mjs",
+    "tokens/geometry.json",
     "tools/lint.py",
     "tools/chart.py",
     "tools/package.py",

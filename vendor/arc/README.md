@@ -1,6 +1,6 @@
 # ARC-design-system
 
-A design system for high-intensity interfaces, in a dark and a light scheme. Version 2.1.0.
+A design system for high-intensity interfaces, in a dark and a light scheme. Version 2.2.0.
 
 ![The dark scheme at the master frame](docs/screenshot.png)
 

@@ -1082,6 +1082,10 @@ interactive control in the affix — that is the in-field action of §8.5.
 | `tools/categories.py` | Checks a product-owned categorical palette against the accent and status hues |
 | `tools/icons.py` | Checks the sprite: one grid, closed bounds, unique names; runs inside the gate |
 | `tools/elements.py` | Checks that every §8 element is rendered once and every glyph drawn is in the sprite |
+| `tools/geometry.mjs` | Measures the layout a page claims: block siblings share both edges, a centred stack
+shares its centre, grid rows agree on column edges, one list's rows share a height, and every padding and
+gap is a step or the sum of two. Relations come from `tokens/geometry.json`; a relation that is not declared
+is not judged |
 | `tools/markup.py` | Writes Appendix C from `index.html`: the first instance of every §8 root with its child classes; `--check` fails when the block and the page disagree |
 | `tools/package.py` | Writes `dist/arc-<version>.tgz` — the release a project takes |
 | `CHANGELOG.md` | What changed between two versions; the pack names the version it came from |
@@ -1127,6 +1131,15 @@ from the page, and when a `<use>` names a glyph the sprite does not carry. Run t
 audit, then run `python3 tools/markup.py` — Appendix C is generated from the page, and the gate fails while the
 block is stale. Add its anatomy to section 8 in the same commit. If it needs a value that does not exist, add
 the value to the dictionary first — and an entry to `docs/DECISIONS.md` if the value is a decision.
+
+**What the audit cannot see, and the tool that can.** The frame audit judges clipping, edges against the
+viewport, the touch floor, an empty mark and a state that disagrees with the screen. It says nothing about
+whether the parts sit on their places: a 20 px inset beside a 16 px one passed it, and so did a panel with no
+inner padding beside a panel with 16. `node tools/geometry.mjs --url <page> --contract tokens/geometry.json`
+answers that class, and the gate runs it against this showcase. The contract is the point — a sweep that
+guesses which blocks must line up prints false positives (measured: 45 findings on this page, 39 of them
+legal relations such as a centred stack or a control sized to its content), and a gate with false positives
+gets switched off.
 
 **What the audit looks for.** What a screenshot cannot answer, in five classes:
 

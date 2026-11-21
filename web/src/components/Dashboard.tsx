@@ -137,8 +137,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
         {`${data.sessions} ${data.sessions === 1 ? 'session' : 'sessions'} · four sets close a pillar`}
       </p>
 
-      <div className="arc-panel">
-        <div className="grid gap-3">
+      <div className="grid grid-cols-2 gap-2">
           {data.pillars.map((row) => (
             <PillarRing
               key={row.id}
@@ -148,7 +147,6 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
               floor={typeof row.target.min === 'number' ? row.target.min : 0}
             />
           ))}
-        </div>
       </div>
 
       {data.days.length > 0 ? <WeekBars days={data.days} pillars={data.pillars} /> : null}

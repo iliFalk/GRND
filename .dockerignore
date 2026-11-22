@@ -6,3 +6,12 @@ web/node_modules
 uploads
 *.log
 **/__pycache__
+data/workout-sessions.json
+data/user-profiles.json
+data/training-plans.json
+data/workout-drafts.json
+data/1.json
+data/default-user.json
+data/test-user.json
+data/*.corrupt-*
+data/*.tmp

@@ -1150,8 +1150,7 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
         message: 'Workout session deleted successfully'
       });
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        // File doesn't exist, return 404
+      if (error.code === 'ENOENT' || error.code === 'NOT_FOUND') {
         return res.status(404).json({ error: 'Workout session not found' });
       }
       if (error.name === 'StoreError') {

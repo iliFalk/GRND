@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs').promises;
@@ -30,7 +31,21 @@ app.use(express.static(appDir));
 // A link saved before the move still carries /next/; send it to the same path at the root.
 app.use('/next', (req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-  const target = req.originalUrl.replace(/^\/next/, '') || '/';
+  const target = req.originalUrl.replace(/^\/next/, '');
+
+  // Only a path that stays on this host is a target. `//host` and `\host` are read as a host by the
+  // browser, so a redirect to either would leave the app and could carry the visitor anywhere.
+  let decoded;
+  try {
+    decoded = decodeURIComponent(target);
+  } catch {
+    return res.status(400).json({ error: 'Invalid redirect target' });
+  }
+  const targetPath = decoded.split(/[?#]/)[0];
+  if (!/^\/(?!\/)./.test(targetPath) || targetPath.includes('\\') || /[\u0000-\u001f\u007f]/.test(decoded)) {
+    return res.status(400).json({ error: 'Invalid redirect target' });
+  }
+
   res.redirect(301, target);
 });
 
@@ -65,10 +80,155 @@ app.use((req, res, next) => {
   next();
 });
 
-// Helper function to get user data file path
-function getUserDataPath(userId) {
-  return path.join(__dirname, 'data', `${userId}.json`);
+// --- Identity and the data root -------------------------------------------------------------------
+
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.name = 'HttpError';
+    this.status = status;
+  }
 }
+
+/** The directory every store lives in. A deployment points GRND_DATA_DIR at a private volume. */
+function dataRoot() {
+  return process.env.GRND_DATA_DIR ? path.resolve(process.env.GRND_DATA_DIR) : path.join(__dirname, 'data');
+}
+
+// A user id names one file, so it may only carry the characters a file name keeps to itself.
+const USER_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+// The shared stores hold every account. A user id must never name one of them, or a plan read would
+// read the journal and a plan write would overwrite it.
+const SHARED_STORE_NAMES = new Set([
+  'user-profiles',
+  'workout-sessions',
+  'workout-drafts',
+  'training-plans',
+  'weekly-targets',
+  'exercise-catalogue',
+  'exercise-taxonomy',
+  'equipment',
+  'pillars'
+]);
+
+/** Why a route's userId may not become a file name, or `null` when it may. */
+function userIdRefusal(userId) {
+  if (typeof userId !== 'string' || !USER_ID_PATTERN.test(userId)) {
+    return 'userId must be 1 to 64 letters, digits, underscores or hyphens';
+  }
+  if (SHARED_STORE_NAMES.has(userId)) return 'userId must not name a shared store';
+  return null;
+}
+
+// Helper function to get user data file path. The path is built from a checked value only: a raw
+// request value never reaches the filesystem.
+function getUserDataPath(userId) {
+  const refusal = userIdRefusal(userId);
+  if (refusal) throw new HttpError(400, refusal);
+
+  const root = dataRoot();
+  const filePath = path.join(root, `${userId}.json`);
+  if (path.dirname(filePath) !== root) throw new HttpError(400, 'userId escapes the data root');
+  return filePath;
+}
+
+/**
+ * The Telegram WebApp initData, or `null` when it was not signed with this bot's token.
+ * The check string is every other field sorted by key as `key=value`; the key is HMAC(bot token,
+ * "WebAppData") and the signature is HMAC(that key, check string).
+ */
+function verifyInitData(raw) {
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+
+  let params;
+  try {
+    params = new URLSearchParams(raw);
+  } catch {
+    return null;
+  }
+
+  const hash = params.get('hash');
+  if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/i.test(hash)) return null;
+
+  const secret = process.env.GRND_TELEGRAM_BOT_TOKEN;
+  if (!secret) return null;
+
+  const pairs = [];
+  for (const [key, value] of params) {
+    if (key === 'hash') continue;
+    pairs.push([key, value]);
+  }
+  pairs.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  const checkString = pairs.map(([key, value]) => `${key}=${value}`).join('\n');
+
+  const key = crypto.createHmac('sha256', 'WebAppData').update(secret).digest();
+  const expected = crypto.createHmac('sha256', key).update(checkString).digest();
+  const received = Buffer.from(hash.toLowerCase(), 'hex');
+  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) return null;
+
+  const authDate = Number(params.get('auth_date'));
+  if (!Number.isFinite(authDate)) return null;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (nowSeconds - authDate > 24 * 60 * 60) return null;
+
+  let user;
+  try {
+    user = JSON.parse(params.get('user') || '');
+  } catch {
+    return null;
+  }
+  if (!user || typeof user !== 'object' || typeof user.id !== 'number' || !Number.isFinite(user.id)) return null;
+
+  return { user, authDate };
+}
+
+/** Every /api request carries one verified principal. Without a bot token there is nothing to verify. */
+function requirePrincipal(req, res, next) {
+  if (!process.env.GRND_TELEGRAM_BOT_TOKEN) {
+    return res.status(503).json({ error: 'Telegram bot token is not configured' });
+  }
+
+  const header = req.get('authorization') || '';
+  const match = /^tma\s+(.+)$/i.exec(header.trim());
+  if (!match) return res.status(401).json({ error: 'Missing Telegram initData' });
+
+  const verified = verifyInitData(match[1].trim());
+  if (!verified) return res.status(401).json({ error: 'Invalid Telegram initData' });
+
+  req.userId = String(verified.user.id);
+  req.telegramUser = verified.user;
+  next();
+}
+
+app.use('/api', requirePrincipal);
+
+// `/:userId` with an empty value does not reach its route; it still must answer 400, not 404.
+app.use('/api', (req, res, next) => {
+  if (!req.path.endsWith('/')) return next();
+  if (/^\/(workout-data|user-profile|workout-draft|workout-sessions|muscle-volume|pillars|suggestions)\/$/.test(req.path)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+  next();
+});
+
+/** A route's `:userId` must be the caller's own. 404, never 403: another account is not a fact here. */
+function requireOwnUserId(req, res, next) {
+  if (req.params.userId !== req.userId) return res.status(404).json({ error: 'Not found' });
+  next();
+}
+
+/** Refuse a malformed userId before any handler can build a path from it. */
+function validateUserIdParam(req, res, next) {
+  const refusal = userIdRefusal(req.params.userId);
+  if (refusal) return res.status(400).json({ error: 'Invalid userId', details: refusal });
+  next();
+}
+
+// Who the caller is, from the verified payload only.
+app.get('/api/me', (req, res) => {
+  res.json({ userId: req.userId });
+});
 
 // Validation functions for new PRD-compliant hierarchical data structure
 function validateTrainingPlan(plan) {
@@ -228,7 +388,7 @@ function validateExercise(exercise, weekNumber, dayNumber, exerciseNumber) {
 // API Endpoints
 
 // GET /api/workout-data/:userId - retrieve user's training plan data
-app.get('/api/workout-data/:userId', async (req, res) => {
+app.get('/api/workout-data/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const filePath = getUserDataPath(userId);
@@ -265,13 +425,14 @@ app.get('/api/workout-data/:userId', async (req, res) => {
       }
     }
   } catch (error) {
+    if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
     console.error('Error reading training plan data:', error);
     res.status(500).json({ error: 'Failed to retrieve training plan data' });
   }
 });
 
 // POST /api/workout-data/:userId - save user's training plan data
-app.post('/api/workout-data/:userId', async (req, res) => {
+app.post('/api/workout-data/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const trainingPlan = req.body;
@@ -307,6 +468,7 @@ app.post('/api/workout-data/:userId', async (req, res) => {
       lastUpdated: dataToSave.updatedAt
     });
   } catch (error) {
+    if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
     console.error('Error saving training plan data:', error);
     res.status(500).json({ error: 'Failed to save training plan data' });
   }
@@ -396,7 +558,7 @@ function validateUserId(req, res, next) {
 // GET /api/user-profile/:userId - retrieve user profile
 // Weekly working sets per muscle group, against the band in data/weekly-targets.json.
 // A kilogram total says nothing about whether a group got enough work; this answers that question.
-app.get('/api/muscle-volume/:userId', async (req, res) => {
+app.get('/api/muscle-volume/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const week = req.query.week || undefined;
@@ -416,9 +578,9 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
 });
 
 // The running workout, so a killed app resumes where it stopped.
-const draftFile = () => path.join(__dirname, 'data', 'workout-drafts.json');
+const draftFile = () => path.join(dataRoot(), 'workout-drafts.json');
 
-app.get('/api/workout-draft/:userId', async (req, res) => {
+app.get('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const draft = await getDraft(draftFile(), req.params.userId);
     if (!draft) return res.status(404).json({ error: 'No draft' });
@@ -429,7 +591,7 @@ app.get('/api/workout-draft/:userId', async (req, res) => {
   }
 });
 
-app.put('/api/workout-draft/:userId', async (req, res) => {
+app.put('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const body = req.body || {};
     if (!body.state || typeof body.state !== 'object') {
@@ -448,7 +610,7 @@ app.put('/api/workout-draft/:userId', async (req, res) => {
   }
 });
 
-app.delete('/api/workout-draft/:userId', async (req, res) => {
+app.delete('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     await removeDraft(draftFile(), req.params.userId);
     res.json({ success: true });
@@ -459,7 +621,7 @@ app.delete('/api/workout-draft/:userId', async (req, res) => {
 });
 
 // Weekly work per ability — pull, push, legs. A set counts once, by the movement of its exercise.
-app.get('/api/pillars/:userId', async (req, res) => {
+app.get('/api/pillars/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const week = req.query.week || undefined;
@@ -481,8 +643,8 @@ app.get('/api/pillars/:userId', async (req, res) => {
 app.post('/api/pairings', async (req, res) => {
   try {
     const body = req.body || {};
-    const catalogue = JSON.parse(await fs.readFile(path.join(__dirname, 'data', 'exercise-catalogue.json'), 'utf8'));
-    const equipmentFile = JSON.parse(await fs.readFile(path.join(__dirname, 'data', 'equipment.json'), 'utf8'));
+    const catalogue = JSON.parse(await fs.readFile(path.join(dataRoot(), 'exercise-catalogue.json'), 'utf8'));
+    const equipmentFile = JSON.parse(await fs.readFile(path.join(dataRoot(), 'equipment.json'), 'utf8'));
     const owned = (equipmentFile.items || []).filter((item) => item.available).map((item) => item.id);
     const selected = Array.isArray(body.selected) ? body.selected : [];
     // No limit unless the caller asks for one: the picker shows the whole ranked list.
@@ -502,7 +664,7 @@ app.post('/api/pairings', async (req, res) => {
 // The fixed list a plan picks from. An exercise is chosen by id, never typed.
 app.get('/api/exercise-catalogue', async (req, res) => {
   try {
-    const raw = await fs.readFile(path.join(__dirname, 'data', 'exercise-catalogue.json'), 'utf8');
+    const raw = await fs.readFile(path.join(dataRoot(), 'exercise-catalogue.json'), 'utf8');
     res.json(JSON.parse(raw));
   } catch (error) {
     console.error('Error reading the exercise catalogue:', error);
@@ -511,7 +673,7 @@ app.get('/api/exercise-catalogue', async (req, res) => {
 });
 
 // What to add this week: the short groups with exercises his own equipment can cover.
-app.get('/api/suggestions/:userId', async (req, res) => {
+app.get('/api/suggestions/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const week = req.query.week || undefined;
@@ -541,10 +703,10 @@ app.get('/api/suggestions/:userId', async (req, res) => {
   }
 });
 
-app.get('/api/user-profile/:userId', async (req, res) => {
+app.get('/api/user-profile/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
-    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+    const filePath = path.join(dataRoot(), 'user-profiles.json');
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
@@ -574,7 +736,7 @@ app.get('/api/user-profile/:userId', async (req, res) => {
 });
 
 // POST /api/user-profile/:userId - create/update profile
-app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
+app.post('/api/user-profile/:userId', validateUserIdParam, requireOwnUserId, validateUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const profile = req.body;
@@ -586,7 +748,7 @@ app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
       return res.status(400).json({ error: 'Invalid user profile structure', details: validationError.message });
     }
 
-    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+    const filePath = path.join(dataRoot(), 'user-profiles.json');
 
     const profiles = await updateJson(filePath, {}, (current) => ({
       ...current,
@@ -609,10 +771,10 @@ app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
 });
 
 // DELETE /api/user-profile/:userId - delete profile
-app.delete('/api/user-profile/:userId', async (req, res) => {
+app.delete('/api/user-profile/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
-    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+    const filePath = path.join(dataRoot(), 'user-profiles.json');
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
@@ -684,10 +846,11 @@ app.get('/api/training-plans', async (req, res) => {
   try {
     // The plans the user built are the file. A hard-coded sample used to be answered here, so the
     // screen showed two plans nobody had, with no days and no exercises, while the real ones sat on disk.
-    const raw = await fs.readFile(path.join(__dirname, 'data', 'training-plans.json'), 'utf8');
+    const raw = await fs.readFile(path.join(dataRoot(), 'training-plans.json'), 'utf8');
     const parsed = JSON.parse(raw);
     const plans = Array.isArray(parsed) ? parsed : (parsed.plans || []);
-    res.json(plans);
+    // Only the caller's own plans. A plan without an owner (the old shape) belongs to nobody.
+    res.json(plans.filter((plan) => plan && plan.userId === req.userId));
   } catch (error) {
     if (error.code === 'ENOENT') return res.json([]);
     console.error('Error retrieving training plans:', error);
@@ -756,6 +919,7 @@ app.get('/api/training-plans', async (req, res) => {
 
     const newPlan = {
       id: planId,
+      userId: req.userId,
       name: name.trim(),
       description: description || '',
       startDate: start.toISOString(),
@@ -765,7 +929,7 @@ app.get('/api/training-plans', async (req, res) => {
     };
 
     // Persist to data/training-plans.json (array)
-    const plansPath = path.join(__dirname, 'data', 'training-plans.json');
+    const plansPath = path.join(dataRoot(), 'training-plans.json');
     await updateJson(plansPath, [], (current) => [
       ...(Array.isArray(current) ? current : []),
       newPlan
@@ -788,13 +952,14 @@ app.put('/api/training-plans/:planId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid plan payload' });
     }
 
-    const plansPath = path.join(__dirname, 'data', 'training-plans.json');
+    const plansPath = path.join(dataRoot(), 'training-plans.json');
 
     // The editor sends the fields it renders. Merging by id keeps the ones it never sees, like
     // `dayOfWeek` on a day and `planId` on a week.
     const updatedPlan = await updateJson(plansPath, [], (current) => {
       const plans = Array.isArray(current) ? current : [];
-      const idx = plans.findIndex((plan) => plan.id === planId);
+      // Another account's plan is not a plan: same answer as a missing one, and nothing is written.
+      const idx = plans.findIndex((plan) => plan.id === planId && plan.userId === req.userId);
       if (idx === -1) {
         const missing = new Error('plan not found');
         missing.code = 'NOT_FOUND';
@@ -806,6 +971,7 @@ app.put('/api/training-plans/:planId', async (req, res) => {
         ...existingPlan,
         ...payload,
         id: existingPlan.id,
+        userId: req.userId,
         updatedAt: new Date().toISOString()
       };
       if (Array.isArray(payload.weeks)) {
@@ -830,22 +996,34 @@ app.put('/api/training-plans/:planId', async (req, res) => {
   }
 });
 
- // DELETE /api/training-plans/:planId - delete a training plan (mock implementation)
+ // DELETE /api/training-plans/:planId - delete the caller's plan
 app.delete('/api/training-plans/:planId', async (req, res) => {
   try {
     const { planId } = req.params;
+    const plansPath = path.join(dataRoot(), 'training-plans.json');
 
-    // In a real implementation this would remove the plan from a database.
-    // Since the current implementation returns static sample plans, just
-    // acknowledge the delete request with a success response.
-
-    console.log(`Received request to delete training plan: ${planId}`);
+    await updateJson(plansPath, [], (current) => {
+      const plans = Array.isArray(current) ? current : [];
+      const idx = plans.findIndex((plan) => plan.id === planId && plan.userId === req.userId);
+      if (idx === -1) {
+        const missing = new Error('plan not found');
+        missing.code = 'NOT_FOUND';
+        throw missing;
+      }
+      return plans.filter((_, index) => index !== idx);
+    });
 
     res.json({
       success: true,
-      message: `Training plan ${planId} deleted (mock).`
+      message: `Training plan ${planId} deleted.`
     });
   } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Training plan not found' });
+    }
+    if (error.name === 'StoreError') {
+      return res.status(500).json({ error: 'The plan file is damaged', details: error.message });
+    }
     console.error('Error deleting training plan:', error);
     res.status(500).json({ error: 'Failed to delete training plan' });
   }
@@ -927,7 +1105,7 @@ app.get('/health', (req, res) => {
 
 // Helper function to get workout sessions file path
 function getWorkoutSessionsPath() {
-  return path.join(__dirname, 'data', 'workout-sessions.json');
+  return path.join(dataRoot(), 'workout-sessions.json');
 }
 
 /**
@@ -943,7 +1121,7 @@ function journalSessions(parsed) {
 /** The bodyweight the profile carries, or `undefined` when it carries none. */
 async function readUserBodyweight(userId) {
   try {
-    const raw = await fs.readFile(path.join(__dirname, 'data', 'user-profiles.json'), 'utf8');
+    const raw = await fs.readFile(path.join(dataRoot(), 'user-profiles.json'), 'utf8');
     const profile = JSON.parse(raw)[userId];
     return profile && typeof profile.bodyweight === 'number' ? profile.bodyweight : undefined;
   } catch (error) {
@@ -1024,11 +1202,17 @@ app.post('/api/workout-session', async (req, res) => {
       return res.status(400).json({ error: 'Invalid workout session structure', details: validationError.message });
     }
 
+    // A session belongs to the verified caller; a body naming another account is refused.
+    if (sessionData.userId !== req.userId) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const userId = req.userId;
+
     // The volume comes from the sets that were done. Bodyweight work needs the body it moved, so a
     // missing profile is a refusal with a reason, never a silent zero.
     let computed;
     try {
-      const bodyweight = await readUserBodyweight(sessionData.userId);
+      const bodyweight = await readUserBodyweight(userId);
       computed = computeSessionVolume(sessionData.completedExercises, bodyweight);
     } catch (volumeError) {
       return res.status(400).json({ error: 'The session cannot be measured', details: volumeError.message });
@@ -1036,6 +1220,7 @@ app.post('/api/workout-session', async (req, res) => {
 
     const newSession = {
       ...sessionData,
+      userId,
       // Two saves in the same millisecond used to share one id, so a delete or a read hit both.
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       date: sessionData.date ? new Date(sessionData.date) : new Date(),
@@ -1069,7 +1254,7 @@ app.post('/api/workout-session', async (req, res) => {
 });
 
 // GET /api/workout-sessions/:userId - get all sessions for a user
-app.get('/api/workout-sessions/:userId', async (req, res) => {
+app.get('/api/workout-sessions/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const filePath = getWorkoutSessionsPath();
@@ -1122,8 +1307,8 @@ app.get('/api/workout-session/:sessionId', async (req, res) => {
         return res.status(500).json({ error: 'Invalid JSON format in workout sessions data' });
       }
 
-      // Find the specific session
-      const session = sessionsData.sessions.find(session => session.id === sessionId);
+      // Find the specific session. One of another account reads as missing, and says nothing about it.
+      const session = journalSessions(sessionsData).find(session => session.id === sessionId && session.userId === req.userId);
 
       if (!session) {
         return res.status(404).json({ error: 'Workout session not found' });
@@ -1153,7 +1338,9 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
     try {
       const removed = await updateJson(filePath, { sessions: [] }, (current) => {
         const sessions = journalSessions(current);
-        if (!sessions.some((session) => session.id === sessionId)) {
+        const target = sessions.find((session) => session.id === sessionId);
+        // A missing session and another account's session are one answer: 404, journal untouched.
+        if (!target || target.userId !== req.userId) {
           const missing = new Error('not found');
           missing.code = 'NOT_FOUND';
           throw missing;

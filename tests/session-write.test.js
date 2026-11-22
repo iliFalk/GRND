@@ -1,13 +1,33 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const SESSIONS_FILE = path.join(ROOT, 'data', 'workout-sessions.json');
-const TEST_USER_ID = 'test-session-write-user';
+const TEST_USER_ID = '987654321';
+// Every /api route now needs a verified Telegram principal, so the test signs its own initData.
+const TEST_BOT_TOKEN = 'test-token:session-write';
+
+function initData(userId) {
+  const params = new URLSearchParams({
+    auth_date: String(Math.floor(Date.now() / 1000)),
+    query_id: 'AAH-session-write',
+    user: JSON.stringify({ id: Number(userId), first_name: 'Test' })
+  });
+  const checkString = [...params.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+  const secret = crypto.createHmac('sha256', 'WebAppData').update(TEST_BOT_TOKEN).digest();
+  params.set('hash', crypto.createHmac('sha256', secret).update(checkString).digest('hex'));
+  return params.toString();
+}
+
+const authHeaders = () => ({ Authorization: `tma ${initData(TEST_USER_ID)}` });
 
 /** Ask the OS for a free port, then release it for the server to bind. */
 function freePort() {
@@ -24,7 +44,7 @@ function freePort() {
 function startServer(port) {
   return spawn(process.execPath, ['server.js'], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(port) },
+    env: { ...process.env, PORT: String(port), GRND_TELEGRAM_BOT_TOKEN: TEST_BOT_TOKEN },
     stdio: ['ignore', 'pipe', 'pipe']
   });
 }
@@ -92,7 +112,7 @@ test('a finished workout is written to the server', async (t) => {
   // must refuse the session with a reason instead of storing a silent zero.
   const bodyweightOnly = await fetch(`${baseUrl}/api/workout-session`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({
       userId: TEST_USER_ID,
       date: new Date().toISOString(),
@@ -123,7 +143,7 @@ test('a finished workout is written to the server', async (t) => {
 
   const res = await fetch(`${baseUrl}/api/workout-session`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(payload)
   });
 
@@ -133,7 +153,7 @@ test('a finished workout is written to the server', async (t) => {
   assert.ok(id !== undefined && id !== null && String(id) !== '', 'the answer carries an id');
 
   // The row really reached the store, not just the response.
-  const stored = await (await fetch(`${baseUrl}/api/workout-sessions/${TEST_USER_ID}`)).json();
+  const stored = await (await fetch(`${baseUrl}/api/workout-sessions/${TEST_USER_ID}`, { headers: authHeaders() })).json();
   assert.equal(stored.length, 1);
   assert.equal(stored[0].id, id);
 

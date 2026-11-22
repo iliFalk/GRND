@@ -300,7 +300,9 @@ test('AC37 initData is verified with the configured bot token', async (t) => {
 });
 
 test('AC38 without a bot token every /api route answers 503 instead of data', async (t) => {
-  const { baseUrl } = await fixture(t, { env: { GRND_TELEGRAM_BOT_TOKEN: undefined } });
+  // An empty string, not a deleted key: dotenv never overrides a key that is already defined, so the
+  // repository's own .env cannot smuggle a working token into this case.
+  const { baseUrl } = await fixture(t, { env: { GRND_TELEGRAM_BOT_TOKEN: '' } });
 
   const me = await call(baseUrl, 'GET', '/api/me', { authorization: `tma ${initData(OWN)}` });
   assert.equal(me.status, 503);

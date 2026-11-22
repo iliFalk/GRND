@@ -179,7 +179,10 @@ test('AC10 a userId that is too long, has a dot or a space answers 400 and creat
   // An empty value does not reach its route; it still must answer 400, not 404.
   assert.equal((await call(baseUrl, 'GET', '/api/user-profile/')).status, 400);
 
-  assert.equal(fs.existsSync(dataDir), false, 'no data root, directory or temp file was created');
+  // AC31 has the server create its data root at boot with mode 0700, so the root itself may exist. What
+  // must not exist is anything a refused id could have made: no file, no directory, no temp inside it.
+  const leftovers = fs.existsSync(dataDir) ? fs.readdirSync(dataDir) : [];
+  assert.deepEqual(leftovers, [], 'a refused userId created no file, directory or temp file');
 });
 
 test('AC11 a userId that names a shared store answers 400 and leaves the store', async (t) => {

@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const VolumeCalculator = require('./backend/utils/volumeCalculator');
 const MuscleVolume = require('./backend/utils/muscleVolume');
@@ -16,8 +17,35 @@ const { readJson, writeJson, updateJson, StoreError } = require('./backend/utils
 const { mergePlanWeeks } = require('./backend/utils/planMerge');
 require('dotenv').config();
 
+// The ceilings on what one request may grow. They sit beside the routes that read them.
+const MAX_PLANS_PER_PRINCIPAL = 50;
+const MAX_PLAN_WEEKS = 52;
+const MAX_EXERCISES_PER_SESSION = 50;
+const MAX_SETS_PER_EXERCISE = 50;
+const MAX_SESSION_NOTES = 2000;
+const MAX_PAIRING_SELECTION = 50;
+const MAX_DRAFT_STATE_BYTES = 64 * 1024;
+const MAX_DRAFTS_STORE_BYTES = 1024 * 1024;
+
+/** The plans one account holds. Without a verified principal every stored plan is that caller's. */
+function plansOf(plans, owner) {
+  return (Array.isArray(plans) ? plans : [])
+    .filter((plan) => plan && (plan.userId || null) === owner);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// The directory that holds the JSON stores: GRND_DATA_DIR when set, <repo>/data otherwise.
+function dataRoot() {
+  return process.env.GRND_DATA_DIR || path.join(__dirname, 'data');
+}
+
+// A local run has no uploads/ (the container creates it), so it is made here. The data root holds the
+// user's journal and drafts and belongs to its owner alone, hence 0700.
+const uploadsDir = path.join(__dirname, 'uploads');
+fsSync.mkdirSync(dataRoot(), { recursive: true, mode: 0o700 });
+fsSync.mkdirSync(uploadsDir, { recursive: true });
 
 // Middleware
 app.use(cors());
@@ -49,14 +77,83 @@ app.use('/next', (req, res, next) => {
   res.redirect(301, target);
 });
 
+// What may be stored and served from uploads/. The declared type and the name's extension must both
+// be on the list: a browser trusts the served type, so a `.png` that is really HTML is refused.
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+const MAX_UPLOADS_PER_PRINCIPAL = 20;
+const MAX_UPLOAD_BYTES_PER_PRINCIPAL = 50 * 1024 * 1024;
+const MAX_UPLOAD_INDEX_ENTRIES = 1000;
+
+const uploadsIndexFile = () => path.join(dataRoot(), 'uploads.json');
+
+/** The allowlisted extension of a name, lowercased, or `null` when it has none. */
+function allowedExtension(name) {
+  const extension = path.extname(typeof name === 'string' ? name : '').slice(1).toLowerCase();
+  return ALLOWED_IMAGE_EXTENSIONS.includes(extension) ? extension : null;
+}
+
+function uploadTypeError(message) {
+  const error = new Error(message);
+  error.code = 'INVALID_UPLOAD_TYPE';
+  error.status = 400;
+  return error;
+}
+
+/** The account an upload belongs to. Without a verified principal every upload is the one caller's. */
+function uploadOwner(req) {
+  return req.userId || null;
+}
+
+/** The files and bytes one principal already holds, from the index the route keeps. */
+async function uploadUsage(owner) {
+  const stored = await readJson(uploadsIndexFile(), []);
+  const entries = (Array.isArray(stored) ? stored : [])
+    .filter((entry) => entry && (entry.owner || null) === owner);
+  return {
+    count: entries.length,
+    bytes: entries.reduce((sum, entry) => sum + (Number(entry.size) || 0), 0)
+  };
+}
+
+/** Refuses the 21st file or the request that would carry the principal past 50 MB. */
+async function uploadQuota(req, res, next) {
+  try {
+    const usage = await uploadUsage(uploadOwner(req));
+    const declared = Number(req.headers['content-length']);
+    const wouldPass = Number.isFinite(declared) && usage.bytes + declared > MAX_UPLOAD_BYTES_PER_PRINCIPAL;
+    if (usage.count >= MAX_UPLOADS_PER_PRINCIPAL
+      || usage.bytes >= MAX_UPLOAD_BYTES_PER_PRINCIPAL
+      || wouldPass) {
+      return res.status(413).json({ error: 'Upload quota reached for this account' });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** Notes the accepted file, so the next request can count it. The index keeps the last 1000. */
+async function recordUpload(owner, file) {
+  await updateJson(uploadsIndexFile(), [], (current) => {
+    const entries = Array.isArray(current) ? current : [];
+    return [...entries, { name: file.filename, size: file.size, owner, at: Date.now() }]
+      .slice(-MAX_UPLOAD_INDEX_ENTRIES);
+  });
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
+    // The stored name is ours: a generated stem and an allowlisted extension. The caller's name is
+    // only inspected, never written, so it cannot choose a path or a type.
+    const extension = allowedExtension(file.originalname);
+    if (!extension) return cb(uploadTypeError('The file name must end in png, jpg, jpeg, webp or gif'));
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, `${file.fieldname || 'image'}-${uniqueSuffix}.${extension}`);
   }
 });
 
@@ -66,11 +163,13 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: function (req, file, cb) {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
+    if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+      return cb(uploadTypeError('Only PNG, JPEG, WebP and GIF images are allowed'));
     }
+    if (!allowedExtension(file.originalname)) {
+      return cb(uploadTypeError('The file name must end in png, jpg, jpeg, webp or gif'));
+    }
+    cb(null, true);
   }
 });
 
@@ -475,12 +574,13 @@ app.post('/api/workout-data/:userId', validateUserIdParam, requireOwnUserId, asy
 });
 
 // POST /api/upload-image - handle exercise image uploads
-app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+app.post('/api/upload-image', uploadQuota, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
 
+    await recordUpload(uploadOwner(req), req.file);
     const imageUrl = `/uploads/${req.file.filename}`;
 
     res.json({
@@ -597,13 +697,30 @@ app.put('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, asy
     if (!body.state || typeof body.state !== 'object') {
       return res.status(400).json({ error: 'A draft carries a state object' });
     }
-    const draft = await putDraft(draftFile(), req.params.userId, {
+    // A draft is a screen's worth of state. A larger one is not a draft, and the store holds every
+    // account's draft in one file, so it has a ceiling of its own.
+    const stateBytes = Buffer.byteLength(JSON.stringify(body.state));
+    if (stateBytes > MAX_DRAFT_STATE_BYTES) {
+      return res.status(413).json({ error: 'The draft state is larger than 64 KB' });
+    }
+    const draft = {
       mode: body.mode === 'amrap' ? 'amrap' : 'sets',
       elapsed: Number(body.elapsed) || 0,
-      state: body.state
+      state: body.state,
+      savedAt: Date.now()
+    };
+    const drafts = await readJson(draftFile(), {});
+    const nextStore = { ...(drafts && typeof drafts === 'object' ? drafts : {}), [req.params.userId]: draft };
+    if (Buffer.byteLength(JSON.stringify(nextStore)) > MAX_DRAFTS_STORE_BYTES) {
+      return res.status(413).json({ error: 'The drafts store would exceed 1 MB' });
+    }
+    const saved = await putDraft(draftFile(), req.params.userId, {
+      mode: draft.mode,
+      elapsed: draft.elapsed,
+      state: draft.state
     });
     // The client ignores the body; echoing the whole draft doubled the traffic of every save.
-    res.json({ savedAt: draft.savedAt });
+    res.json({ savedAt: saved.savedAt });
   } catch (error) {
     console.error('Error writing the workout draft:', error);
     res.status(500).json({ error: 'Failed to write the workout draft' });
@@ -643,10 +760,14 @@ app.get('/api/pillars/:userId', validateUserIdParam, requireOwnUserId, async (re
 app.post('/api/pairings', async (req, res) => {
   try {
     const body = req.body || {};
+    const selected = Array.isArray(body.selected) ? body.selected : [];
+    // The bound is answered before any file is read: a refusal must not depend on the data root.
+    if (selected.length > MAX_PAIRING_SELECTION) {
+      return res.status(400).json({ error: `selected must hold at most ${MAX_PAIRING_SELECTION} entries` });
+    }
     const catalogue = JSON.parse(await fs.readFile(path.join(dataRoot(), 'exercise-catalogue.json'), 'utf8'));
     const equipmentFile = JSON.parse(await fs.readFile(path.join(dataRoot(), 'equipment.json'), 'utf8'));
     const owned = (equipmentFile.items || []).filter((item) => item.available).map((item) => item.id);
-    const selected = Array.isArray(body.selected) ? body.selected : [];
     // No limit unless the caller asks for one: the picker shows the whole ranked list.
     const limit = Number.isFinite(body.limit) ? body.limit : 0;
     res.json({
@@ -812,34 +933,8 @@ app.delete('/api/user-profile/:userId', validateUserIdParam, requireOwnUserId, a
   }
 });
 
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Error:', error);
-
-  if (error instanceof multer.MulterError) {
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File too large' });
-    }
-    return res.status(400).json({ error: error.message });
-  }
-
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-
-// Serve uploaded files statically
-app.use('/uploads', express.static('uploads'));
-
-// Unsplash API key endpoint
-app.get('/api/unsplash-key', (req, res) => {
-  const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY;
-  
-  if (!unsplashAccessKey) {
-    return res.status(500).json({ error: 'Unsplash API key not configured' });
-  }
-  
-  res.json({ accessKey: unsplashAccessKey });
-});
+// `GET /api/unsplash-key` is gone: it answered a server secret to any caller. It falls through to the
+// 404 at the end of the stack now.
 
 // Training Plans endpoint
 app.get('/api/training-plans', async (req, res) => {
@@ -885,8 +980,16 @@ app.get('/api/training-plans', async (req, res) => {
       return res.status(400).json({ error: 'startDate cannot be in the past' });
     }
 
-    if (!Number.isInteger(durationWeeks) || durationWeeks < 1) {
-      return res.status(400).json({ error: 'durationWeeks must be an integer >= 1' });
+    if (!Number.isInteger(durationWeeks) || durationWeeks < 1 || durationWeeks > MAX_PLAN_WEEKS) {
+      return res.status(400).json({ error: `durationWeeks must be an integer between 1 and ${MAX_PLAN_WEEKS}` });
+    }
+
+    // The plan belongs to the principal that made it, and one account may hold 50.
+    const owner = req.userId || null;
+    const plansPath = path.join(dataRoot(), 'training-plans.json');
+    const held = plansOf(await readJson(plansPath, []), owner);
+    if (held.length >= MAX_PLANS_PER_PRINCIPAL) {
+      return res.status(400).json({ error: `An account holds at most ${MAX_PLANS_PER_PRINCIPAL} plans` });
     }
 
     // Generate IDs (simple timestamp-based ids to avoid adding a UUID dependency)
@@ -925,18 +1028,27 @@ app.get('/api/training-plans', async (req, res) => {
       startDate: start.toISOString(),
       durationWeeks,
       weeks,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      ...(owner ? { userId: owner } : {})
     };
 
-    // Persist to data/training-plans.json (array)
-    const plansPath = path.join(dataRoot(), 'training-plans.json');
-    await updateJson(plansPath, [], (current) => [
-      ...(Array.isArray(current) ? current : []),
-      newPlan
-    ]);
+    // Persist to the data root's training-plans.json (array). The cap is checked again inside the
+    // queued change: two creates that arrive together must not both slip past the count.
+    await updateJson(plansPath, [], (current) => {
+      const plans = Array.isArray(current) ? current : [];
+      if (plansOf(plans, owner).length >= MAX_PLANS_PER_PRINCIPAL) {
+        const full = new Error('plan limit');
+        full.code = 'PLAN_LIMIT';
+        throw full;
+      }
+      return [...plans, newPlan];
+    });
 
     res.status(201).json(newPlan);
   } catch (error) {
+    if (error.code === 'PLAN_LIMIT') {
+      return res.status(400).json({ error: `An account holds at most ${MAX_PLANS_PER_PRINCIPAL} plans` });
+    }
     console.error('Error creating training plan:', error);
     res.status(500).json({ error: 'Failed to create training plan' });
   }
@@ -953,6 +1065,12 @@ app.put('/api/training-plans/:planId', async (req, res) => {
     }
 
     const plansPath = path.join(dataRoot(), 'training-plans.json');
+
+    // A plan is at most 52 weeks. The merge keeps the incoming weeks, so the payload is the place to
+    // refuse one that would grow past the ceiling.
+    if (Array.isArray(payload.weeks) && payload.weeks.length > MAX_PLAN_WEEKS) {
+      return res.status(400).json({ error: `A plan holds at most ${MAX_PLAN_WEEKS} weeks` });
+    }
 
     // The editor sends the fields it renders. Merging by id keeps the ones it never sees, like
     // `dayOfWeek` on a day and `planId` on a week.
@@ -1072,30 +1190,29 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
- // Telegram webhook endpoint for Telegram Bot updates
- const TELEGRAM_SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN || '';
+// Telegram webhook endpoint for Telegram Bot updates
+app.post('/telegram-webhook', (req, res) => {
+  const secret = process.env.TELEGRAM_SECRET_TOKEN || '';
 
- app.post('/telegram-webhook', (req, res) => {
-   // If a secret token is configured, verify the incoming request contains it.
-   if (TELEGRAM_SECRET_TOKEN) {
-     const received = req.get('X-Telegram-Bot-Api-Secret-Token') || req.get('x-telegram-bot-api-secret-token');
-     if (received !== TELEGRAM_SECRET_TOKEN) {
-       console.warn('Unauthorized Telegram webhook request - invalid secret token');
-       return res.status(401).send('Unauthorized');
-     }
-   }
+  // Without a secret the endpoint cannot tell Telegram from anyone else, so it does not pretend to.
+  if (!secret) {
+    console.warn('Telegram webhook: TELEGRAM_SECRET_TOKEN is not configured');
+    return res.status(503).send('Webhook not configured');
+  }
 
-   // Acknowledge quickly to Telegram and log the update for further processing
-   try {
-     console.log('Telegram update received:', JSON.stringify(req.body));
-     // TODO: add processing logic here (e.g., route to handlers that respond to messages/commands)
-   } catch (err) {
-     console.error('Error processing Telegram update:', err);
-   }
+  const received = req.get('X-Telegram-Bot-Api-Secret-Token') || '';
+  if (received !== secret) {
+    console.warn('Unauthorized Telegram webhook request - invalid secret token');
+    return res.status(401).send('Unauthorized');
+  }
 
-   // Telegram requires a quick 200 OK response for webhook updates
-   res.status(200).send('OK');
- });
+  // The update body carries whatever the sender wrote, so only its id is logged.
+  const updateId = req.body && req.body.update_id;
+  if (updateId !== undefined) console.log(`Telegram update ${updateId} received`);
+
+  // Telegram requires a quick 200 OK response for webhook updates
+  res.status(200).send('OK');
+});
 
  // Start server
  app.listen(PORT, () => {
@@ -1151,6 +1268,10 @@ function validateWorkoutSession(session) {
     throw new Error('completedExercises is required and must be an array');
   }
 
+  if (session.completedExercises.length > MAX_EXERCISES_PER_SESSION) {
+    throw new Error(`A session holds at most ${MAX_EXERCISES_PER_SESSION} exercises`);
+  }
+
   for (const exercise of session.completedExercises) {
     if (!exercise || typeof exercise !== 'object') {
       throw new Error('Each exercise in completedExercises must be an object');
@@ -1164,6 +1285,10 @@ function validateWorkoutSession(session) {
 
     if (!Array.isArray(exercise.sets)) {
       throw new Error('Each exercise must have a sets array');
+    }
+
+    if (exercise.sets.length > MAX_SETS_PER_EXERCISE) {
+      throw new Error(`An exercise holds at most ${MAX_SETS_PER_EXERCISE} sets`);
     }
 
     for (const set of exercise.sets) {
@@ -1183,6 +1308,10 @@ function validateWorkoutSession(session) {
 
   if (session.notes !== undefined && typeof session.notes !== 'string') {
     throw new Error('notes must be a string if provided');
+  }
+
+  if (typeof session.notes === 'string' && session.notes.length > MAX_SESSION_NOTES) {
+    throw new Error(`notes holds at most ${MAX_SESSION_NOTES} characters`);
   }
 
   return true;
@@ -1366,4 +1495,34 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
     console.error('Error deleting workout session:', error);
     res.status(500).json({ error: 'Failed to delete workout session' });
   }
+});
+
+// Uploaded files are served after every route above, so nothing here can shadow an `/api` path. The
+// browser is told not to guess the type, and only the four image types are rendered inline; anything
+// else is a download.
+app.use('/uploads', express.static(uploadsDir, {
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const extension = allowedExtension(filePath);
+    res.setHeader('Content-Disposition', extension ? 'inline' : 'attachment');
+  }
+}));
+
+// The last middleware of the stack: a route above that throws answers here, so an `/api` caller always
+// gets JSON rather than Express's HTML error page.
+app.use((error, req, res, next) => {
+  console.error('Error:', error);
+
+  if (error.code === 'INVALID_UPLOAD_TYPE') {
+    return res.status(400).json({ error: error.message });
+  }
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large' });
+    }
+    return res.status(400).json({ error: error.message });
+  }
+
+  res.status(500).json({ error: 'Internal server error' });
 });

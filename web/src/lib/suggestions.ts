@@ -1,3 +1,5 @@
+import { apiFetch } from './api';
+
 export type GroupStatus = 'below' | 'in' | 'above' | 'high' | 'unknown';
 
 export interface TargetBand {
@@ -106,7 +108,7 @@ export function getDashboardState(userId: string): DashboardState {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await apiFetch(url);
   if (!response.ok) throw new Error(`${url} returned ${response.status}`);
   return (await response.json()) as T;
 }

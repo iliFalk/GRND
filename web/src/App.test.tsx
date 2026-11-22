@@ -1,7 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import App from './App';
+import { currentUserId } from './lib/api';
 import { loadPillars } from './lib/pillars';
+
+const SIGNED = 'auth_date=1763884800&hash=ab12&user=%7B%22id%22%3A931142831%7D';
+const USER_ID = '931142831';
 
 const pillars = {
   week_start: '2026-11-16',
@@ -58,11 +62,17 @@ afterEach(() => {
 });
 
 it('renders the three pillars with their progress', async () => {
+  // Inside Telegram the identity comes from the server, so the page carries the signed string only.
+  vi.stubGlobal('window', { Telegram: { WebApp: { initData: SIGNED } } });
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      const payload = url.includes('/api/pillars/') ? pillars : catalogue;
+      const payload = url.includes('/api/me')
+        ? { userId: USER_ID }
+        : url.includes('/api/pillars/')
+          ? pillars
+          : catalogue;
       return new Response(JSON.stringify(payload), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
@@ -70,7 +80,8 @@ it('renders the three pillars with their progress', async () => {
     })
   );
 
-  await loadPillars('default-user');
+  await currentUserId();
+  await loadPillars(USER_ID);
   const html = renderToString(<App />);
 
   expect(html).toContain('Pull');
@@ -79,4 +90,12 @@ it('renders the three pillars with their progress', async () => {
   expect(html).toContain('6 more');
   expect(html).toContain('12 more');
   expect(html).toContain('2 short');
+});
+
+it('outside Telegram the app asks for the client instead of reading an account', () => {
+  // No window at all: no signed string, so no account — and the shell says which client to open in.
+  const html = renderToString(<App />);
+
+  expect(html).toContain('Open this inside Telegram');
+  expect(html).not.toContain('Pull');
 });

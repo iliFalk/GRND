@@ -7,6 +7,8 @@ interface TelegramWebAppUser {
 }
 
 interface TelegramWebApp {
+  /** The raw signed string the server verifies on every call. */
+  initData?: string;
   initDataUnsafe?: {
     user?: TelegramWebAppUser;
   };
@@ -28,5 +30,4 @@ interface Window {
   Telegram?: {
     WebApp?: TelegramWebApp;
   };
-  __GRND_USER_ID__?: string | number;
 }

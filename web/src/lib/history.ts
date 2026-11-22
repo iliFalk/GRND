@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from './api';
 
 export interface HistorySet {
   reps: number;
@@ -136,7 +137,7 @@ export function useHistory(userId: string) {
   const reload = useCallback(async () => {
     setState((previous) => ({ ...previous, loading: true, error: null }));
     try {
-      const response = await fetch(`/api/workout-sessions/${encodeURIComponent(userId)}`);
+      const response = await apiFetch(`/api/workout-sessions/${encodeURIComponent(userId)}`);
       if (!response.ok) throw new Error(await reasonFor(response));
       const payload: unknown = await response.json();
       const sessions = Array.isArray(payload) ? (payload as HistorySession[]) : [];
@@ -164,7 +165,7 @@ export function useHistory(userId: string) {
 
   const remove = useCallback(
     async (sessionId: string) => {
-      const response = await fetch(`/api/workout-session/${encodeURIComponent(sessionId)}`, {
+      const response = await apiFetch(`/api/workout-session/${encodeURIComponent(sessionId)}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error(await reasonFor(response));

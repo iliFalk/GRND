@@ -13,7 +13,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY server.js ./
 COPY backend ./backend
-COPY dist ./dist
+# The bundle comes from the build stage: `dist/` is ignored by git, so a clean clone has none.
+COPY --from=build /app/dist ./dist
 COPY data ./data
 COPY design ./design
 COPY docs ./docs

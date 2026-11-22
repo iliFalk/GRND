@@ -65,3 +65,35 @@ test('test_a_finished_workout_leaves_no_draft', async () => {
 test('test_a_missing_file_answers_nothing_instead_of_throwing', async () => {
   assert.equal(await getDraft('/tmp/grnd-nonexistent-drafts.json', 'u1'), null);
 });
+
+test('test_five_drafts_saved_at_once_all_land', async () => {
+  // Without the queue four of five saves were lost and three callers got a 500.
+  const file = tempFile();
+  const now = 1_700_000_000_000;
+
+  const answers = await Promise.allSettled(
+    ['a', 'b', 'c', 'd', 'e'].map((user) => putDraft(file, user, draft(user), now))
+  );
+
+  assert.deepEqual(answers.map((answer) => answer.status), [
+    'fulfilled',
+    'fulfilled',
+    'fulfilled',
+    'fulfilled',
+    'fulfilled'
+  ]);
+  assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(file, 'utf8'))).sort(), ['a', 'b', 'c', 'd', 'e']);
+});
+
+test('test_a_damaged_draft_file_is_moved_aside_not_overwritten', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grnd-drafts-'));
+  const file = path.join(dir, 'workout-drafts.json');
+  fs.writeFileSync(file, '{"u1":{"mode":"sets"');
+
+  await putDraft(file, 'u2', draft('b'), 1_700_000_000_000);
+
+  const aside = fs.readdirSync(dir).filter((name) => name.includes('.corrupt-'));
+  assert.equal(aside.length, 1);
+  assert.equal(fs.readFileSync(path.join(dir, aside[0]), 'utf8'), '{"u1":{"mode":"sets"');
+  assert.equal((await getDraft(file, 'u2', 1_700_000_001_000)).state.marker, 'b');
+});

@@ -75,7 +75,7 @@ function weeklyPillars(sessions, options = {}) {
   const dayOf = new Map(days.map((day) => [day.date, day]));
 
   for (const session of MuscleVolume.sessionList(sessions)) {
-    if (wantedUser && session.userId && String(session.userId) !== wantedUser) continue;
+    if (wantedUser && String(session.userId || '') !== wantedUser) continue;
     const date = MuscleVolume.sessionDate(session);
     if (!date || date < bounds.start || date >= bounds.end) continue;
 

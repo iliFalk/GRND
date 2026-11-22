@@ -482,7 +482,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               </span>
             </div>
             <div className="arc-readout arc-readout--center">
-              <span className="arc-readout__label">Sets</span>
+              <span className="arc-readout__label">Reps</span>
               <span className="arc-readout__value">{exercise?.counter ?? 0}</span>
             </div>
             <div className="flex justify-center gap-3">

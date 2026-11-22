@@ -32,7 +32,10 @@ function queued(file, work) {
 }
 
 async function writeAtomic(file, data) {
-  const temp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  // The pid and the millisecond are not enough: a second write inside the same millisecond picked the
+  // same temp file, the first rename ate it and the second failed with ENOENT.
+  const stamp = Math.random().toString(36).slice(2, 8);
+  const temp = `${file}.${process.pid}.${Date.now()}.${stamp}.tmp`;
   await fs.writeFile(temp, JSON.stringify(data, null, 2));
   await fs.rename(temp, file);
 }

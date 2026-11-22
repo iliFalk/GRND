@@ -403,7 +403,7 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
     let sessions = [];
     try {
       const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
-      sessions = JSON.parse(data).sessions || [];
+      sessions = journalSessions(JSON.parse(data));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
@@ -466,7 +466,7 @@ app.get('/api/pillars/:userId', async (req, res) => {
     let sessions = [];
     try {
       const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
-      sessions = JSON.parse(data).sessions || [];
+      sessions = journalSessions(JSON.parse(data));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
@@ -519,7 +519,7 @@ app.get('/api/suggestions/:userId', async (req, res) => {
     let sessions = [];
     try {
       const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
-      sessions = JSON.parse(data).sessions || [];
+      sessions = journalSessions(JSON.parse(data));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
@@ -930,6 +930,16 @@ function getWorkoutSessionsPath() {
   return path.join(__dirname, 'data', 'workout-sessions.json');
 }
 
+/**
+ * The sessions of a journal, whichever of its two shapes the file has: a plain array (the oldest form)
+ * or `{ schema, sessions }`. A file that reads as neither has no sessions rather than a crash.
+ */
+function journalSessions(parsed) {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && Array.isArray(parsed.sessions)) return parsed.sessions;
+  return [];
+}
+
 /** The bodyweight the profile carries, or `undefined` when it carries none. */
 async function readUserBodyweight(userId) {
   try {
@@ -1041,10 +1051,10 @@ app.post('/api/workout-session', async (req, res) => {
     // One queued read-change-write: two saves that arrive together must both land, and a damaged
     // journal must stop here instead of being overwritten with a single session.
     await updateJson(getWorkoutSessionsPath(), { sessions: [] }, (current) => ({
-      ...current,
-      // The shape of the records, so a later reader can tell an old row from a new one.
+      // A file in the oldest shape is an array; spreading it into an object numbered the sessions and
+      // hid them from every report.
       schema: 2,
-      sessions: [...(Array.isArray(current.sessions) ? current.sessions : []), newSession]
+      sessions: [...journalSessions(current), newSession]
     }));
 
     res.json({
@@ -1079,7 +1089,7 @@ app.get('/api/workout-sessions/:userId', async (req, res) => {
       }
 
       // Filter sessions for the specific user
-      const userSessions = sessionsData.sessions.filter(session => session.userId === userId);
+      const userSessions = journalSessions(sessionsData).filter(session => session.userId === userId);
 
       res.json(userSessions);
     } catch (error) {
@@ -1142,13 +1152,13 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
 
     try {
       const removed = await updateJson(filePath, { sessions: [] }, (current) => {
-        const sessions = Array.isArray(current.sessions) ? current.sessions : [];
+        const sessions = journalSessions(current);
         if (!sessions.some((session) => session.id === sessionId)) {
           const missing = new Error('not found');
           missing.code = 'NOT_FOUND';
           throw missing;
         }
-        return { ...current, sessions: sessions.filter((session) => session.id !== sessionId) };
+        return { schema: 2, sessions: sessions.filter((session) => session.id !== sessionId) };
       });
 
 

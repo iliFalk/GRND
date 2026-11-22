@@ -28,7 +28,7 @@ AC20  WHEN `/uploads` answers THE SYSTEM SHALL send `X-Content-Type-Options: nos
 AC21  WHEN a principal holds 20 files or 50 MB in `uploads/` THE SYSTEM SHALL answer `413`.
 AC22  WHEN `/next` is requested with a target that does not begin with a single `/` followed by a non-`/` character THE SYSTEM SHALL answer `400`.
 AC23  WHEN any `/api` route throws THE SYSTEM SHALL answer JSON with status `500` from the last error middleware.
-AC24  WHEN `GET /api/unsplash-key` is requested THE SYSTEM SHALL answer `404`.
+AC24  WHEN a verified principal requests `GET /api/unsplash-key` THE SYSTEM SHALL answer `404`; without a verified principal the route SHALL answer `401` like every other `/api` route.  <!-- amended after the identity lane merged: the auth layer answers first, so an unauthenticated call cannot reach the deleted route -->
 AC25  WHEN `POST /telegram-webhook` arrives without the configured secret THE SYSTEM SHALL answer `401`.
 AC26  WHEN `POST /telegram-webhook` arrives while no secret is configured THE SYSTEM SHALL answer `503`.
 AC27  WHEN `POST /telegram-webhook` is answered THE SYSTEM SHALL NOT write the update body to the log.

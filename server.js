@@ -709,7 +709,15 @@ app.put('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, asy
       state: body.state,
       savedAt: Date.now()
     };
-    const drafts = await readJson(draftFile(), {});
+    // A damaged file reads as empty here: putDraft moves it aside and rewrites it, which is the point
+    // of that recovery. Failing the request would leave the damage in place forever.
+    let drafts = {};
+    try {
+      drafts = await readJson(draftFile(), {});
+    } catch (error) {
+      if (error.name !== 'StoreError') throw error;
+      console.warn('drafts: the store is damaged, the save repairs it');
+    }
     const nextStore = { ...(drafts && typeof drafts === 'object' ? drafts : {}), [req.params.userId]: draft };
     if (Buffer.byteLength(JSON.stringify(nextStore)) > MAX_DRAFTS_STORE_BYTES) {
       return res.status(413).json({ error: 'The drafts store would exceed 1 MB' });

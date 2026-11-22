@@ -38,6 +38,14 @@
       "child": ".arc-listbox__option"
     }
   ],
+  "control-height": [
+    {
+      "selector": ".arc-btn",
+      "heights": [
+        "--arc-control-height-m"
+      ]
+    }
+  ],
   "columns": [
     {
       "grid": ".arc-table",
@@ -71,6 +79,11 @@
   "truncate": [
     {
       "scope": "main .arc-item__title, main .arc-chip, main .arc-micro"
+    }
+  ],
+  "loss": [
+    {
+      "scope": "main p, main span, main h1, main h2, main h3"
     }
   ],
   "snapshot": {

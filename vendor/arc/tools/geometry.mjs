@@ -6,6 +6,10 @@
 //   node geometry.mjs --url ... --save base.json          # record boxes and findings
 //   node geometry.mjs --url ... --compare base.json       # what moved since then
 //   node geometry.mjs --url ... --explain                 # how many elements each rule reached
+//   node geometry.mjs --url ... --dir rtl                 # the same contract, right to left
+//   node geometry.mjs --url ... --state density=compact   # a root attribute, before measuring
+//   node geometry.mjs --url ... --box ".panel=280"        # one container narrower than the viewport
+//   node geometry.mjs --url ... --stress                  # WCAG 1.4.12 text spacing
 //
 // The frame audit answers "does anything leave the frame, is a target too small". It says nothing about
 // whether the parts sit on their places: a 20 px inset beside a 16 px one, a 112 px foot, a table row whose
@@ -56,14 +60,31 @@ const allow = list('allow').map(Number);
 const clicks = list('click');
 const tolerance = Number(arg('tolerance', 0.6));
 const explain = flag('explain');
+const asJson = flag('json');
 const savePath = arg('save', '');
 const comparePath = arg('compare', '');
 const settle = Number(arg('settle', 700));
+const dir = String(arg('dir', '')).toLowerCase();
+const stress = flag('stress');
+const states = list('state')
+  .map((pair) => {
+    const at = pair.indexOf('=');
+    return at === -1 ? [pair, ''] : [pair.slice(0, at), pair.slice(at + 1)];
+  })
+  .filter(([key]) => key);
+const boxes = list('box')
+  .map((pair) => {
+    const at = pair.lastIndexOf('=');
+    if (at === -1) return null;
+    const px = Number(pair.slice(at + 1));
+    return Number.isFinite(px) && px > 0 ? [pair.slice(0, at), px] : null;
+  })
+  .filter(Boolean);
 
 const contractPath = arg('contract', '');
 const contract = contractPath ? JSON.parse(readFileSync(String(contractPath), 'utf8')) : null;
 
-const KNOWN_RULES = ['inset', 'centre', 'padding', 'columns', 'rows', 'rhythm', 'truncate', 'overlap', 'snapshot'];
+const KNOWN_RULES = ['inset', 'centre', 'padding', 'columns', 'rows', 'rhythm', 'truncate', 'overlap', 'snapshot', 'radius', 'gaps', 'align', 'baseline', 'square', 'measure', 'structure', 'centre-in', 'concentric', 'loss', 'hierarchy', 'control-height'];
 if (contract) {
   for (const key of Object.keys(contract)) {
     if (key.startsWith('_') || key === 'steps' || key === 'allow') continue;
@@ -170,7 +191,7 @@ const probe = `(() => {
     el.remove();
     return +px.toFixed(2);
   };
-  const vars = TOKENS.length ? TOKENS : (CONTRACT && CONTRACT.steps) || ['--arc-space-1','--arc-space-2','--arc-space-3','--arc-space-4','--arc-space-5','--arc-space-6','--arc-space-8'];
+  const vars = TOKENS.length ? TOKENS : (CONTRACT && CONTRACT.steps) || ['--arc-space-1','--arc-space-2','--arc-space-3','--arc-space-4','--arc-space-5','--arc-space-6','--arc-space-8','--arc-space-10','--arc-space-12','--arc-control-height-m','--arc-control-height-l'];
   const steps = new Set([0, 1, 2, ...ALLOW]);
   for (const v of vars) {
     const px = resolve(v);
@@ -226,6 +247,21 @@ const probe = `(() => {
     }
   };
 
+  const SIDE_KEY = {
+    top: 'paddingTop',
+    right: 'paddingRight',
+    bottom: 'paddingBottom',
+    left: 'paddingLeft',
+    'block-start': 'paddingTop',
+    'block-end': 'paddingBottom',
+  };
+  const sideKey = (side, rtl) => {
+    if (SIDE_KEY[side]) return SIDE_KEY[side];
+    if (side === 'start') return rtl ? 'paddingRight' : 'paddingLeft';
+    if (side === 'end') return rtl ? 'paddingLeft' : 'paddingRight';
+    return null;
+  };
+
   const paddingRule = (rule) => {
     const min = resolve(rule.min);
     for (const el of document.querySelectorAll(rule.selector)) {
@@ -233,8 +269,13 @@ const probe = `(() => {
       if (!painted(el)) continue;
       if (el.getBoundingClientRect().width < 60) continue;
       const style = getComputedStyle(el);
+      const rtl = style.direction === 'rtl';
       for (const side of rule.sides || ['top', 'left']) {
-        const key = 'padding' + side[0].toUpperCase() + side.slice(1);
+        const key = sideKey(side, rtl);
+        if (!key) {
+          notes.push('padding: unknown side "' + side + '" on ' + name(el));
+          continue;
+        }
         const value = parseFloat(style[key]);
         if (Number.isFinite(value) && value + TOL < min) {
           findings.push({ rule: 'padding', at: name(el), detail: side + ' ' + value.toFixed(2) + 'px is under ' + rule.min + ' (' + min.toFixed(2) + 'px)' });
@@ -282,15 +323,39 @@ const probe = `(() => {
     }
   };
 
+  // A list's rows share a height. With by: text-lines the comparison is per line count, because a row whose
+  // label wraps is legitimately taller: a reader who raises text spacing must not lose the label to keep the
+  // list level.
   const rowsRule = (rule) => {
     for (const container of document.querySelectorAll(rule.container)) {
       mark('rows', 1);
       const group = [...container.querySelectorAll(rule.child)].filter(painted);
       if (group.length < 3) continue;
-      const heights = group.map((el) => +el.getBoundingClientRect().height.toFixed(1));
-      const spread = Math.max(...heights) - Math.min(...heights);
-      if (spread > 1.1) {
-        findings.push({ rule: 'rows', at: name(group[0]), detail: 'heights differ by ' + spread.toFixed(1) + 'px: ' + heights.join(' / ') });
+      let buckets = [group];
+      if (rule.by === 'text-lines') {
+        const lines = (el) => {
+          const leaves = [...el.querySelectorAll('*')].filter((node) => node.children.length === 0 && (node.textContent || '').trim().length > 2);
+          const leaf = leaves.sort((a, b) => (b.textContent || '').length - (a.textContent || '').length)[0];
+          if (!leaf) return '1';
+          const style = getComputedStyle(leaf);
+          const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
+          if (!line) return '1';
+          return String(Math.max(1, Math.round(leaf.getBoundingClientRect().height / line)));
+        };
+        const map = new Map();
+        for (const row of group) {
+          const key = lines(row);
+          map.set(key, [...(map.get(key) || []), row]);
+        }
+        buckets = [...map.values()];
+      }
+      for (const bucket of buckets) {
+        if (bucket.length < 2) continue;
+        const heights = bucket.map((el) => +el.getBoundingClientRect().height.toFixed(1));
+        const spread = Math.max(...heights) - Math.min(...heights);
+        if (spread > 1.1) {
+          findings.push({ rule: 'rows', at: name(bucket[0]), detail: 'heights differ by ' + spread.toFixed(1) + 'px: ' + heights.join(' / ') });
+        }
       }
     }
   };
@@ -306,6 +371,274 @@ const probe = `(() => {
       if (style.overflow !== 'hidden' && style.overflowX !== 'hidden' && style.textOverflow !== 'ellipsis') continue;
       if (el.scrollWidth > el.clientWidth + 1) {
         findings.push({ rule: 'truncate', at: name(el), detail: 'text cut: ' + el.scrollWidth + ' > ' + el.clientWidth + ' px — "' + text.slice(0, 40) + '"' });
+      }
+    }
+  };
+
+  const radiusRule = (rule) => {
+    const allow = (rule.allow || ['0px']).map(String);
+    for (const el of document.querySelectorAll(rule.scope)) {
+      mark('radius', 1);
+      if (!painted(el)) continue;
+      const style = getComputedStyle(el);
+      const corners = [style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomRightRadius, style.borderBottomLeftRadius];
+      for (const value of corners) {
+        const simple = value.split(' ')[0];
+        if (allow.includes(simple)) continue;
+        if (rule.circle && value.includes('%')) continue;
+        findings.push({ rule: 'radius', at: name(el), detail: 'corner ' + simple + ' is not one of ' + allow.join(' / ') });
+        break;
+      }
+    }
+  };
+
+  // A nested corner is concentric when outer radius minus the distance from the outer edge equals the
+  // inner radius. Two boxes with the same radius inside padding look wrong, and nothing else reports it.
+  const corners = (style) => ({
+    'top-left': style.borderTopLeftRadius,
+    'top-right': style.borderTopRightRadius,
+    'bottom-right': style.borderBottomRightRadius,
+    'bottom-left': style.borderBottomLeftRadius,
+  });
+
+  // A control is a declared height: a button, a field, a row. One pixel of drift in a border or a leading
+  // makes a row of controls look broken, and every rule above reads relations, not absolute heights.
+  const controlHeightRule = (rule) => {
+    const heights = (rule.heights || []).map((token) => resolve(token)).filter((value) => value > 0);
+    if (!heights.length) {
+      notes.push('control-height: no height resolved for ' + (rule.selector || '?'));
+      return;
+    }
+    const tol = rule.tolerance || TOL;
+    for (const el of document.querySelectorAll(rule.selector)) {
+      mark('control-height', 1);
+      if (!painted(el)) continue;
+      const height = +el.getBoundingClientRect().height.toFixed(1);
+      if (rule.mode === 'min') {
+        const low = Math.min(...heights);
+        if (height + tol < low) {
+          findings.push({ rule: 'control-height', at: name(el), detail: 'height ' + height.toFixed(1) + 'px is under ' + low.toFixed(1) + 'px' });
+        }
+        continue;
+      }
+      if (!heights.some((value) => Math.abs(value - height) <= tol)) {
+        findings.push({ rule: 'control-height', at: name(el), detail: 'height ' + height.toFixed(1) + 'px is not ' + heights.map((value) => value.toFixed(1) + 'px').join(' or ') });
+      }
+    }
+  };
+
+  const concentricRule = (rule) => {
+    for (const parent of document.querySelectorAll(rule.parent)) {
+      if (!painted(parent)) continue;
+      const kids = [...parent.querySelectorAll(rule.child || ':scope > *')].filter(painted);
+      if (!kids.length) continue;
+      mark('concentric', kids.length);
+      const outerStyle = getComputedStyle(parent);
+      const outer = corners(outerStyle);
+      const pb = parent.getBoundingClientRect();
+      for (const kid of kids) {
+        const inner = corners(getComputedStyle(kid));
+        const kb = kid.getBoundingClientRect();
+        const inset = {
+          'top-left': Math.min(kb.left - pb.left, kb.top - pb.top),
+          'top-right': Math.min(pb.right - kb.right, kb.top - pb.top),
+          'bottom-right': Math.min(pb.right - kb.right, pb.bottom - kb.bottom),
+          'bottom-left': Math.min(kb.left - pb.left, pb.bottom - kb.bottom),
+        };
+        for (const corner of Object.keys(outer)) {
+          const out = outer[corner].split(' ')[0];
+          const inside = inner[corner].split(' ')[0];
+          // a percentage corner is a pill or a circle: it has no numeric answer to compare
+          if (out.includes('%') || inside.includes('%')) continue;
+          const outerPx = parseFloat(out) || 0;
+          const innerPx = parseFloat(inside) || 0;
+          if (outerPx === 0 && innerPx === 0) continue;
+          const gap = +Math.max(0, inset[corner]).toFixed(1);
+          const expected = +Math.max(0, outerPx - gap).toFixed(1);
+          if (Math.abs(innerPx - expected) > (rule.tolerance || 1)) {
+            findings.push({
+              rule: 'concentric',
+              at: name(parent) + ' > ' + name(kid),
+              detail: corner + ': inner ' + innerPx.toFixed(1) + 'px, outer ' + outerPx.toFixed(1) + 'px minus ' + gap.toFixed(1) + 'px inset = ' + expected.toFixed(1) + 'px',
+            });
+            break;
+          }
+        }
+      }
+    }
+  };
+
+  // Content lost, not merely shortened: a text leaf clipped by its own box in the block direction.
+  // An intentional line clamp is not a loss, so a declared clamp is skipped.
+  const lossRule = (rule) => {
+    for (const el of document.querySelectorAll(rule.scope || rule.selector)) {
+      mark('loss', 1);
+      if (!painted(el)) continue;
+      if (el.children.length > 0) continue;
+      const text = (el.textContent || '').trim();
+      if (text.length < 4) continue;
+      const style = getComputedStyle(el);
+      const clamp = style.webkitLineClamp || style.lineClamp;
+      if (clamp && clamp !== 'none') continue;
+      const clipped = style.overflow === 'hidden' || style.overflow === 'clip' || style.overflowY === 'hidden' || style.overflowY === 'clip';
+      if (!clipped) continue;
+      if (el.scrollHeight > el.clientHeight + 1) {
+        findings.push({ rule: 'loss', at: name(el), detail: 'text cut vertically: ' + el.scrollHeight + ' > ' + el.clientHeight + ' px — "' + text.slice(0, 40) + '"' });
+      }
+    }
+  };
+
+  // 2. a stack keeps one gap: every step between block siblings is the same number
+  const gapsRule = (rule) => {
+    for (const container of document.querySelectorAll(rule.container)) {
+      mark('gaps', 1);
+      const kids = [...container.children].filter(painted);
+      if (kids.length < 3) continue;
+      const gaps = [];
+      for (let i = 1; i < kids.length; i += 1) {
+        const previous = kids[i - 1].getBoundingClientRect();
+        const current = kids[i].getBoundingClientRect();
+        gaps.push(+(current.top - previous.bottom).toFixed(1));
+      }
+      const distinct = [...new Set(gaps)];
+      if (distinct.length > 1) {
+        findings.push({ rule: 'gaps', at: name(container), detail: 'one stack, ' + distinct.length + ' gaps: ' + gaps.join(' / ') });
+      }
+    }
+  };
+
+  // Proximity is meaning: a block inside a group sits closer than two groups. A declared stack is judged
+  // by the widest inner gap against the narrowest outer one, so one legal inner gap does not hide a defect.
+  // The inner gaps must run along the same axis as the outer ones: the free space in a row between a label
+  // and a trailing mark is a layout, not a step.
+  const gapOf = (a, b) => {
+    const verticalOverlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    const horizontalOverlap = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    if (verticalOverlap >= Math.min(a.height, b.height) * 0.5) {
+      return { gap: +Math.max(a.left - b.right, b.left - a.right, 0).toFixed(1), axis: 'x' };
+    }
+    if (horizontalOverlap >= Math.min(a.width, b.width) * 0.5) {
+      return { gap: +Math.max(a.top - b.bottom, b.top - a.bottom, 0).toFixed(1), axis: 'y' };
+    }
+    return null;
+  };
+
+  const hierarchyRule = (rule) => {
+    const inner = rule.group ? ':scope > ' + rule.group : ':scope > *';
+    for (const outer of document.querySelectorAll(rule.parent)) {
+      if (!painted(outer)) continue;
+      const groups = [...outer.querySelectorAll(inner)].filter(painted);
+      if (groups.length < 2) continue;
+      mark('hierarchy', groups.length);
+      const outerPairs = [];
+      for (let i = 1; i < groups.length; i += 1) {
+        const pair = gapOf(groups[i - 1].getBoundingClientRect(), groups[i].getBoundingClientRect());
+        if (pair) outerPairs.push(pair);
+      }
+      if (!outerPairs.length) continue;
+      const axis = outerPairs.filter((p) => p.axis === 'y').length >= outerPairs.filter((p) => p.axis === 'x').length ? 'y' : 'x';
+      const between = outerPairs.filter((p) => p.axis === axis).map((p) => p.gap);
+      if (!between.length) continue;
+      const inside = [];
+      for (const group of groups) {
+        const kids = [...group.children].filter(painted);
+        for (let i = 1; i < kids.length; i += 1) {
+          const pair = gapOf(kids[i - 1].getBoundingClientRect(), kids[i].getBoundingClientRect());
+          if (pair && pair.axis === axis && pair.gap > 0) inside.push(pair.gap);
+        }
+      }
+      if (!inside.length) continue;
+      const wide = Math.max(...inside);
+      const narrow = Math.min(...between);
+      if (wide >= narrow - TOL) {
+        findings.push({ rule: 'hierarchy', at: name(outer), detail: 'a gap inside a group (' + wide.toFixed(1) + 'px) is not narrower than the gap between groups (' + narrow.toFixed(1) + 'px)' });
+        continue;
+      }
+      if (rule.ratio) {
+        const want = +(wide * rule.ratio).toFixed(1);
+        if (narrow + TOL < want) {
+          findings.push({ rule: 'hierarchy', at: name(outer), detail: 'groups sit ' + narrow.toFixed(1) + 'px apart, ratio ' + rule.ratio + ' asks ' + want.toFixed(1) + 'px for a ' + wide.toFixed(1) + 'px gap inside' });
+        }
+      }
+    }
+  };
+
+  // 3. a declared column shares one text alignment
+  const alignRule = (rule) => {
+    for (const cell of document.querySelectorAll(rule.selector)) {
+      mark('align', 1);
+      if (!painted(cell)) continue;
+      const align = getComputedStyle(cell).textAlign;
+      if (!rule.allow.includes(align)) {
+        findings.push({ rule: 'align', at: name(cell), detail: 'text-align ' + align + ', expected ' + rule.allow.join(' or ') });
+      }
+    }
+  };
+
+  // The baseline itself: a zero-size inline-block with vertical-align baseline sits on it, so its bottom
+  // edge is the line the reader means. A line box bottom is not the baseline when two sizes meet.
+  const baselineOf = (el) => {
+    const probe = document.createElement('span');
+    probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    el.append(probe);
+    const bottom = probe.getBoundingClientRect().bottom;
+    probe.remove();
+    return +bottom.toFixed(1);
+  };
+
+  const baselineRule = (rule) => {
+    for (const container of document.querySelectorAll(rule.container)) {
+      mark('baseline', 1);
+      const kids = [...container.querySelectorAll(rule.selector || ':scope > *')].filter(painted);
+      if (kids.length < 2) continue;
+      const bottoms = [...new Set(kids.map(baselineOf))];
+      if (bottoms.length > 1 && Math.max(...bottoms) - Math.min(...bottoms) > 1) {
+        findings.push({ rule: 'baseline', at: name(container), detail: 'baselines at ' + bottoms.join(' / ') });
+      }
+    }
+  };
+
+  const squareRule = (rule) => {
+    for (const el of document.querySelectorAll(rule.selector)) {
+      mark('square', 1);
+      if (!painted(el)) continue;
+      const b = el.getBoundingClientRect();
+      const delta = Math.abs(b.width - b.height);
+      if (delta > (rule.tolerance || 1)) {
+        findings.push({ rule: 'square', at: name(el), detail: 'box ' + b.width.toFixed(1) + ' x ' + b.height.toFixed(1) + ' px' });
+      }
+    }
+  };
+
+  const measureRule = (rule) => {
+    for (const el of document.querySelectorAll(rule.selector)) {
+      mark('measure', 1);
+      if (!painted(el)) continue;
+      const text = (el.textContent || '').trim();
+      if (!text) continue;
+      const style = getComputedStyle(el);
+      const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
+      const lines = Math.max(1, Math.round(el.getBoundingClientRect().height / line));
+      const perLine = Math.round(text.length / lines);
+      if (perLine > rule.max) {
+        findings.push({ rule: 'measure', at: name(el), detail: perLine + ' characters a line, the limit is ' + rule.max });
+      }
+    }
+  };
+
+  const centreInRule = (rule) => {
+    for (const el of document.querySelectorAll(rule.selector)) {
+      mark('centre-in', 1);
+      if (!painted(el)) continue;
+      const box = el.closest(rule.within);
+      if (!box) continue;
+      const a = el.getBoundingClientRect();
+      const b = box.getBoundingClientRect();
+      const dx = +((a.left + a.width / 2) - (b.left + b.width / 2)).toFixed(1);
+      const dy = +((a.top + a.height / 2) - (b.top + b.height / 2)).toFixed(1);
+      const tolerance = rule.tolerance || 1;
+      if (Math.abs(dx) > tolerance || Math.abs(dy) > tolerance) {
+        findings.push({ rule: 'centre-in', at: name(el), detail: 'off centre by x ' + dx + ' y ' + dy + ' px' });
       }
     }
   };
@@ -354,7 +687,18 @@ const probe = `(() => {
     for (const rule of CONTRACT.columns || []) columnsRule(rule);
     for (const rule of CONTRACT.rows || []) rowsRule(rule);
     for (const rule of CONTRACT.truncate || []) truncateRule(rule);
+    for (const rule of CONTRACT.radius || []) radiusRule(rule);
+    for (const rule of CONTRACT.gaps || []) gapsRule(rule);
+    for (const rule of CONTRACT.align || []) alignRule(rule);
+    for (const rule of CONTRACT.baseline || []) baselineRule(rule);
+    for (const rule of CONTRACT.square || []) squareRule(rule);
+    for (const rule of CONTRACT.measure || []) measureRule(rule);
+    for (const rule of CONTRACT['centre-in'] || []) centreInRule(rule);
     for (const rule of CONTRACT.overlap || []) overlapRule(rule);
+    for (const rule of CONTRACT.concentric || []) concentricRule(rule);
+    for (const rule of CONTRACT.loss || []) lossRule(rule);
+    for (const rule of CONTRACT.hierarchy || []) hierarchyRule(rule);
+    for (const rule of CONTRACT['control-height'] || []) controlHeightRule(rule);
   } else {
     notes.push('sweep mode: no contract, so only rhythm and truncation are judged — advisory');
     for (const el of [...document.querySelectorAll('*')].filter((el) => painted(el) && !el.closest('#geometry') && isSystem(el))) {
@@ -381,7 +725,33 @@ const probe = `(() => {
     notes,
     reached: EXPLAIN ? reached : undefined,
     snapshot: snapshotScope ? snapshot() : undefined,
+    structure: (CONTRACT && CONTRACT.structure) ? Object.fromEntries(
+      CONTRACT.structure.selectors.map((sel) => [sel, document.querySelectorAll(sel).length])
+    ) : undefined,
   });
+})()`;
+
+const setup = `(() => {
+  const DIR = ${JSON.stringify(dir)};
+  const STATES = ${JSON.stringify(states)};
+  const BOXES = ${JSON.stringify(boxes)};
+  const STRESS = ${stress};
+  const missing = [];
+  if (DIR) document.documentElement.dir = DIR;
+  for (const pair of STATES) document.documentElement.setAttribute(pair[0], pair[1]);
+  for (const pair of BOXES) {
+    const el = document.querySelector(pair[0]);
+    if (!el) { missing.push(pair[0]); continue; }
+    el.style.width = pair[1] + 'px';
+    el.style.maxWidth = pair[1] + 'px';
+    el.style.flexBasis = pair[1] + 'px';
+  }
+  if (STRESS) {
+    const style = document.createElement('style');
+    style.textContent = '*{line-height:1.5 !important;letter-spacing:0.12em !important;word-spacing:0.16em !important} p,li,dd,blockquote{margin-block-end:2em !important}';
+    document.head.append(style);
+  }
+  return JSON.stringify({ dir: document.dir || document.documentElement.dir, direction: getComputedStyle(document.documentElement).direction, states: STATES.length, boxes: BOXES.length, stress: STRESS, missing });
 })()`;
 
 async function measure(width) {
@@ -395,6 +765,10 @@ async function measure(width) {
   if (scheme) targetURL.searchParams.set('scheme', String(scheme));
   await send('Page.navigate', { url: targetURL.toString() });
   await sleep(settle);
+  const applied = await send('Runtime.evaluate', { expression: setup, returnByValue: true });
+  const render = applied.result.value ? JSON.parse(applied.result.value) : {};
+  for (const selector of render.missing || []) console.error(`geometry: --box ${selector} found nothing`);
+  if (dir || states.length || boxes.length || stress) await sleep(300);
   for (const selector of clicks) {
     const click = `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return 'missing'; el.click(); return 'clicked'; })()`;
     const { result } = await send('Runtime.evaluate', { expression: click, returnByValue: true });
@@ -402,7 +776,12 @@ async function measure(width) {
     await sleep(250);
   }
   const { result } = await send('Runtime.evaluate', { expression: probe, returnByValue: true });
-  return JSON.parse(result.value);
+  const run = JSON.parse(result.value);
+  run.render = render;
+  if (run.viewport && Math.abs(run.viewport[0] - width) > 1) {
+    run.notes.push('page rendered ' + run.viewport[0] + ' CSS px wide, not ' + width + ' — the document declares no viewport');
+  }
+  return run;
 }
 
 const report = { url, scheme: scheme || null, widths: {} };
@@ -411,23 +790,48 @@ for (const width of sizes) {
 }
 
 let failed = false;
+const log = asJson ? () => {} : (...args) => console.log(...args);
 for (const width of sizes) {
   const run = report.widths[width];
-  console.log(`geometry — ${width}×${height} · ${run.findings.length} finding(s) · ${run.notes.length} note(s) · ${run.mode}`);
-  if (width === sizes[0]) console.log(`steps: ${run.steps.join(' / ')}`);
-  for (const finding of run.findings) {
-    console.log(`  ${finding.rule.padEnd(8)} ${String(finding.at).padEnd(34)} ${finding.detail}`);
+  log(`geometry — ${width}×${height} · ${run.findings.length} finding(s) · ${run.notes.length} note(s) · ${run.mode}`);
+  if (width === sizes[0]) log(`steps: ${run.steps.join(' / ')}`);
+  if (width === sizes[0] && run.render && (run.render.dir || run.render.states || run.render.boxes || run.render.stress)) {
+    const bits = [];
+    if (run.render.dir) bits.push('dir ' + run.render.dir + ' (computed ' + run.render.direction + ')');
+    if (run.render.states) bits.push(run.render.states + ' state attribute(s)');
+    if (run.render.boxes) bits.push(run.render.boxes + ' box width(s) forced');
+    if (run.render.stress) bits.push('WCAG 1.4.12 text spacing');
+    log('render: ' + bits.join(' · '));
   }
-  for (const note of run.notes) console.log(`  note     ${note}`);
+  for (const finding of run.findings) {
+    log(`  ${finding.rule.padEnd(8)} ${String(finding.at).padEnd(34)} ${finding.detail}`);
+  }
+  for (const note of run.notes) log(`  note     ${note}`);
   if (explain && run.reached) {
-    console.log('  reached: ' + Object.entries(run.reached).map(([rule, n]) => rule + ' ' + n).join(' · '));
+    log('  reached: ' + Object.entries(run.reached).map(([rule, n]) => rule + ' ' + n).join(' · '));
   }
   if (run.findings.length) failed = true;
 }
 
+if (contract && contract.structure && sizes.length > 1) {
+  const base = report.widths[sizes[0]].structure || {};
+  let drift = 0;
+  for (const width of sizes.slice(1)) {
+    const now = report.widths[width].structure || {};
+    for (const selector of Object.keys(base)) {
+      if (base[selector] !== now[selector]) {
+        log(`  structure ${selector} ${base[selector]} at ${sizes[0]} vs ${now[selector]} at ${width}`);
+        drift += 1;
+      }
+    }
+  }
+  log(`structure: ${drift} selector(s) change the count across ${sizes.length} widths`);
+  if (drift) failed = true;
+}
+
 if (savePath) {
   writeFileSync(String(savePath), JSON.stringify(report, null, 1));
-  console.log(`geometry: baseline written to ${savePath}`);
+  log(`geometry: baseline written to ${savePath}`);
 }
 
 if (comparePath) {
@@ -437,7 +841,7 @@ if (comparePath) {
     const now = report.widths[width];
     const then = base.widths?.[width];
     if (!then) {
-      console.log(`compare ${width}: no baseline at this width`);
+      log(`compare ${width}: no baseline at this width`);
       continue;
     }
     const moved = [];
@@ -462,14 +866,16 @@ if (comparePath) {
     const isFindings = new Set((now.findings || []).map((f) => f.rule + '|' + f.at + '|' + f.detail));
     const fresh = [...isFindings].filter((f) => !wasFindings.has(f));
     const gone = [...wasFindings].filter((f) => !isFindings.has(f));
-    console.log(`compare ${width}: ${moved.length} element(s) moved · ${fresh.length} new finding(s) · ${gone.length} gone`);
-    for (const line of moved) console.log('  moved    ' + line);
-    for (const line of fresh) console.log('  new      ' + line);
-    for (const line of gone) console.log('  gone     ' + line);
+    log(`compare ${width}: ${moved.length} element(s) moved · ${fresh.length} new finding(s) · ${gone.length} gone`);
+    for (const line of moved) log('  moved    ' + line);
+    for (const line of fresh) log('  new      ' + line);
+    for (const line of gone) log('  gone     ' + line);
     drift += moved.length + fresh.length;
   }
   if (drift) failed = true;
 }
+
+if (asJson) console.log(JSON.stringify(report, null, 1));
 
 ws.close();
 child.kill();

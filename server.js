@@ -1026,7 +1026,8 @@ app.post('/api/workout-session', async (req, res) => {
 
     const newSession = {
       ...sessionData,
-      id: Date.now().toString(),
+      // Two saves in the same millisecond used to share one id, so a delete or a read hit both.
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       date: sessionData.date ? new Date(sessionData.date) : new Date(),
       status: 'completed', // Default to completed for new sessions
       // The weekly report counts a circuit apart from the strength band; this is how it knows.

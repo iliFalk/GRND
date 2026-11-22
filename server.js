@@ -1068,8 +1068,12 @@ app.get('/api/workout-sessions/:userId', async (req, res) => {
       try {
         sessionsData = JSON.parse(data);
       } catch (parseError) {
+        // An empty list here reads as "no training this week" while the journal is damaged.
         console.error('JSON parse error in workout sessions data:', parseError);
-        return res.json([]); // Return empty array if JSON is invalid
+        return res.status(500).json({
+          error: 'The session journal is damaged',
+          details: 'workout-sessions.json does not parse'
+        });
       }
 
       // Filter sessions for the specific user

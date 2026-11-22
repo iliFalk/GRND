@@ -1042,6 +1042,8 @@ app.post('/api/workout-session', async (req, res) => {
     // journal must stop here instead of being overwritten with a single session.
     await updateJson(getWorkoutSessionsPath(), { sessions: [] }, (current) => ({
       ...current,
+      // The shape of the records, so a later reader can tell an old row from a new one.
+      schema: 2,
       sessions: [...(Array.isArray(current.sessions) ? current.sessions : []), newSession]
     }));
 

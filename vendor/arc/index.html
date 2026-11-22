@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ARC — elements</title>
+    <link rel="stylesheet" href="dist/arc.css" />
+    <style>
+
+      /* Showcase only. Every value below is a token; nothing is typed by hand. */
+      .demo-head {
+        display: grid;
+        gap: var(--arc-space-1);
+        padding: var(--arc-space-5) 0 var(--arc-space-4);
+      }
+      .demo-stack {
+        display: grid;
+        gap: var(--arc-space-4);
+        padding-bottom: var(--arc-space-6);
+      }
+      .demo-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--arc-space-2);
+        align-items: center;
+      }
+      .demo-glyphs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--arc-space-2);
+      }
+      .demo-glyph {
+        display: flex;
+        align-items: center;
+        gap: var(--arc-space-2);
+        color: var(--arc-fg-medium);
+      }
+      .demo-swatches {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--arc-space-2);
+      }
+      .demo-swatch {
+        display: grid;
+        gap: var(--arc-space-1);
+        padding: var(--arc-space-2);
+        border: var(--arc-stroke-hair) solid var(--arc-line-soft);
+      }
+      .demo-chip {
+        width: 100%;
+        height: var(--arc-space-6);
+      }
+      .demo-wide {
+        display: grid;
+        gap: var(--arc-space-4);
+      }
+      @media (min-width: 900px) {
+        .demo-wide {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          align-items: start;
+        }
+      }
+      .demo-stack-tight {
+        display: grid;
+        gap: var(--arc-space-2);
+      }
+      .demo-caption {
+        padding-top: var(--arc-space-2);
+      }
+      /* The fault is a screen, so its demo is a whole app shell. It bleeds out of the page padding to
+         stand at the master frame's own width, which is what resolves the fluid unit to 16.00 px. */
+      .demo-fault {
+        margin-inline: calc(var(--arc-space-4) * -1);
+      }
+      #geometry {
+        position: fixed;
+        inset: 0 0 auto 0;
+        z-index: 99;
+        margin: 0;
+        background: var(--arc-bg-void);
+        font-family: var(--arc-font-mono);
+        font-size: var(--arc-fs-micro);
+        line-height: 1.35;
+        color: var(--arc-status-attention);
+        white-space: pre-wrap;
+        padding: var(--arc-space-2);
+        border-bottom: var(--arc-stroke-hair) dashed var(--arc-line-hair);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="arc-ambient" aria-hidden="true"></div>
+    <div class="arc-scan" aria-hidden="true"></div>
+
+    <main class="arc-shell">
+      <header class="demo-head">
+        <p class="arc-micro">Mk.2 · elements · 390 × 844 is the master frame</p>
+        <h1 class="arc-h1">ARC / <span class="arc-accent">CYAN LEAD</span></h1>
+        <p class="arc-body arc-muted">
+          Cyan is the system accent. Amber marks attention, magenta and red mark alarm. A filled control
+          takes the ink its fill allows: near-black on a bright fill, paper on a dark one — both measured.
+        </p>
+      </header>
+
+      <div class="demo-wide">
+        <section class="demo-stack">
+          <div class="demo-row">
+            <span class="arc-chip"><i class="arc-chip__dot"></i>All</span>
+            <span class="arc-chip arc-chip--selected"><i class="arc-chip__dot"></i>Runs</span>
+            <span class="arc-chip"><i class="arc-chip__dot"></i>Jobs</span>
+          </div>
+          <pre class="arc-code">12:04:31 lane=arc-design-system step=gate   ok=18 fail=0
+12:04:38 lane=arc-design-system step=publish sha=9627f15</pre>
+
+          <div class="arc-codeblock">
+            <div class="arc-code__bar">
+              <span class="arc-code__title">gate.log</span>
+              <div class="arc-code__acts">
+                <button class="arc-code__act" type="button" id="log-copy">
+                  <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#copy"/></svg>
+                  <span class="arc-code__word">COPY</span>
+                </button>
+                <button class="arc-code__act arc-code__act--wrap" type="button" id="log-wrap" aria-pressed="false">
+                  <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#text-wrap"/></svg>
+                  <span class="arc-code__word">SCROLL</span>
+                </button>
+                <button class="arc-code__act" type="button" id="log-pause" aria-pressed="false">
+                  <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#play"/></svg>
+                  <span class="arc-code__word">LIVE</span>
+                </button>
+              </div>
+            </div>
+            <pre class="arc-code" id="log">12:04:31 lane=arc-design-system step=gate    ok=45 fail=0
+12:04:38 lane=arc-design-system step=publish sha=1082126 clean</pre>
+          </div>
+          <div class="demo-row">
+            <button class="arc-btn arc-btn--primary" type="button">Deploy</button>
+            <button class="arc-btn arc-btn--secondary" type="button">Inspect</button>
+            <button class="arc-btn arc-btn--ghost" type="button">Cancel</button>
+          </div>
+          <div class="demo-row">
+            <button class="arc-btn arc-btn--primary" type="button">M</button>
+            <button class="arc-btn arc-btn--primary arc-btn--l" type="button">L</button>
+            <button class="arc-btn arc-btn--danger" type="button">Abort</button>
+            <button class="arc-btn arc-btn--primary" type="button" aria-pressed="true">Armed</button>
+            <button class="arc-btn arc-btn--secondary" type="button" disabled>Locked</button>
+          </div>
+
+          <article class="arc-panel arc-panel--active">
+            <div class="arc-panel__head">
+              <h2 class="arc-h3">Reactor output</h2>
+              <span class="arc-chip arc-chip--ok"><i class="arc-chip__dot"></i>Nominal</span>
+            </div>
+            <div class="arc-kv">
+              <span class="arc-kv__key">Load</span>
+              <span class="arc-kv__value">84.2 %</span>
+            </div>
+            <div class="arc-meter">
+              <div class="arc-meter__track">
+                <div class="arc-meter__fill" style="--arc-meter-value: 84%"></div>
+              </div>
+            </div>
+            <div class="arc-row">
+              <span class="arc-kv__key">Coolant</span>
+              <span class="arc-chip arc-chip--attention"><i class="arc-chip__dot"></i>Watch</span>
+            </div>
+            <div class="arc-row">
+              <span class="arc-kv__key">Intrusion</span>
+              <span class="arc-chip arc-chip--critical"><i class="arc-chip__dot"></i>Breach</span>
+            </div>
+            <div class="arc-row">
+              <span class="arc-kv__key">Auto-scrub</span>
+              <button class="arc-switch" type="button" role="switch" aria-checked="true" aria-label="Auto-scrub">
+                <span class="arc-switch__track"></span>
+              </button>
+            </div>
+            <div class="arc-row">
+              <span class="arc-kv__key">Cold start</span>
+              <button class="arc-switch" type="button" role="switch" aria-checked="false" aria-label="Cold start">
+                <span class="arc-switch__track"></span>
+              </button>
+            </div>
+          </article>
+
+          <article class="arc-panel arc-sweep" id="fx-panel">
+            <div class="arc-panel__head">
+              <h2 class="arc-h3">Motion</h2>
+              <span class="arc-chip arc-chip--attention"><i class="arc-chip__dot"></i>One-shot</span>
+            </div>
+            <p class="arc-body arc-muted arc-glitch" id="fx-line">
+              Signal lost on link 3. The relay reroutes on its own.
+            </p>
+            <div class="demo-stack-tight">
+              <span class="arc-reveal arc-small arc-faint" style="--arc-i: 1">One pass per event</span>
+              <span class="arc-reveal arc-small arc-faint" style="--arc-i: 2">3 px displacement at most</span>
+              <span class="arc-reveal arc-small arc-faint" style="--arc-i: 3">Switched off under a reduced-motion request</span>
+            </div>
+            <div class="demo-row">
+              <button class="arc-btn arc-btn--secondary" type="button" id="fx-replay">Replay</button>
+              <span class="arc-small arc-faint">Caret<span class="arc-caret"></span></span>
+            </div>
+          </article>
+
+          <article class="arc-panel arc-panel--alarm" style="--arc-panel-alarm: var(--arc-status-error)">
+            <div class="arc-panel__head">
+              <h2 class="arc-h3">Core temperature</h2>
+              <span class="arc-chip arc-chip--error"><i class="arc-chip__dot"></i>Fail</span>
+            </div>
+            <p class="arc-body arc-muted">
+              Alarm carries a word and a mark, never colour alone. Red is text-safe at 5.73:1.
+            </p>
+          </article>
+        </section>
+
+        <section class="demo-stack">
+          <label class="arc-field">
+            <span class="arc-field__label">Node address</span>
+            <input class="arc-input" type="text" value="10.0.0.42" />
+            <span class="arc-field__hint">Tabular digits: the same width for every number.</span>
+          </label>
+
+          <label class="arc-field">
+            <span class="arc-field__label">Sync key</span>
+            <input class="arc-input" type="text" value="—" aria-invalid="true" aria-describedby="sync-error" />
+            <span class="arc-field__error" id="sync-error" role="alert"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#circle-alert"/></svg>Key rejected by the relay</span>
+          </label>
+
+          <div class="arc-field">
+            <label class="arc-field__label" for="demo-query">Query</label>
+            <span class="arc-field__control">
+              <svg class="arc-icon arc-field__icon" aria-hidden="true"><use href="assets/icons.svg#search"/></svg>
+              <input class="arc-input arc-input--icon arc-input--action" id="demo-query" type="search" value="navidrome" />
+              <button class="arc-field__action" type="button" id="demo-clear" aria-label="Clear the query">
+                <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#x"/></svg>
+              </button>
+            </span>
+            <span class="arc-field__hint">A mark before the value, one action inside the frame.</span>
+          </div>
+
+          <div class="arc-field">
+            <label class="arc-field__label" for="demo-key">Access key</label>
+            <span class="arc-field__control">
+              <input class="arc-input arc-input--action" id="demo-key" type="password" value="arc-9f2b-cache" />
+              <button class="arc-field__action" type="button" id="demo-reveal" aria-pressed="false" aria-label="Show the key">
+                <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#eye"/></svg>
+              </button>
+            </span>
+            <span class="arc-field__hint">The eye is the mark for this act, so the mark takes the row; a word stands in only where the sprite has none.</span>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Steps · words carry the number</p>
+            <div class="arc-steps">
+              <p class="arc-steps__label">Step 2 of 3 · Device</p>
+              <div class="arc-steps__track" aria-hidden="true">
+                <span class="arc-steps__seg arc-steps__seg--done"></span>
+                <span class="arc-steps__seg arc-steps__seg--now"></span>
+                <span class="arc-steps__seg"></span>
+              </div>
+            </div>
+            <p class="arc-small arc-muted">
+              Lost the key?
+              <a class="arc-link" href="#reset">Reset it on the relay</a>
+            </p>
+            <div class="demo-row">
+              <a class="arc-link" href="#log">Open the log<svg class="arc-icon arc-icon--s" aria-hidden="true"><use href="assets/icons.svg#chevron-right"/></svg></a>
+              <a class="arc-link arc-link--quiet" href="#later">Later</a>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Chart · the axis carries the numbers</p>
+            <figure class="arc-chart">
+              <figcaption class="arc-chart__head">
+                <span class="arc-chart__label">Runs · 7 days</span>
+                <span class="arc-chart__peak">Sun · 24</span>
+              </figcaption>
+              <div class="arc-chart__body">
+                <div class="arc-chart__y" aria-hidden="true"><span>24</span><span>16.5</span><span>9</span></div>
+                <svg class="arc-chart__plot" viewBox="0 0 100 100" preserveAspectRatio="none" role="img"
+                     aria-label="Runs per day: 12 Mon, 18 Tue, 15 Wed, 22 Thu, 9 Fri, 17 Sat, 24 Sun. Peak 24 on Sunday.">
+                  <g class="arc-chart__grid">
+                    <line x1="0" y1="0" x2="100.0" y2="0"/>
+                    <line x1="0" y1="50" x2="100.0" y2="50"/>
+                    <line x1="0" y1="100" x2="100.0" y2="100"/>
+                  </g>
+                  <path class="arc-chart__area" d="M1 100 L1 80 L17.33 40 L33.67 60 L50 13.33 L66.33 100 L82.67 46.67 L99 0 L99 100 Z"/>
+                  <path class="arc-chart__line" d="M1 80 L17.33 40 L33.67 60 L50 13.33 L66.33 100 L82.67 46.67 L99 0"/>
+                  <path class="arc-chart__point" d="M99 0 L99 0"/>
+                </svg>
+                <div class="arc-chart__x" aria-hidden="true"><span>Mon</span><span>Thu</span><span>Sun</span></div>
+              </div>
+            </figure>
+            <p class="demo-caption arc-faint arc-small">The path comes from tools/chart.py; the values in it are the data.</p>
+          </div>
+
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Select · the list arrives from the edge</p>
+            <div class="arc-field">
+              <label class="arc-field__label" for="demo-device">Device</label>
+              <button class="arc-select" type="button" id="demo-device" aria-haspopup="listbox" aria-expanded="false" aria-controls="demo-sheet">
+                <span class="arc-select__value">ilja-iphone</span>
+                <svg class="arc-icon arc-select__mark" aria-hidden="true"><use href="assets/icons.svg#chevron-down"/></svg>
+              </button>
+              <span class="arc-field__hint">A choice from many is a sheet on a phone, not a dropdown.</span>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Check and radio · one choice per row</p>
+            <label class="arc-check">
+              <input class="arc-check__input" type="checkbox" checked />
+              <span class="arc-check__mark" aria-hidden="true"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#check"/></svg></span>
+              <span class="arc-check__text">Include archived runs<span class="arc-check__meta">3 214 records</span></span>
+            </label>
+            <label class="arc-check">
+              <input class="arc-check__input" type="checkbox" />
+              <span class="arc-check__mark" aria-hidden="true"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#check"/></svg></span>
+              <span class="arc-check__text">Follow the tail live</span>
+            </label>
+            <label class="arc-radio">
+              <input class="arc-radio__input" type="radio" name="demo-range" checked />
+              <span class="arc-radio__mark" aria-hidden="true"></span>
+              <span class="arc-check__text">24 hours</span>
+            </label>
+            <label class="arc-radio">
+              <input class="arc-radio__input" type="radio" name="demo-range" />
+              <span class="arc-radio__mark" aria-hidden="true"></span>
+              <span class="arc-check__text">7 days</span>
+            </label>
+            <div class="demo-row">
+              <button class="arc-icon-btn" type="button" id="demo-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="demo-menu-sheet" aria-label="More actions">
+                <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#ellipsis"/></svg>
+              </button>
+              <span class="arc-small arc-faint">an action menu, opened from a mark</span>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Slider · the value is the number beside it</p>
+            <div class="arc-slider">
+              <div class="arc-slider__row">
+                <input class="arc-slider__input" id="demo-slider" type="range" min="0" max="100" value="62" aria-label="Load" style="--arc-slider-value: 62%" />
+                <span class="arc-slider__value" id="demo-slider-value">62 %</span>
+              </div>
+              <span class="arc-small arc-faint">The filled part is one gradient, because Chrome has no progress pseudo-element.</span>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Badge · a count on a target, never the target</p>
+            <div class="demo-row">
+              <span class="arc-small">Logs<span class="arc-badge">3</span></span>
+              <span class="arc-small">Alerts<span class="arc-badge arc-badge--error">2</span></span>
+              <span class="arc-small">Watch<span class="arc-badge arc-badge--attention">1</span></span>
+              <span class="arc-small">New<span class="arc-badge arc-badge--dot"></span></span>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Combobox · results under the field, never behind a sheet</p>
+            <div class="arc-combobox">
+              <div class="arc-field">
+                <label class="arc-field__label" for="demo-combobox">Lane</label>
+                <input class="arc-input" id="demo-combobox" type="text" role="combobox" aria-expanded="true" aria-controls="demo-combobox-list" aria-autocomplete="list" value="na" />
+              </div>
+              <ul class="arc-listbox arc-combobox__list" id="demo-combobox-list" role="listbox" aria-label="Lanes">
+                <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">navidrome</li>
+                <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">navidrome scan</li>
+                <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">navidrome backup</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Form · the summary blocks the action</p>
+            <form class="arc-form" id="demo-form" novalidate>
+              <div class="arc-field" id="demo-name-field">
+                <label class="arc-field__label" for="demo-name">Device name</label>
+                <input class="arc-input" id="demo-name" name="name" type="text" aria-invalid="true" aria-describedby="demo-name-error" />
+                <span class="arc-field__error" id="demo-name-error" role="alert">
+                  <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#circle-alert"/></svg>
+                  Required
+                </span>
+              </div>
+              <div class="arc-field" id="demo-relay-field">
+                <label class="arc-field__label" for="demo-relay">Relay address</label>
+                <input class="arc-input" id="demo-relay" name="relay" type="text" value="agent.tailbae8be.ts.net" aria-invalid="true" aria-describedby="demo-relay-error" />
+                <span class="arc-field__error" id="demo-relay-error" role="alert">
+                  <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#circle-alert"/></svg>
+                  Add the port — host:port
+                </span>
+              </div>
+              <div class="arc-form__summary" id="demo-summary" role="alert">
+                <p class="arc-form__summary-title" id="demo-summary-title">2 fields need attention</p>
+                <ul class="arc-form__summary-list" id="demo-summary-list"></ul>
+              </div>
+              <div class="arc-form__actions">
+                <button class="arc-btn arc-btn--primary" type="submit" id="demo-submit" disabled>Continue</button>
+                <button class="arc-btn arc-btn--ghost" type="reset">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="arc-panel">
+            <p class="arc-section-label">Lanes</p>
+            <button class="arc-item" type="button">
+              <span class="arc-item__text">
+                <span class="arc-item__title">bookindex</span>
+                <span class="arc-item__meta">suite · 41 s</span>
+              </span>
+              <span class="arc-item__end"><span class="arc-item__chevron" aria-hidden="true"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-right"/></svg></span></span>
+            </button>
+            <div class="arc-item">
+              <span class="arc-item__text">
+                <span class="arc-item__title">lernquiz</span>
+                <span class="arc-item__meta">build · running</span>
+              </span>
+              <span class="arc-item__end">
+                <button class="arc-switch" type="button" role="switch" aria-checked="true" aria-label="lernquiz">
+                  <span class="arc-switch__track"></span>
+                </button>
+              </span>
+            </div>
+            <div class="arc-item">
+              <span class="arc-item__text">
+                <span class="arc-item__title">Alert when a disk passes 85 %</span>
+                <span class="arc-item__meta">rule · checked every 5 min</span>
+              </span>
+              <span class="arc-item__end">
+                <button class="arc-switch" type="button" role="switch" aria-checked="false" aria-label="Alert when a disk passes 85 %">
+                  <span class="arc-switch__track"></span>
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <div class="arc-panel">
+            <div class="arc-empty">
+              <p class="arc-h3">No runs yet</p>
+              <p class="arc-empty__text">A run appears here after the first push to this lane.</p>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Type roles</p>
+            <p class="arc-display">Display</p>
+            <p class="arc-label">Label · tracked</p>
+            <p class="arc-data">Data · 1 204</p>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Dialog · a decision above everything</p>
+            <div class="demo-row">
+              <button class="arc-btn arc-btn--secondary" type="button" id="demo-dialog-open">Open the dialog</button>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Wide table · three columns at the frame, the rest scrolls</p>
+            <div class="arc-table arc-table__scroll">
+              <div class="arc-table__row arc-table__row--head">
+                <span class="arc-table__cell arc-table__cell--head">Lane</span>
+                <span class="arc-table__cell arc-table__cell--head arc-table__cell--num">Runs</span>
+                <span class="arc-table__cell arc-table__cell--head arc-table__cell--num">Fail</span>
+                <span class="arc-table__cell arc-table__cell--head arc-table__cell--num">Median</span>
+              </div>
+              <div class="arc-table__row">
+                <span class="arc-table__cell">arc-design-system</span>
+                <span class="arc-table__cell arc-table__cell--num">46</span>
+                <span class="arc-table__cell arc-table__cell--num">0</span>
+                <span class="arc-table__cell arc-table__cell--num">31 s</span>
+              </div>
+              <div class="arc-table__row">
+                <span class="arc-table__cell">bookindex</span>
+                <span class="arc-table__cell arc-table__cell--num">41</span>
+                <span class="arc-table__cell arc-table__cell--num">0</span>
+                <span class="arc-table__cell arc-table__cell--num">44 s</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Group · one decision of several choices</p>
+            <fieldset class="arc-group">
+              <legend class="arc-group__legend">Range</legend>
+              <p class="arc-group__hint">Applies to every lane on this device.</p>
+              <label class="arc-radio">
+                <input class="arc-radio__input" type="radio" name="demo-group-range" value="24" checked />
+                <span class="arc-radio__mark" aria-hidden="true"></span>
+                <span class="arc-check__text">24 hours<span class="arc-check__meta">41 runs</span></span>
+              </label>
+              <label class="arc-radio">
+                <input class="arc-radio__input" type="radio" name="demo-group-range" value="168" />
+                <span class="arc-radio__mark" aria-hidden="true"></span>
+                <span class="arc-check__text">7 days<span class="arc-check__meta">288 runs</span></span>
+              </label>
+            </fieldset>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Count · the limit is said, never cut</p>
+            <div class="arc-field">
+              <label class="arc-field__label" for="demo-notes">Notes for the operator</label>
+              <textarea class="arc-input" id="demo-notes" rows="3" aria-describedby="demo-count">Works from the home network only.</textarea>
+              <span class="arc-count" id="demo-count" aria-live="polite">95 characters remaining</span>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Result · what happened, and the thing it made</p>
+            <div class="arc-result arc-result--ok">
+              <p class="arc-result__class">Relay · paired</p>
+              <p class="arc-h1">Device paired</p>
+              <p class="arc-result__body">ilja-iphone answers on port 8443. The key expires in twelve hours.</p>
+              <div class="arc-result__record">
+                <div class="arc-kv"><span class="arc-kv__key">Device</span><span class="arc-kv__value">ilja-iphone</span></div>
+                <div class="arc-kv"><span class="arc-kv__key">Key</span><span class="arc-kv__value">arc-9f2b</span></div>
+              </div>
+              <div class="arc-result__actions">
+                <a class="arc-link" href="#job">Run the first job<svg class="arc-icon arc-icon--s" aria-hidden="true"><use href="assets/icons.svg#chevron-right"/></svg></a>
+              </div>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Tasks · where each step stands</p>
+            <ol class="arc-tasks">
+              <li><a class="arc-tasks__row" href="#pair">
+                <span class="arc-tasks__text"><span class="arc-tasks__title">Pair the device</span><span class="arc-tasks__meta">done 09:12</span></span>
+                <span class="arc-tasks__state arc-tasks__state--done">Done</span>
+              </a></li>
+              <li><a class="arc-tasks__row" href="#relay">
+                <span class="arc-tasks__text"><span class="arc-tasks__title">Point the relay at it</span><span class="arc-tasks__meta">2 of 3 checks pass</span></span>
+                <span class="arc-tasks__state arc-tasks__state--now">In progress</span>
+              </a></li>
+              <li><a class="arc-tasks__row" href="#job">
+                <span class="arc-tasks__text"><span class="arc-tasks__title">Run the first job</span><span class="arc-tasks__meta">needs the relay</span></span>
+                <span class="arc-tasks__state arc-tasks__state--todo">Not started</span>
+              </a></li>
+            </ol>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Note, warning, disclosure</p>
+            <div class="arc-note">
+              <p>A lane that fails twice in a row is paused until somebody looks at it.</p>
+            </div>
+            <p class="arc-warning">
+              <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#triangle-alert"/></svg>
+              Removing this device kills its keys at once.
+            </p>
+            <details class="arc-disclosure">
+              <summary class="arc-disclosure__summary">Relay settings<span class="arc-disclosure__mark" aria-hidden="true"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-down"/></svg></span></summary>
+              <div class="arc-disclosure__body">
+                <p>Port 8443, TLS required, key lifetime twelve hours.</p>
+              </div>
+            </details>
+            <details class="arc-disclosure">
+              <summary class="arc-disclosure__summary">History<span class="arc-disclosure__mark" aria-hidden="true"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-down"/></svg></span></summary>
+              <div class="arc-disclosure__body">
+                <p>Thirty days of runs, kept on the relay.</p>
+              </div>
+            </details>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Field with an affix</p>
+            <div class="arc-field">
+              <label class="arc-field__label" for="demo-load">Load threshold</label>
+              <span class="arc-field__control arc-field__control--joined">
+                <input class="arc-input" id="demo-load" type="text" inputmode="numeric" value="85" />
+                <span class="arc-field__affix" aria-hidden="true">% of peak</span>
+              </span>
+              <span class="arc-field__hint">The relay pauses a lane above this figure.</span>
+            </div>
+            <div class="arc-field">
+              <label class="arc-field__label" for="demo-url">Relay address</label>
+              <span class="arc-field__control arc-field__control--joined">
+                <span class="arc-field__affix" aria-hidden="true">https://</span>
+                <input class="arc-input" id="demo-url" type="text" value="agent.tailbae8be.ts.net" />
+              </span>
+            </div>
+          </div>
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Palette · measured, not asserted</p>
+            <div class="demo-swatches">
+              <div class="demo-swatch">
+                <i class="demo-chip" style="background: var(--arc-accent-primary)"></i>
+                <span class="arc-micro">accent · 10.90:1</span>
+              </div>
+              <div class="demo-swatch">
+                <i class="demo-chip" style="background: var(--arc-status-attention)"></i>
+                <span class="arc-micro">attention · 9.97:1</span>
+              </div>
+              <div class="demo-swatch">
+                <i class="demo-chip" style="background: var(--arc-status-critical)"></i>
+                <span class="arc-micro">critical · 5.30:1</span>
+              </div>
+              <div class="demo-swatch">
+                <i class="demo-chip" style="background: var(--arc-status-error)"></i>
+                <span class="arc-micro">error · 5.73:1</span>
+              </div>
+            </div>
+            <p class="demo-caption arc-faint arc-small">
+              Ratios on the base ground, from tools/contrast.py.
+            </p>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <div class="arc-tabs" role="tablist" aria-label="Time range">
+              <button class="arc-tabs__tab" role="tab" type="button" aria-selected="true">Live</button>
+              <button class="arc-tabs__tab" role="tab" type="button" aria-selected="false">24 h</button>
+              <button class="arc-tabs__tab" role="tab" type="button" aria-selected="false">7 d</button>
+            </div>
+            <div class="arc-table">
+              <div class="arc-table__row arc-table__row--head">
+                <span class="arc-table__cell arc-table__cell--head">Lane</span>
+                <span class="arc-table__cell arc-table__cell--head arc-table__cell--num">Runs</span>
+                <span class="arc-table__cell arc-table__cell--head arc-table__cell--num">Fail</span>
+              </div>
+              <div class="arc-table__row">
+                <span class="arc-table__cell">bookindex</span>
+                <span class="arc-table__cell arc-table__cell--num">41</span>
+                <span class="arc-table__cell arc-table__cell--num">0</span>
+              </div>
+              <div class="arc-table__row">
+                <span class="arc-table__cell">lernquiz</span>
+                <span class="arc-table__cell arc-table__cell--num">12</span>
+                <span class="arc-table__cell arc-table__cell--num">1</span>
+              </div>
+              <div class="arc-table__row">
+                <span class="arc-table__cell">navidrome</span>
+                <span class="arc-table__cell arc-table__cell--num">7</span>
+                <span class="arc-table__cell arc-table__cell--num">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Loading state</p>
+            <div class="demo-stack-tight">
+              <span class="arc-skeleton" style="--arc-skeleton-width: 62%"></span>
+              <span class="arc-skeleton" style="--arc-skeleton-width: 88%"></span>
+              <span class="arc-skeleton" style="--arc-skeleton-width: 74%"></span>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Readout</p>
+            <div class="arc-readout">
+              <span class="arc-readout__label">Rest</span>
+              <span class="arc-readout__value">01:23<span class="arc-readout__unit">s</span></span>
+            </div>
+
+            <div class="arc-readout arc-readout--center">
+              <span class="arc-readout__label">Rest · centred</span>
+              <span class="arc-readout__value">01:23</span>
+            </div>
+            <div class="arc-readout arc-readout--attention">
+              <span class="arc-readout__label">Time under load</span>
+              <span class="arc-readout__value">00:12</span>
+            </div>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Icons · one em, stroke only · the whole catalogue sits in icons.html</p>
+            <div class="demo-glyphs">
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-down"/></svg><span class="arc-micro arc-faint">arrow-down</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#arrow-up"/></svg><span class="arc-micro arc-faint">arrow-up</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#bell"/></svg><span class="arc-micro arc-faint">bell</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#calendar"/></svg><span class="arc-micro arc-faint">calendar</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#check"/></svg><span class="arc-micro arc-faint">check</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-down"/></svg><span class="arc-micro arc-faint">chevron-down</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-left"/></svg><span class="arc-micro arc-faint">chevron-left</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-right"/></svg><span class="arc-micro arc-faint">chevron-right</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#chevron-up"/></svg><span class="arc-micro arc-faint">chevron-up</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#circle-alert"/></svg><span class="arc-micro arc-faint">circle-alert</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#circle-check"/></svg><span class="arc-micro arc-faint">circle-check</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#clock"/></svg><span class="arc-micro arc-faint">clock</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#copy"/></svg><span class="arc-micro arc-faint">copy</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#eye"/></svg><span class="arc-micro arc-faint">eye</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#eye-off"/></svg><span class="arc-micro arc-faint">eye-off</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#link"/></svg><span class="arc-micro arc-faint">link</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#minus"/></svg><span class="arc-micro arc-faint">minus</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#pause"/></svg><span class="arc-micro arc-faint">pause</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#play"/></svg><span class="arc-micro arc-faint">play</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#plus"/></svg><span class="arc-micro arc-faint">plus</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#refresh-cw"/></svg><span class="arc-micro arc-faint">refresh-cw</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#search"/></svg><span class="arc-micro arc-faint">search</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#settings"/></svg><span class="arc-micro arc-faint">settings</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#text-wrap"/></svg><span class="arc-micro arc-faint">text-wrap</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#trash"/></svg><span class="arc-micro arc-faint">trash</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#triangle-alert"/></svg><span class="arc-micro arc-faint">triangle-alert</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#user"/></svg><span class="arc-micro arc-faint">user</span></span>
+              <span class="demo-glyph"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#x"/></svg><span class="arc-micro arc-faint">x</span></span>
+            </div>
+            <div class="arc-bars">
+              <span class="arc-bars__bar" style="--arc-bar-value: 40%"></span>
+              <span class="arc-bars__bar" style="--arc-bar-value: 70%"></span>
+              <span class="arc-bars__bar arc-bars__bar--over" style="--arc-bar-value: 100%"></span>
+              <span class="arc-bars__bar arc-bars__bar--now" style="--arc-bar-value: 85%"></span>
+              <span class="arc-bars__bar" style="--arc-bar-value: 55%"></span>
+            </div>
+            <div class="arc-bars__labels">
+              <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span>
+            </div>
+          </div>
+
+          <div class="arc-alert arc-alert--error">
+            <svg class="arc-icon arc-alert__icon" aria-hidden="true"><use href="assets/icons.svg#triangle-alert"/></svg>
+            <span>Two fields need attention before this screen can be saved.</span>
+          </div>
+
+          <div class="arc-panel arc-panel--flat">
+            <p class="arc-micro">Level glow · top step only</p>
+            <div class="arc-readout">
+              <span class="arc-readout__label">Time to cutoff</span>
+              <span class="arc-readout__value arc-glow-text" style="color: var(--arc-status-critical)">00:04</span>
+            </div>
+            <div class="arc-meter">
+              <div class="arc-meter__track"><div class="arc-meter__fill arc-glow" style="--arc-meter-value: 96%"></div></div>
+            </div>
+            <div class="arc-row">
+              <span class="arc-kv__key">Coolant</span>
+              <span class="arc-kv__value arc-glow-text--soft" style="color: var(--arc-status-attention)">78 °C</span>
+            </div>
+          </div>
+
+          <pre id="geometry" hidden></pre>
+        </section>
+      </div>
+
+      <section class="demo-fault" aria-label="Fault screen at the master frame">
+        <div class="arc-shell arc-shell--app">
+          <header class="arc-appbar">
+            <p class="arc-micro">RELAY · LINK 3</p>
+            <div class="arc-appbar__row">
+              <p class="arc-h2">Link</p>
+              <span class="arc-chip arc-chip--error"><i class="arc-chip__dot"></i>Down</span>
+            </div>
+          </header>
+          <div class="arc-screen">
+            <div class="arc-fault arc-fault--error">
+              <p class="arc-fault__head">
+                <svg class="arc-icon arc-fault__mark" aria-hidden="true"><use href="assets/icons.svg#triangle-alert"/></svg>
+                No route
+              </p>
+              <p class="arc-h1">No route to the relay</p>
+              <p class="arc-fault__text">The tailnet is up. The relay answers nothing on 8443.</p>
+              <pre class="arc-code arc-code--wrap">curl: (7) Failed to connect to 100.64.0.9 port 8443</pre>
+              <div class="arc-fault__actions">
+                <button class="arc-btn arc-btn--primary" type="button">Retry</button>
+                <button class="arc-btn arc-btn--secondary" type="button">Work offline</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <dialog class="arc-sheet" id="demo-sheet" aria-labelledby="demo-sheet-title">
+        <div class="arc-sheet__handle" aria-hidden="true"></div>
+        <header class="arc-sheet__head">
+          <h2 class="arc-h3" id="demo-sheet-title">Device</h2>
+          <button class="arc-sheet__close" type="button" id="demo-sheet-close" aria-label="Close">
+            <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#x"/></svg>
+          </button>
+        </header>
+        <div class="arc-sheet__body">
+          <ul class="arc-listbox" role="listbox" aria-label="Device">
+            <li class="arc-listbox__option arc-listbox__option--selected" role="option" aria-selected="true" tabindex="0">ilja-iphone<svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#check"/></svg></li>
+            <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">ilja-ipad</li>
+            <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">rabotnik</li>
+            <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">falknest-mini</li>
+            <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">z440</li>
+            <li class="arc-listbox__option" role="option" aria-selected="false" tabindex="0">casamac</li>
+          </ul>
+        </div>
+      </dialog>
+
+      <dialog class="arc-sheet" id="demo-menu-sheet" aria-labelledby="demo-menu-title">
+        <div class="arc-sheet__handle" aria-hidden="true"></div>
+        <header class="arc-sheet__head">
+          <h2 class="arc-h3" id="demo-menu-title">bookindex · run 41</h2>
+          <button class="arc-sheet__close" type="button" id="demo-menu-close" aria-label="Close">
+            <svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#x"/></svg>
+          </button>
+        </header>
+        <div class="arc-sheet__body">
+          <ul class="arc-menu" role="menu" aria-label="Run actions">
+            <li class="arc-menu__item" role="menuitem" tabindex="0"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#pencil"/></svg>Rename the run</li>
+            <li class="arc-menu__item" role="menuitem" tabindex="0"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#copy"/></svg>Copy the record</li>
+            <li class="arc-menu__item" role="menuitem" tabindex="0"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#external-link"/></svg>Open on GitHub</li>
+            <li class="arc-menu__item arc-menu__item--danger" role="menuitem" tabindex="0"><svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#trash"/></svg>Remove the run</li>
+          </ul>
+        </div>
+      </dialog>
+
+      <dialog class="arc-dialog" id="demo-dialog" aria-labelledby="demo-dialog-title">
+        <div class="arc-dialog__head">
+          <h2 class="arc-h2" id="demo-dialog-title">Remove this device?</h2>
+          <span class="arc-chip arc-chip--error"><i class="arc-chip__dot"></i>Danger</span>
+        </div>
+        <p class="arc-body arc-muted">The relay forgets the key at once. The device is paired again from the start.</p>
+        <div class="arc-dialog__actions">
+          <button class="arc-btn arc-btn--ghost" type="button" id="demo-dialog-cancel">Keep it</button>
+          <button class="arc-btn arc-btn--danger" type="button" id="demo-dialog-confirm">Remove</button>
+        </div>
+      </dialog>
+      <div class="arc-toast arc-toast--attention" role="status" id="toast" hidden>
+        <svg class="arc-icon arc-toast__mark" aria-hidden="true"><use href="assets/icons.svg#triangle-alert"/></svg>
+        <span>Coolant below the margin. The pump ramps up in 20 s.</span>
+      </div>
+
+      <nav class="arc-bar" aria-label="Primary">
+        <button class="arc-bar__item" type="button" aria-current="page">Status</button>
+        <button class="arc-bar__item" type="button">Grid</button>
+        <button class="arc-bar__item" type="button">Log</button>
+        <button class="arc-bar__item" type="button">Link</button>
+      </nav>
+    </main>
+
+    <script>
+      // one pass per event: the replay button restarts the two one-shot effects
+      const panel = document.getElementById("fx-panel");
+      const line = document.getElementById("fx-line");
+
+      // field slot: one action clears the value and returns focus; the other swaps the input's type
+      document.getElementById("demo-clear").addEventListener("click", () => {
+        const input = document.getElementById("demo-query");
+        input.value = "";
+        input.focus();
+      });
+
+      const reveal = document.getElementById("demo-reveal");
+      reveal.addEventListener("click", () => {
+        const input = document.getElementById("demo-key");
+        const shown = reveal.getAttribute("aria-pressed") === "true";
+        input.type = shown ? "password" : "text";
+        reveal.setAttribute("aria-pressed", String(!shown));
+        reveal.setAttribute("aria-label", shown ? "Show the key" : "Hide the key");
+        reveal.querySelector("use").setAttribute("href", shown ? "assets/icons.svg#eye" : "assets/icons.svg#eye-off");
+      });
+
+
+      // the select opens the sheet; choosing a row writes the value and closes it
+      const sheet = document.getElementById("demo-sheet");
+      const select = document.getElementById("demo-device");
+      const selectValue = select.querySelector(".arc-select__value");
+      const closeSheet = () => {
+        sheet.close();
+        select.setAttribute("aria-expanded", "false");
+      };
+      select.addEventListener("click", () => {
+        sheet.showModal();
+        select.setAttribute("aria-expanded", "true");
+      });
+      document.getElementById("demo-sheet-close").addEventListener("click", closeSheet);
+      sheet.addEventListener("close", () => select.setAttribute("aria-expanded", "false"));
+      for (const option of sheet.querySelectorAll(".arc-listbox__option")) {
+        option.addEventListener("click", () => {
+          const text = option.textContent.trim();
+          for (const other of sheet.querySelectorAll(".arc-listbox__option")) {
+            other.setAttribute("aria-selected", "false");
+            other.classList.remove("arc-listbox__option--selected");
+            other.querySelector(".arc-icon")?.remove();
+          }
+          option.setAttribute("aria-selected", "true");
+          option.classList.add("arc-listbox__option--selected");
+          option.insertAdjacentHTML("beforeend", '<svg class="arc-icon" aria-hidden="true"><use href="assets/icons.svg#check"/></svg>');
+          selectValue.textContent = text;
+          closeSheet();
+        });
+      }
+
+
+      // the action menu: a mark opens a sheet of acts, the sheet closes on a choice
+      const menuSheet = document.getElementById("demo-menu-sheet");
+      const menuTrigger = document.getElementById("demo-menu");
+      const closeMenu = () => {
+        menuSheet.close();
+        menuTrigger.setAttribute("aria-expanded", "false");
+      };
+      menuTrigger.addEventListener("click", () => {
+        menuSheet.showModal();
+        menuTrigger.setAttribute("aria-expanded", "true");
+      });
+      document.getElementById("demo-menu-close").addEventListener("click", closeMenu);
+      menuSheet.addEventListener("close", () => menuTrigger.setAttribute("aria-expanded", "false"));
+      for (const item of menuSheet.querySelectorAll(".arc-menu__item")) {
+        item.addEventListener("click", closeMenu);
+      }
+
+
+      // the slider writes its own fill and its own number: the gradient needs the value, the reader needs the digits
+      const slider = document.getElementById("demo-slider");
+      const sliderValue = document.getElementById("demo-slider-value");
+      const paintSlider = () => {
+        const pct = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+        slider.style.setProperty("--arc-slider-value", `${pct}%`);
+        sliderValue.textContent = `${slider.value} %`;
+      };
+      slider.addEventListener("input", paintSlider);
+      paintSlider();
+
+
+      // the form: each failing field is listed in the summary, the action stays disabled until the list is empty
+      const form = document.getElementById("demo-form");
+      const summary = document.getElementById("demo-summary");
+      const summaryTitle = document.getElementById("demo-summary-title");
+      const submit = document.getElementById("demo-submit");
+      const summaryList = document.getElementById("demo-summary-list");
+      const fields = [
+        { input: "demo-name", field: "demo-name-field", label: "Device name — required",
+          valid: (v) => v.trim().length > 0 },
+        { input: "demo-relay", field: "demo-relay-field", label: "Relay address — add the port",
+          valid: (v) => /:\d{2,5}$/.test(v.trim()) }
+      ];
+      const revalidate = () => {
+        const failing = [];
+        for (const { input, field, label, valid } of fields) {
+          const el = document.getElementById(input);
+          const bad = !valid(el.value);
+          el.setAttribute("aria-invalid", String(bad));
+          document.getElementById(field).querySelector(".arc-field__error").hidden = !bad;
+          if (bad) failing.push({ input, label });
+        }
+        // the summary names only the fields that fail now: a stale row sends the reader to a field that is fine
+        summaryList.replaceChildren(...failing.slice(0, 3).map(({ input, label }) => {
+          const li = document.createElement("li");
+          const link = document.createElement("a");
+          link.className = "arc-form__summary-link";
+          link.href = `#${input}`;
+          link.textContent = label;
+          li.append(link);
+          return li;
+        }));
+        summary.hidden = failing.length === 0;
+        summaryTitle.textContent = `${failing.length} ${failing.length === 1 ? "field needs" : "fields need"} attention`;
+        submit.disabled = failing.length > 0;
+      };
+      for (const { input } of fields) {
+        document.getElementById(input).addEventListener("input", revalidate);
+      }
+      form.addEventListener("submit", (event) => event.preventDefault());
+      revalidate();
+
+      // the dialog: the platform's top layer, focus trap and Escape; the system only supplies the surface
+      const demoDialog = document.getElementById("demo-dialog");
+      document.getElementById("demo-dialog-open").addEventListener("click", () => demoDialog.showModal());
+      document.getElementById("demo-dialog-cancel").addEventListener("click", () => demoDialog.close());
+      document.getElementById("demo-dialog-confirm").addEventListener("click", () => demoDialog.close());
+
+
+      // the count: the field keeps what was typed, the line says what is left, and nothing is cut
+      const notes = document.getElementById("demo-notes");
+      const count = document.getElementById("demo-count");
+      const LIMIT = 120;
+      const recount = () => {
+        const left = LIMIT - notes.value.length;
+        count.textContent = left >= 0
+          ? `${left} characters remaining`
+          : `You have ${-left} characters too many`;
+        count.classList.toggle("arc-count--over", left < 0);
+      };
+      notes.addEventListener("input", recount);
+      recount();
+
+      // code bar: a copy reports itself in words, and a toggle names the state it is in
+      const log = document.getElementById("log");
+      const copy = document.getElementById("log-copy");
+      const copyWord = copy.querySelector(".arc-code__word");
+      copy.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(log.textContent);
+        } catch {
+          return; // no clipboard, no claim: the word stays COPY
+        }
+        copyWord.textContent = "COPIED";
+        copy.classList.add("arc-code__act--done");
+        setTimeout(() => {
+          copyWord.textContent = "COPY";
+          copy.classList.remove("arc-code__act--done");
+        }, 2000);
+      });
+
+      const pause = document.getElementById("log-pause");
+      pause.addEventListener("click", () => {
+        const paused = pause.getAttribute("aria-pressed") !== "true";
+        pause.setAttribute("aria-pressed", String(paused));
+        pause.querySelector(".arc-code__word").textContent = paused ? "PAUSED" : "LIVE";
+        pause.querySelector("use").setAttribute("href", paused ? "assets/icons.svg#pause" : "assets/icons.svg#play");
+      });
+
+      // the wrap act: the CSS reads the attribute, so only the word follows the state here
+      const wrap = document.getElementById("log-wrap");
+      wrap.addEventListener("click", () => {
+        const on = wrap.getAttribute("aria-pressed") !== "true";
+        wrap.setAttribute("aria-pressed", String(on));
+        wrap.querySelector(".arc-code__word").textContent = on ? "WRAP" : "SCROLL";
+      });
+
+      document.getElementById("fx-replay").addEventListener("click", () => {
+        for (const el of [panel, line]) {
+          const name = el === panel ? "arc-sweep" : "arc-glitch";
+          el.classList.remove(name);
+          void el.offsetWidth; // force a reflow so the animation can restart
+          el.classList.add(name);
+        }
+      });
+
+      // ?toast=1 reveals the toast: it is fixed, so the default frame shows the elements underneath.
+      const params = new URLSearchParams(location.search);
+      // ?scheme=light renders the light scheme; the build emits it for the media query and for this flag
+      if (params.has("scheme")) document.documentElement.dataset.scheme = params.get("scheme");
+      if (params.has("toast")) document.getElementById("toast").hidden = false;
+      // ?wrap=1 puts the record in its wrapped state, so both states of the act can be rendered
+      if (params.has("wrap")) document.getElementById("log-wrap").click();
+      // ?sheet=1 opens the sheet, so its state can be rendered
+      if (params.has("sheet")) document.getElementById("demo-device").click();
+      // ?menu=1 opens the action menu
+      if (params.has("menu")) document.getElementById("demo-menu").click();
+      // ?dialog=1 opens the dialog for a render
+      if (params.has("dialog")) document.getElementById("demo-dialog-open").click();
+      // ?open=1 unfolds the first disclosure for a render
+      if (params.has("open")) document.querySelector(".arc-disclosure").open = true;
+
+      // ?geometry=1 prints the numbers a reader would otherwise guess.
+      if (params.has("geometry")) {
+        const root = document.documentElement;
+        // a custom property keeps its token text; a probe element resolves it to px
+        const px = (name) => {
+          const probe = document.createElement("div");
+          probe.style.cssText = `position:absolute;width:var(${name});height:0`;
+          document.body.append(probe);
+          const value = probe.getBoundingClientRect().width;
+          probe.remove();
+          return `${value.toFixed(2)}px`;
+        };
+        const box = (selector) => {
+          const el = document.querySelector(selector);
+          if (!el) return `${selector}: missing`;
+          const r = el.getBoundingClientRect();
+          return `${selector}: ${r.width.toFixed(1)} × ${r.height.toFixed(1)}`;
+        };
+        const out = [
+          `viewport: ${innerWidth} × ${innerHeight} @ ${devicePixelRatio}x`,
+          `--arc-u: ${px("--arc-u")}`,
+          `--arc-fs: ${px("--arc-fs")}`,
+          `--arc-space-4: ${px("--arc-space-4")}`,
+          `--arc-control-height-m: ${px("--arc-control-height-m")}`,
+          box(".arc-btn--primary"),
+          box(".arc-input"),
+          box(".arc-panel"),
+          box(".arc-bar"),
+          `shell width: ${document.querySelector(".arc-shell").getBoundingClientRect().width.toFixed(1)}`,
+        ];
+        const pre = document.getElementById("geometry");
+        pre.hidden = false;
+        pre.textContent = out.join("\n");
+      }
+    </script>
+  </body>
+</html>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from './api';
 
 /** One entry of `data/exercise-catalogue.json` as the route returns it. */
 export interface CatalogueEntry {
@@ -110,7 +111,7 @@ function normalizeCatalogue(payload: unknown): CatalogueEntry[] {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await apiFetch(url);
   if (!response.ok) throw new Error(`${url} returned ${response.status}`);
   return (await response.json()) as T;
 }

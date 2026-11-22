@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const VolumeCalculator = require('./backend/utils/volumeCalculator');
 const MuscleVolume = require('./backend/utils/muscleVolume');
@@ -10,11 +12,41 @@ const { suggestForReport } = require('./backend/utils/muscleSuggestions');
 const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('./backend/utils/pairings');
 const { computeSessionVolume } = require('./backend/utils/sessionVolume');
 const { weeklyPillars } = require('./backend/utils/pillars');
+const { statsFor, periodDays, DEFAULT_PERIOD } = require('./backend/utils/stats');
+const { getDraft, putDraft, removeDraft } = require('./backend/utils/drafts');
+const { readJson, writeJson, updateJson, StoreError } = require('./backend/utils/store');
 const { mergePlanWeeks } = require('./backend/utils/planMerge');
 require('dotenv').config();
 
+// The ceilings on what one request may grow. They sit beside the routes that read them.
+const MAX_PLANS_PER_PRINCIPAL = 50;
+const MAX_PLAN_WEEKS = 52;
+const MAX_EXERCISES_PER_SESSION = 50;
+const MAX_SETS_PER_EXERCISE = 50;
+const MAX_SESSION_NOTES = 2000;
+const MAX_PAIRING_SELECTION = 50;
+const MAX_DRAFT_STATE_BYTES = 64 * 1024;
+const MAX_DRAFTS_STORE_BYTES = 1024 * 1024;
+
+/** The plans one account holds. Without a verified principal every stored plan is that caller's. */
+function plansOf(plans, owner) {
+  return (Array.isArray(plans) ? plans : [])
+    .filter((plan) => plan && (plan.userId || null) === owner);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// The directory that holds the JSON stores: GRND_DATA_DIR when set, <repo>/data otherwise.
+function dataRoot() {
+  return process.env.GRND_DATA_DIR || path.join(__dirname, 'data');
+}
+
+// A local run has no uploads/ (the container creates it), so it is made here. The data root holds the
+// user's journal and drafts and belongs to its owner alone, hence 0700.
+const uploadsDir = path.join(__dirname, 'uploads');
+fsSync.mkdirSync(dataRoot(), { recursive: true, mode: 0o700 });
+fsSync.mkdirSync(uploadsDir, { recursive: true });
 
 // Middleware
 app.use(cors());
@@ -28,18 +60,101 @@ app.use(express.static(appDir));
 // A link saved before the move still carries /next/; send it to the same path at the root.
 app.use('/next', (req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-  const target = req.originalUrl.replace(/^\/next/, '') || '/';
+  const target = req.originalUrl.replace(/^\/next/, '');
+
+  // Only a path that stays on this host is a target. `//host` and `\host` are read as a host by the
+  // browser, so a redirect to either would leave the app and could carry the visitor anywhere.
+  let decoded;
+  try {
+    decoded = decodeURIComponent(target);
+  } catch {
+    return res.status(400).json({ error: 'Invalid redirect target' });
+  }
+  const targetPath = decoded.split(/[?#]/)[0];
+  if (!/^\/(?!\/)./.test(targetPath) || targetPath.includes('\\') || /[\u0000-\u001f\u007f]/.test(decoded)) {
+    return res.status(400).json({ error: 'Invalid redirect target' });
+  }
+
   res.redirect(301, target);
 });
+
+// What may be stored and served from uploads/. The declared type and the name's extension must both
+// be on the list: a browser trusts the served type, so a `.png` that is really HTML is refused.
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
+const MAX_UPLOADS_PER_PRINCIPAL = 20;
+const MAX_UPLOAD_BYTES_PER_PRINCIPAL = 50 * 1024 * 1024;
+const MAX_UPLOAD_INDEX_ENTRIES = 1000;
+
+const uploadsIndexFile = () => path.join(dataRoot(), 'uploads.json');
+
+/** The allowlisted extension of a name, lowercased, or `null` when it has none. */
+function allowedExtension(name) {
+  const extension = path.extname(typeof name === 'string' ? name : '').slice(1).toLowerCase();
+  return ALLOWED_IMAGE_EXTENSIONS.includes(extension) ? extension : null;
+}
+
+function uploadTypeError(message) {
+  const error = new Error(message);
+  error.code = 'INVALID_UPLOAD_TYPE';
+  error.status = 400;
+  return error;
+}
+
+/** The account an upload belongs to. Without a verified principal every upload is the one caller's. */
+function uploadOwner(req) {
+  return req.userId || null;
+}
+
+/** The files and bytes one principal already holds, from the index the route keeps. */
+async function uploadUsage(owner) {
+  const stored = await readJson(uploadsIndexFile(), []);
+  const entries = (Array.isArray(stored) ? stored : [])
+    .filter((entry) => entry && (entry.owner || null) === owner);
+  return {
+    count: entries.length,
+    bytes: entries.reduce((sum, entry) => sum + (Number(entry.size) || 0), 0)
+  };
+}
+
+/** Refuses the 21st file or the request that would carry the principal past 50 MB. */
+async function uploadQuota(req, res, next) {
+  try {
+    const usage = await uploadUsage(uploadOwner(req));
+    const declared = Number(req.headers['content-length']);
+    const wouldPass = Number.isFinite(declared) && usage.bytes + declared > MAX_UPLOAD_BYTES_PER_PRINCIPAL;
+    if (usage.count >= MAX_UPLOADS_PER_PRINCIPAL
+      || usage.bytes >= MAX_UPLOAD_BYTES_PER_PRINCIPAL
+      || wouldPass) {
+      return res.status(413).json({ error: 'Upload quota reached for this account' });
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
+/** Notes the accepted file, so the next request can count it. The index keeps the last 1000. */
+async function recordUpload(owner, file) {
+  await updateJson(uploadsIndexFile(), [], (current) => {
+    const entries = Array.isArray(current) ? current : [];
+    return [...entries, { name: file.filename, size: file.size, owner, at: Date.now() }]
+      .slice(-MAX_UPLOAD_INDEX_ENTRIES);
+  });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
+    // The stored name is ours: a generated stem and an allowlisted extension. The caller's name is
+    // only inspected, never written, so it cannot choose a path or a type.
+    const extension = allowedExtension(file.originalname);
+    if (!extension) return cb(uploadTypeError('The file name must end in png, jpg, jpeg, webp or gif'));
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, `${file.fieldname || 'image'}-${uniqueSuffix}.${extension}`);
   }
 });
 
@@ -49,11 +164,13 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: function (req, file, cb) {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
+    if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+      return cb(uploadTypeError('Only PNG, JPEG, WebP and GIF images are allowed'));
     }
+    if (!allowedExtension(file.originalname)) {
+      return cb(uploadTypeError('The file name must end in png, jpg, jpeg, webp or gif'));
+    }
+    cb(null, true);
   }
 });
 
@@ -63,10 +180,155 @@ app.use((req, res, next) => {
   next();
 });
 
-// Helper function to get user data file path
-function getUserDataPath(userId) {
-  return path.join(__dirname, 'data', `${userId}.json`);
+// --- Identity and the data root -------------------------------------------------------------------
+
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.name = 'HttpError';
+    this.status = status;
+  }
 }
+
+/** The directory every store lives in. A deployment points GRND_DATA_DIR at a private volume. */
+function dataRoot() {
+  return process.env.GRND_DATA_DIR ? path.resolve(process.env.GRND_DATA_DIR) : path.join(__dirname, 'data');
+}
+
+// A user id names one file, so it may only carry the characters a file name keeps to itself.
+const USER_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+// The shared stores hold every account. A user id must never name one of them, or a plan read would
+// read the journal and a plan write would overwrite it.
+const SHARED_STORE_NAMES = new Set([
+  'user-profiles',
+  'workout-sessions',
+  'workout-drafts',
+  'training-plans',
+  'weekly-targets',
+  'exercise-catalogue',
+  'exercise-taxonomy',
+  'equipment',
+  'pillars'
+]);
+
+/** Why a route's userId may not become a file name, or `null` when it may. */
+function userIdRefusal(userId) {
+  if (typeof userId !== 'string' || !USER_ID_PATTERN.test(userId)) {
+    return 'userId must be 1 to 64 letters, digits, underscores or hyphens';
+  }
+  if (SHARED_STORE_NAMES.has(userId)) return 'userId must not name a shared store';
+  return null;
+}
+
+// Helper function to get user data file path. The path is built from a checked value only: a raw
+// request value never reaches the filesystem.
+function getUserDataPath(userId) {
+  const refusal = userIdRefusal(userId);
+  if (refusal) throw new HttpError(400, refusal);
+
+  const root = dataRoot();
+  const filePath = path.join(root, `${userId}.json`);
+  if (path.dirname(filePath) !== root) throw new HttpError(400, 'userId escapes the data root');
+  return filePath;
+}
+
+/**
+ * The Telegram WebApp initData, or `null` when it was not signed with this bot's token.
+ * The check string is every other field sorted by key as `key=value`; the key is HMAC(bot token,
+ * "WebAppData") and the signature is HMAC(that key, check string).
+ */
+function verifyInitData(raw) {
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+
+  let params;
+  try {
+    params = new URLSearchParams(raw);
+  } catch {
+    return null;
+  }
+
+  const hash = params.get('hash');
+  if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/i.test(hash)) return null;
+
+  const secret = process.env.GRND_TELEGRAM_BOT_TOKEN;
+  if (!secret) return null;
+
+  const pairs = [];
+  for (const [key, value] of params) {
+    if (key === 'hash') continue;
+    pairs.push([key, value]);
+  }
+  pairs.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  const checkString = pairs.map(([key, value]) => `${key}=${value}`).join('\n');
+
+  const key = crypto.createHmac('sha256', 'WebAppData').update(secret).digest();
+  const expected = crypto.createHmac('sha256', key).update(checkString).digest();
+  const received = Buffer.from(hash.toLowerCase(), 'hex');
+  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) return null;
+
+  const authDate = Number(params.get('auth_date'));
+  if (!Number.isFinite(authDate)) return null;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (nowSeconds - authDate > 24 * 60 * 60) return null;
+
+  let user;
+  try {
+    user = JSON.parse(params.get('user') || '');
+  } catch {
+    return null;
+  }
+  if (!user || typeof user !== 'object' || typeof user.id !== 'number' || !Number.isFinite(user.id)) return null;
+
+  return { user, authDate };
+}
+
+/** Every /api request carries one verified principal. Without a bot token there is nothing to verify. */
+function requirePrincipal(req, res, next) {
+  if (!process.env.GRND_TELEGRAM_BOT_TOKEN) {
+    return res.status(503).json({ error: 'Telegram bot token is not configured' });
+  }
+
+  const header = req.get('authorization') || '';
+  const match = /^tma\s+(.+)$/i.exec(header.trim());
+  if (!match) return res.status(401).json({ error: 'Missing Telegram initData' });
+
+  const verified = verifyInitData(match[1].trim());
+  if (!verified) return res.status(401).json({ error: 'Invalid Telegram initData' });
+
+  req.userId = String(verified.user.id);
+  req.telegramUser = verified.user;
+  next();
+}
+
+app.use('/api', requirePrincipal);
+
+// `/:userId` with an empty value does not reach its route; it still must answer 400, not 404.
+app.use('/api', (req, res, next) => {
+  if (!req.path.endsWith('/')) return next();
+  if (/^\/(workout-data|user-profile|workout-draft|workout-sessions|muscle-volume|pillars|suggestions|stats)\/$/.test(req.path)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+  next();
+});
+
+/** A route's `:userId` must be the caller's own. 404, never 403: another account is not a fact here. */
+function requireOwnUserId(req, res, next) {
+  if (req.params.userId !== req.userId) return res.status(404).json({ error: 'Not found' });
+  next();
+}
+
+/** Refuse a malformed userId before any handler can build a path from it. */
+function validateUserIdParam(req, res, next) {
+  const refusal = userIdRefusal(req.params.userId);
+  if (refusal) return res.status(400).json({ error: 'Invalid userId', details: refusal });
+  next();
+}
+
+// Who the caller is, from the verified payload only.
+app.get('/api/me', (req, res) => {
+  res.json({ userId: req.userId });
+});
 
 // Validation functions for new PRD-compliant hierarchical data structure
 function validateTrainingPlan(plan) {
@@ -226,7 +488,7 @@ function validateExercise(exercise, weekNumber, dayNumber, exerciseNumber) {
 // API Endpoints
 
 // GET /api/workout-data/:userId - retrieve user's training plan data
-app.get('/api/workout-data/:userId', async (req, res) => {
+app.get('/api/workout-data/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const filePath = getUserDataPath(userId);
@@ -263,13 +525,14 @@ app.get('/api/workout-data/:userId', async (req, res) => {
       }
     }
   } catch (error) {
+    if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
     console.error('Error reading training plan data:', error);
     res.status(500).json({ error: 'Failed to retrieve training plan data' });
   }
 });
 
 // POST /api/workout-data/:userId - save user's training plan data
-app.post('/api/workout-data/:userId', async (req, res) => {
+app.post('/api/workout-data/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const trainingPlan = req.body;
@@ -297,7 +560,7 @@ app.post('/api/workout-data/:userId', async (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
-    await fs.writeFile(filePath, JSON.stringify(dataToSave, null, 2));
+    await writeJson(filePath, dataToSave);
 
     res.json({
       success: true,
@@ -305,18 +568,20 @@ app.post('/api/workout-data/:userId', async (req, res) => {
       lastUpdated: dataToSave.updatedAt
     });
   } catch (error) {
+    if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
     console.error('Error saving training plan data:', error);
     res.status(500).json({ error: 'Failed to save training plan data' });
   }
 });
 
 // POST /api/upload-image - handle exercise image uploads
-app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+app.post('/api/upload-image', uploadQuota, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
 
+    await recordUpload(uploadOwner(req), req.file);
     const imageUrl = `/uploads/${req.file.filename}`;
 
     res.json({
@@ -394,14 +659,14 @@ function validateUserId(req, res, next) {
 // GET /api/user-profile/:userId - retrieve user profile
 // Weekly working sets per muscle group, against the band in data/weekly-targets.json.
 // A kilogram total says nothing about whether a group got enough work; this answers that question.
-app.get('/api/muscle-volume/:userId', async (req, res) => {
+app.get('/api/muscle-volume/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const week = req.query.week || undefined;
     let sessions = [];
     try {
       const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
-      sessions = JSON.parse(data).sessions || [];
+      sessions = journalSessions(JSON.parse(data));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
@@ -413,15 +678,83 @@ app.get('/api/muscle-volume/:userId', async (req, res) => {
   }
 });
 
+// The running workout, so a killed app resumes where it stopped.
+const draftFile = () => path.join(dataRoot(), 'workout-drafts.json');
+
+app.get('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
+  try {
+    const draft = await getDraft(draftFile(), req.params.userId);
+    if (!draft) return res.status(404).json({ error: 'No draft' });
+    res.json({ draft });
+  } catch (error) {
+    console.error('Error reading the workout draft:', error);
+    res.status(500).json({ error: 'Failed to read the workout draft' });
+  }
+});
+
+app.put('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!body.state || typeof body.state !== 'object') {
+      return res.status(400).json({ error: 'A draft carries a state object' });
+    }
+    // A draft is a screen's worth of state. A larger one is not a draft, and the store holds every
+    // account's draft in one file, so it has a ceiling of its own.
+    const stateBytes = Buffer.byteLength(JSON.stringify(body.state));
+    if (stateBytes > MAX_DRAFT_STATE_BYTES) {
+      return res.status(413).json({ error: 'The draft state is larger than 64 KB' });
+    }
+    const draft = {
+      mode: body.mode === 'amrap' ? 'amrap' : 'sets',
+      elapsed: Number(body.elapsed) || 0,
+      state: body.state,
+      savedAt: Date.now()
+    };
+    // A damaged file reads as empty here: putDraft moves it aside and rewrites it, which is the point
+    // of that recovery. Failing the request would leave the damage in place forever.
+    let drafts = {};
+    try {
+      drafts = await readJson(draftFile(), {});
+    } catch (error) {
+      if (error.name !== 'StoreError') throw error;
+      console.warn('drafts: the store is damaged, the save repairs it');
+    }
+    const nextStore = { ...(drafts && typeof drafts === 'object' ? drafts : {}), [req.params.userId]: draft };
+    if (Buffer.byteLength(JSON.stringify(nextStore)) > MAX_DRAFTS_STORE_BYTES) {
+      return res.status(413).json({ error: 'The drafts store would exceed 1 MB' });
+    }
+    const saved = await putDraft(draftFile(), req.params.userId, {
+      mode: draft.mode,
+      elapsed: draft.elapsed,
+      state: draft.state
+    });
+    // The client ignores the body; echoing the whole draft doubled the traffic of every save.
+    res.json({ savedAt: saved.savedAt });
+  } catch (error) {
+    console.error('Error writing the workout draft:', error);
+    res.status(500).json({ error: 'Failed to write the workout draft' });
+  }
+});
+
+app.delete('/api/workout-draft/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
+  try {
+    await removeDraft(draftFile(), req.params.userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error removing the workout draft:', error);
+    res.status(500).json({ error: 'Failed to remove the workout draft' });
+  }
+});
+
 // Weekly work per ability — pull, push, legs. A set counts once, by the movement of its exercise.
-app.get('/api/pillars/:userId', async (req, res) => {
+app.get('/api/pillars/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const week = req.query.week || undefined;
     let sessions = [];
     try {
       const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
-      sessions = JSON.parse(data).sessions || [];
+      sessions = journalSessions(JSON.parse(data));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
@@ -432,14 +765,43 @@ app.get('/api/pillars/:userId', async (req, res) => {
   }
 });
 
+// Sets, reps and the working weight of every exercise, over a window that ends now.
+// The period is one of the app's own names: week, month, 3m, 6m, y.
+app.get('/api/stats/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const period = req.query.period === undefined ? DEFAULT_PERIOD : String(req.query.period);
+    // An unknown name is refused, never read as the default: a typo would answer another period.
+    if (periodDays(period) === null) {
+      return res.status(400).json({ error: `period must be one of week, month, 3m, 6m, y` });
+    }
+
+    let sessions = [];
+    try {
+      const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
+      sessions = journalSessions(JSON.parse(data));
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    res.json(statsFor(sessions, { period, userId }));
+  } catch (error) {
+    console.error('Error building the statistics:', error);
+    res.status(500).json({ error: 'Failed to build the statistics' });
+  }
+});
+
 // What pairs well with what, for a circuit. It advises; the user chooses.
 app.post('/api/pairings', async (req, res) => {
   try {
     const body = req.body || {};
-    const catalogue = JSON.parse(await fs.readFile(path.join(__dirname, 'data', 'exercise-catalogue.json'), 'utf8'));
-    const equipmentFile = JSON.parse(await fs.readFile(path.join(__dirname, 'data', 'equipment.json'), 'utf8'));
-    const owned = (equipmentFile.items || []).filter((item) => item.available).map((item) => item.id);
     const selected = Array.isArray(body.selected) ? body.selected : [];
+    // The bound is answered before any file is read: a refusal must not depend on the data root.
+    if (selected.length > MAX_PAIRING_SELECTION) {
+      return res.status(400).json({ error: `selected must hold at most ${MAX_PAIRING_SELECTION} entries` });
+    }
+    const catalogue = JSON.parse(await fs.readFile(path.join(dataRoot(), 'exercise-catalogue.json'), 'utf8'));
+    const equipmentFile = JSON.parse(await fs.readFile(path.join(dataRoot(), 'equipment.json'), 'utf8'));
+    const owned = (equipmentFile.items || []).filter((item) => item.available).map((item) => item.id);
     // No limit unless the caller asks for one: the picker shows the whole ranked list.
     const limit = Number.isFinite(body.limit) ? body.limit : 0;
     res.json({
@@ -457,7 +819,7 @@ app.post('/api/pairings', async (req, res) => {
 // The fixed list a plan picks from. An exercise is chosen by id, never typed.
 app.get('/api/exercise-catalogue', async (req, res) => {
   try {
-    const raw = await fs.readFile(path.join(__dirname, 'data', 'exercise-catalogue.json'), 'utf8');
+    const raw = await fs.readFile(path.join(dataRoot(), 'exercise-catalogue.json'), 'utf8');
     res.json(JSON.parse(raw));
   } catch (error) {
     console.error('Error reading the exercise catalogue:', error);
@@ -466,7 +828,7 @@ app.get('/api/exercise-catalogue', async (req, res) => {
 });
 
 // What to add this week: the short groups with exercises his own equipment can cover.
-app.get('/api/suggestions/:userId', async (req, res) => {
+app.get('/api/suggestions/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const week = req.query.week || undefined;
@@ -474,7 +836,7 @@ app.get('/api/suggestions/:userId', async (req, res) => {
     let sessions = [];
     try {
       const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
-      sessions = JSON.parse(data).sessions || [];
+      sessions = journalSessions(JSON.parse(data));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
@@ -496,10 +858,10 @@ app.get('/api/suggestions/:userId', async (req, res) => {
   }
 });
 
-app.get('/api/user-profile/:userId', async (req, res) => {
+app.get('/api/user-profile/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
-    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+    const filePath = path.join(dataRoot(), 'user-profiles.json');
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
@@ -529,7 +891,7 @@ app.get('/api/user-profile/:userId', async (req, res) => {
 });
 
 // POST /api/user-profile/:userId - create/update profile
-app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
+app.post('/api/user-profile/:userId', validateUserIdParam, requireOwnUserId, validateUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const profile = req.body;
@@ -541,32 +903,16 @@ app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
       return res.status(400).json({ error: 'Invalid user profile structure', details: validationError.message });
     }
 
-    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+    const filePath = path.join(dataRoot(), 'user-profiles.json');
 
-    // Read existing profiles
-    let profiles = {};
-    try {
-      const data = await fs.readFile(filePath, 'utf8');
-      try {
-        profiles = JSON.parse(data);
-      } catch (parseError) {
-        console.error('JSON parse error in user profiles data:', parseError);
-        profiles = {}; // Start with empty object if JSON is invalid
+    const profiles = await updateJson(filePath, {}, (current) => ({
+      ...current,
+      [userId]: {
+        ...profile,
+        createdAt: current[userId] ? current[userId].createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-      // File doesn't exist, start with empty object
-    }
-
-    // Update or create profile
-    profiles[userId] = {
-      ...profile,
-      createdAt: profiles[userId] ? profiles[userId].createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Write back to file
-    await fs.writeFile(filePath, JSON.stringify(profiles, null, 2));
+    }));
 
     res.json({
       success: true,
@@ -580,10 +926,10 @@ app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
 });
 
 // DELETE /api/user-profile/:userId - delete profile
-app.delete('/api/user-profile/:userId', async (req, res) => {
+app.delete('/api/user-profile/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
-    const filePath = path.join(__dirname, 'data', 'user-profiles.json');
+    const filePath = path.join(dataRoot(), 'user-profiles.json');
 
     try {
       const data = await fs.readFile(filePath, 'utf8');
@@ -599,11 +945,11 @@ app.delete('/api/user-profile/:userId', async (req, res) => {
         return res.status(404).json({ error: 'User profile not found' });
       }
 
-      // Delete the profile
-      delete profiles[userId];
-
-      // Write back to file
-      await fs.writeFile(filePath, JSON.stringify(profiles, null, 2));
+      await updateJson(filePath, {}, (current) => {
+        const next = { ...current };
+        delete next[userId];
+        return next;
+      });
 
       res.json({
         success: true,
@@ -621,44 +967,19 @@ app.delete('/api/user-profile/:userId', async (req, res) => {
   }
 });
 
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Error:', error);
-
-  if (error instanceof multer.MulterError) {
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'File too large' });
-    }
-    return res.status(400).json({ error: error.message });
-  }
-
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-
-// Serve uploaded files statically
-app.use('/uploads', express.static('uploads'));
-
-// Unsplash API key endpoint
-app.get('/api/unsplash-key', (req, res) => {
-  const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY;
-  
-  if (!unsplashAccessKey) {
-    return res.status(500).json({ error: 'Unsplash API key not configured' });
-  }
-  
-  res.json({ accessKey: unsplashAccessKey });
-});
+// `GET /api/unsplash-key` is gone: it answered a server secret to any caller. It falls through to the
+// 404 at the end of the stack now.
 
 // Training Plans endpoint
 app.get('/api/training-plans', async (req, res) => {
   try {
     // The plans the user built are the file. A hard-coded sample used to be answered here, so the
     // screen showed two plans nobody had, with no days and no exercises, while the real ones sat on disk.
-    const raw = await fs.readFile(path.join(__dirname, 'data', 'training-plans.json'), 'utf8');
+    const raw = await fs.readFile(path.join(dataRoot(), 'training-plans.json'), 'utf8');
     const parsed = JSON.parse(raw);
     const plans = Array.isArray(parsed) ? parsed : (parsed.plans || []);
-    res.json(plans);
+    // Only the caller's own plans. A plan without an owner (the old shape) belongs to nobody.
+    res.json(plans.filter((plan) => plan && plan.userId === req.userId));
   } catch (error) {
     if (error.code === 'ENOENT') return res.json([]);
     console.error('Error retrieving training plans:', error);
@@ -693,8 +1014,16 @@ app.get('/api/training-plans', async (req, res) => {
       return res.status(400).json({ error: 'startDate cannot be in the past' });
     }
 
-    if (!Number.isInteger(durationWeeks) || durationWeeks < 1) {
-      return res.status(400).json({ error: 'durationWeeks must be an integer >= 1' });
+    if (!Number.isInteger(durationWeeks) || durationWeeks < 1 || durationWeeks > MAX_PLAN_WEEKS) {
+      return res.status(400).json({ error: `durationWeeks must be an integer between 1 and ${MAX_PLAN_WEEKS}` });
+    }
+
+    // The plan belongs to the principal that made it, and one account may hold 50.
+    const owner = req.userId || null;
+    const plansPath = path.join(dataRoot(), 'training-plans.json');
+    const held = plansOf(await readJson(plansPath, []), owner);
+    if (held.length >= MAX_PLANS_PER_PRINCIPAL) {
+      return res.status(400).json({ error: `An account holds at most ${MAX_PLANS_PER_PRINCIPAL} plans` });
     }
 
     // Generate IDs (simple timestamp-based ids to avoid adding a UUID dependency)
@@ -727,34 +1056,33 @@ app.get('/api/training-plans', async (req, res) => {
 
     const newPlan = {
       id: planId,
+      userId: req.userId,
       name: name.trim(),
       description: description || '',
       startDate: start.toISOString(),
       durationWeeks,
       weeks,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      ...(owner ? { userId: owner } : {})
     };
 
-    // Persist to data/training-plans.json (array)
-    const plansPath = path.join(__dirname, 'data', 'training-plans.json');
-    let plans = [];
-    try {
-      const existing = await fs.readFile(plansPath, 'utf8');
-      plans = JSON.parse(existing);
-      if (!Array.isArray(plans)) plans = [];
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err;
-      // file doesn't exist -- we'll create it
-      plans = [];
-    }
-
-    plans.push(newPlan);
-
-    await fs.mkdir(path.dirname(plansPath), { recursive: true });
-    await fs.writeFile(plansPath, JSON.stringify(plans, null, 2));
+    // Persist to the data root's training-plans.json (array). The cap is checked again inside the
+    // queued change: two creates that arrive together must not both slip past the count.
+    await updateJson(plansPath, [], (current) => {
+      const plans = Array.isArray(current) ? current : [];
+      if (plansOf(plans, owner).length >= MAX_PLANS_PER_PRINCIPAL) {
+        const full = new Error('plan limit');
+        full.code = 'PLAN_LIMIT';
+        throw full;
+      }
+      return [...plans, newPlan];
+    });
 
     res.status(201).json(newPlan);
   } catch (error) {
+    if (error.code === 'PLAN_LIMIT') {
+      return res.status(400).json({ error: `An account holds at most ${MAX_PLANS_PER_PRINCIPAL} plans` });
+    }
     console.error('Error creating training plan:', error);
     res.status(500).json({ error: 'Failed to create training plan' });
   }
@@ -770,67 +1098,84 @@ app.put('/api/training-plans/:planId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid plan payload' });
     }
 
-    const plansPath = path.join(__dirname, 'data', 'training-plans.json');
-    let plans = [];
-    try {
-      const existing = await fs.readFile(plansPath, 'utf8');
-      plans = JSON.parse(existing);
-      if (!Array.isArray(plans)) plans = [];
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        return res.status(404).json({ error: 'No plans found' });
-      }
-      throw err;
-    }
+    const plansPath = path.join(dataRoot(), 'training-plans.json');
 
-    const idx = plans.findIndex(p => p.id === planId);
-    if (idx === -1) {
-      return res.status(404).json({ error: 'Training plan not found' });
+    // A plan is at most 52 weeks. The merge keeps the incoming weeks, so the payload is the place to
+    // refuse one that would grow past the ceiling.
+    if (Array.isArray(payload.weeks) && payload.weeks.length > MAX_PLAN_WEEKS) {
+      return res.status(400).json({ error: `A plan holds at most ${MAX_PLAN_WEEKS} weeks` });
     }
-
-    // Merge payload into existing plan but preserve immutable fields
-    const existingPlan = plans[idx];
-    const updatedPlan = {
-      ...existingPlan,
-      ...payload,
-      id: existingPlan.id,
-      createdAt: existingPlan.createdAt || existingPlan.createdAt,
-      updatedAt: new Date().toISOString()
-    };
 
     // The editor sends the fields it renders. Merging by id keeps the ones it never sees, like
     // `dayOfWeek` on a day and `planId` on a week.
-    if (Array.isArray(payload.weeks)) {
-      updatedPlan.weeks = mergePlanWeeks(existingPlan.weeks, payload.weeks);
-    }
+    const updatedPlan = await updateJson(plansPath, [], (current) => {
+      const plans = Array.isArray(current) ? current : [];
+      // Another account's plan is not a plan: same answer as a missing one, and nothing is written.
+      const idx = plans.findIndex((plan) => plan.id === planId && plan.userId === req.userId);
+      if (idx === -1) {
+        const missing = new Error('plan not found');
+        missing.code = 'NOT_FOUND';
+        throw missing;
+      }
 
-    plans[idx] = updatedPlan;
+      const existingPlan = plans[idx];
+      const merged = {
+        ...existingPlan,
+        ...payload,
+        id: existingPlan.id,
+        userId: req.userId,
+        updatedAt: new Date().toISOString()
+      };
+      if (Array.isArray(payload.weeks)) {
+        merged.weeks = mergePlanWeeks(existingPlan.weeks, payload.weeks);
+      }
 
-    await fs.writeFile(plansPath, JSON.stringify(plans, null, 2));
+      const next = [...plans];
+      next[idx] = merged;
+      return next;
+    }).then((plans) => plans.find((plan) => plan.id === planId));
 
     res.json(updatedPlan);
   } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Training plan not found' });
+    }
+    if (error.name === 'StoreError') {
+      return res.status(500).json({ error: 'The plan file is damaged', details: error.message });
+    }
     console.error('Error updating training plan:', error);
     res.status(500).json({ error: 'Failed to update training plan' });
   }
 });
 
- // DELETE /api/training-plans/:planId - delete a training plan (mock implementation)
+ // DELETE /api/training-plans/:planId - delete the caller's plan
 app.delete('/api/training-plans/:planId', async (req, res) => {
   try {
     const { planId } = req.params;
+    const plansPath = path.join(dataRoot(), 'training-plans.json');
 
-    // In a real implementation this would remove the plan from a database.
-    // Since the current implementation returns static sample plans, just
-    // acknowledge the delete request with a success response.
-
-    console.log(`Received request to delete training plan: ${planId}`);
+    await updateJson(plansPath, [], (current) => {
+      const plans = Array.isArray(current) ? current : [];
+      const idx = plans.findIndex((plan) => plan.id === planId && plan.userId === req.userId);
+      if (idx === -1) {
+        const missing = new Error('plan not found');
+        missing.code = 'NOT_FOUND';
+        throw missing;
+      }
+      return plans.filter((_, index) => index !== idx);
+    });
 
     res.json({
       success: true,
-      message: `Training plan ${planId} deleted (mock).`
+      message: `Training plan ${planId} deleted.`
     });
   } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Training plan not found' });
+    }
+    if (error.name === 'StoreError') {
+      return res.status(500).json({ error: 'The plan file is damaged', details: error.message });
+    }
     console.error('Error deleting training plan:', error);
     res.status(500).json({ error: 'Failed to delete training plan' });
   }
@@ -879,30 +1224,29 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
- // Telegram webhook endpoint for Telegram Bot updates
- const TELEGRAM_SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN || '';
+// Telegram webhook endpoint for Telegram Bot updates
+app.post('/telegram-webhook', (req, res) => {
+  const secret = process.env.TELEGRAM_SECRET_TOKEN || '';
 
- app.post('/telegram-webhook', (req, res) => {
-   // If a secret token is configured, verify the incoming request contains it.
-   if (TELEGRAM_SECRET_TOKEN) {
-     const received = req.get('X-Telegram-Bot-Api-Secret-Token') || req.get('x-telegram-bot-api-secret-token');
-     if (received !== TELEGRAM_SECRET_TOKEN) {
-       console.warn('Unauthorized Telegram webhook request - invalid secret token');
-       return res.status(401).send('Unauthorized');
-     }
-   }
+  // Without a secret the endpoint cannot tell Telegram from anyone else, so it does not pretend to.
+  if (!secret) {
+    console.warn('Telegram webhook: TELEGRAM_SECRET_TOKEN is not configured');
+    return res.status(503).send('Webhook not configured');
+  }
 
-   // Acknowledge quickly to Telegram and log the update for further processing
-   try {
-     console.log('Telegram update received:', JSON.stringify(req.body));
-     // TODO: add processing logic here (e.g., route to handlers that respond to messages/commands)
-   } catch (err) {
-     console.error('Error processing Telegram update:', err);
-   }
+  const received = req.get('X-Telegram-Bot-Api-Secret-Token') || '';
+  if (received !== secret) {
+    console.warn('Unauthorized Telegram webhook request - invalid secret token');
+    return res.status(401).send('Unauthorized');
+  }
 
-   // Telegram requires a quick 200 OK response for webhook updates
-   res.status(200).send('OK');
- });
+  // The update body carries whatever the sender wrote, so only its id is logged.
+  const updateId = req.body && req.body.update_id;
+  if (updateId !== undefined) console.log(`Telegram update ${updateId} received`);
+
+  // Telegram requires a quick 200 OK response for webhook updates
+  res.status(200).send('OK');
+});
 
  // Start server
  app.listen(PORT, () => {
@@ -912,13 +1256,23 @@ app.get('/health', (req, res) => {
 
 // Helper function to get workout sessions file path
 function getWorkoutSessionsPath() {
-  return path.join(__dirname, 'data', 'workout-sessions.json');
+  return path.join(dataRoot(), 'workout-sessions.json');
+}
+
+/**
+ * The sessions of a journal, whichever of its two shapes the file has: a plain array (the oldest form)
+ * or `{ schema, sessions }`. A file that reads as neither has no sessions rather than a crash.
+ */
+function journalSessions(parsed) {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && Array.isArray(parsed.sessions)) return parsed.sessions;
+  return [];
 }
 
 /** The bodyweight the profile carries, or `undefined` when it carries none. */
 async function readUserBodyweight(userId) {
   try {
-    const raw = await fs.readFile(path.join(__dirname, 'data', 'user-profiles.json'), 'utf8');
+    const raw = await fs.readFile(path.join(dataRoot(), 'user-profiles.json'), 'utf8');
     const profile = JSON.parse(raw)[userId];
     return profile && typeof profile.bodyweight === 'number' ? profile.bodyweight : undefined;
   } catch (error) {
@@ -948,6 +1302,10 @@ function validateWorkoutSession(session) {
     throw new Error('completedExercises is required and must be an array');
   }
 
+  if (session.completedExercises.length > MAX_EXERCISES_PER_SESSION) {
+    throw new Error(`A session holds at most ${MAX_EXERCISES_PER_SESSION} exercises`);
+  }
+
   for (const exercise of session.completedExercises) {
     if (!exercise || typeof exercise !== 'object') {
       throw new Error('Each exercise in completedExercises must be an object');
@@ -961,6 +1319,10 @@ function validateWorkoutSession(session) {
 
     if (!Array.isArray(exercise.sets)) {
       throw new Error('Each exercise must have a sets array');
+    }
+
+    if (exercise.sets.length > MAX_SETS_PER_EXERCISE) {
+      throw new Error(`An exercise holds at most ${MAX_SETS_PER_EXERCISE} sets`);
     }
 
     for (const set of exercise.sets) {
@@ -982,6 +1344,10 @@ function validateWorkoutSession(session) {
     throw new Error('notes must be a string if provided');
   }
 
+  if (typeof session.notes === 'string' && session.notes.length > MAX_SESSION_NOTES) {
+    throw new Error(`notes holds at most ${MAX_SESSION_NOTES} characters`);
+  }
+
   return true;
 }
 
@@ -999,11 +1365,17 @@ app.post('/api/workout-session', async (req, res) => {
       return res.status(400).json({ error: 'Invalid workout session structure', details: validationError.message });
     }
 
+    // A session belongs to the verified caller; a body naming another account is refused.
+    if (sessionData.userId !== req.userId) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const userId = req.userId;
+
     // The volume comes from the sets that were done. Bodyweight work needs the body it moved, so a
     // missing profile is a refusal with a reason, never a silent zero.
     let computed;
     try {
-      const bodyweight = await readUserBodyweight(sessionData.userId);
+      const bodyweight = await readUserBodyweight(userId);
       computed = computeSessionVolume(sessionData.completedExercises, bodyweight);
     } catch (volumeError) {
       return res.status(400).json({ error: 'The session cannot be measured', details: volumeError.message });
@@ -1011,7 +1383,9 @@ app.post('/api/workout-session', async (req, res) => {
 
     const newSession = {
       ...sessionData,
-      id: Date.now().toString(),
+      userId,
+      // Two saves in the same millisecond used to share one id, so a delete or a read hit both.
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       date: sessionData.date ? new Date(sessionData.date) : new Date(),
       status: 'completed', // Default to completed for new sessions
       // The weekly report counts a circuit apart from the strength band; this is how it knows.
@@ -1022,28 +1396,14 @@ app.post('/api/workout-session', async (req, res) => {
       total_volume_kg: computed.totalVolume
     };
 
-    const filePath = getWorkoutSessionsPath();
-
-    // Read existing sessions
-    let sessionsData = { sessions: [] };
-    try {
-      const data = await fs.readFile(filePath, 'utf8');
-      try {
-        sessionsData = JSON.parse(data);
-      } catch (parseError) {
-        console.error('JSON parse error in workout sessions data:', parseError);
-        sessionsData = { sessions: [] }; // Start with empty array if JSON is invalid
-      }
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-      // File doesn't exist, start with empty array
-    }
-
-    // Add the new session
-    sessionsData.sessions.push(newSession);
-
-    // Write back to file
-    await fs.writeFile(filePath, JSON.stringify(sessionsData, null, 2));
+    // One queued read-change-write: two saves that arrive together must both land, and a damaged
+    // journal must stop here instead of being overwritten with a single session.
+    await updateJson(getWorkoutSessionsPath(), { sessions: [] }, (current) => ({
+      // A file in the oldest shape is an array; spreading it into an object numbered the sessions and
+      // hid them from every report.
+      schema: 2,
+      sessions: [...journalSessions(current), newSession]
+    }));
 
     res.json({
       success: true,
@@ -1057,7 +1417,7 @@ app.post('/api/workout-session', async (req, res) => {
 });
 
 // GET /api/workout-sessions/:userId - get all sessions for a user
-app.get('/api/workout-sessions/:userId', async (req, res) => {
+app.get('/api/workout-sessions/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
   try {
     const { userId } = req.params;
     const filePath = getWorkoutSessionsPath();
@@ -1068,12 +1428,16 @@ app.get('/api/workout-sessions/:userId', async (req, res) => {
       try {
         sessionsData = JSON.parse(data);
       } catch (parseError) {
+        // An empty list here reads as "no training this week" while the journal is damaged.
         console.error('JSON parse error in workout sessions data:', parseError);
-        return res.json([]); // Return empty array if JSON is invalid
+        return res.status(500).json({
+          error: 'The session journal is damaged',
+          details: 'workout-sessions.json does not parse'
+        });
       }
 
       // Filter sessions for the specific user
-      const userSessions = sessionsData.sessions.filter(session => session.userId === userId);
+      const userSessions = journalSessions(sessionsData).filter(session => session.userId === userId);
 
       res.json(userSessions);
     } catch (error) {
@@ -1106,8 +1470,8 @@ app.get('/api/workout-session/:sessionId', async (req, res) => {
         return res.status(500).json({ error: 'Invalid JSON format in workout sessions data' });
       }
 
-      // Find the specific session
-      const session = sessionsData.sessions.find(session => session.id === sessionId);
+      // Find the specific session. One of another account reads as missing, and says nothing about it.
+      const session = journalSessions(sessionsData).find(session => session.id === sessionId && session.userId === req.userId);
 
       if (!session) {
         return res.status(404).json({ error: 'Workout session not found' });
@@ -1135,42 +1499,74 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
     const filePath = getWorkoutSessionsPath();
 
     try {
-      const data = await fs.readFile(filePath, 'utf8');
-      let sessionsData;
-      try {
-        sessionsData = JSON.parse(data);
-      } catch (parseError) {
-        console.error('JSON parse error in workout sessions data:', parseError);
-        return res.status(500).json({ error: 'Invalid JSON format in workout sessions data' });
-      }
+      const removed = await updateJson(filePath, { sessions: [] }, (current) => {
+        const sessions = journalSessions(current);
+        const target = sessions.find((session) => session.id === sessionId);
+        // A missing session and another account's session are one answer: 404, journal untouched.
+        if (!target || target.userId !== req.userId) {
+          const missing = new Error('not found');
+          missing.code = 'NOT_FOUND';
+          throw missing;
+        }
+        return { schema: 2, sessions: sessions.filter((session) => session.id !== sessionId) };
+      });
 
-      // Find the session index
-      const sessionIndex = sessionsData.sessions.findIndex(session => session.id === sessionId);
-
-      if (sessionIndex === -1) {
-        return res.status(404).json({ error: 'Workout session not found' });
-      }
-
-      // Remove the session
-      sessionsData.sessions.splice(sessionIndex, 1);
-
-      // Write back to file
-      await fs.writeFile(filePath, JSON.stringify(sessionsData, null, 2));
 
       res.json({
         success: true,
         message: 'Workout session deleted successfully'
       });
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        // File doesn't exist, return 404
+      if (error.code === 'ENOENT' || error.code === 'NOT_FOUND') {
         return res.status(404).json({ error: 'Workout session not found' });
-      } else {
-        throw error;
       }
+      if (error.name === 'StoreError') {
+        return res.status(500).json({ error: 'The session journal is damaged', details: error.message });
+      }
+      throw error;
     }
   } catch (error) {
     console.error('Error deleting workout session:', error);
     res.status(500).json({ error: 'Failed to delete workout session' });
   }
+});
+
+// Uploaded files are served after every route above, so nothing here can shadow an `/api` path. The
+// browser is told not to guess the type, and only the four image types are rendered inline; anything
+// else is a download.
+app.use('/uploads', express.static(uploadsDir, {
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    const extension = allowedExtension(filePath);
+    res.setHeader('Content-Disposition', extension ? 'inline' : 'attachment');
+  }
+}));
+
+// The last middleware of the stack: a route above that throws answers here, so an `/api` caller always
+// gets JSON rather than Express's HTML error page.
+app.use((error, req, res, next) => {
+  console.error('Error:', error);
+
+  if (error.code === 'INVALID_UPLOAD_TYPE') {
+    return res.status(400).json({ error: error.message });
+  }
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large' });
+    }
+    return res.status(400).json({ error: error.message });
+  }
+
+  // body-parser rejects an oversized or malformed body before any route runs. Its error carries no
+  // `status` in this version, only a `type`, so the type decides: a 100 KB+ body is a 413 and a body
+  // that does not parse is a 400. Reporting both as 500 hides which bound the caller hit.
+  if (error.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'The request body is too large' });
+  }
+  if (error.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'The request body is not valid JSON' });
+  }
+
+  res.status(500).json({ error: 'Internal server error' });
 });

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   MAX_CHOICES,
   buildAmrapPayload,
   completeRound,
+  elapsedSeconds,
   isTimeUp,
   remainingSeconds,
+  resumeAmrap,
   setPartial,
   setsFor,
   startAmrap,
@@ -12,6 +14,8 @@ import {
   type AmrapState
 } from '../../lib/amrap';
 import { amrapEntries, useExerciseCatalogue } from '../../lib/catalogue';
+import { clearDraft, loadDraft, useDraftSync } from '../../lib/draft';
+import { STALE_AFTER_MS, clearSaved, readSaved, writeSaved } from '../../lib/persistence';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { saveWorkoutSession, type SavedSession } from '../../lib/session';
 import { Button } from '../ui/button';
@@ -40,7 +44,29 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
   const catalogue = useExerciseCatalogue();
   const [minutes, setMinutes] = useState('12');
   const [choices, setChoices] = useState<AmrapChoice[]>([]);
-  const [state, setState] = useState<AmrapState | null>(null);
+  const storageKey = `grnd-amrap-${userId}`;
+  const localStamp = useRef(0);
+  const [state, setState] = useState<AmrapState | null>(() => {
+    // A circuit that was running when the app closed picks up its clock.
+    const saved = readSaved<AmrapState>(storageKey, Date.now());
+    if (!saved) return null;
+    localStamp.current = saved.savedAt;
+    return resumeAmrap(saved.value, saved.elapsed, Date.now());
+  });
+
+  // The server draft survives a killed client, so it wins when it is the newer one.
+  useEffect(() => {
+    let active = true;
+    void loadDraft<AmrapState>(userId).then((draft) => {
+      if (!active || !draft || draft.mode !== 'amrap') return;
+      if (Date.now() - (draft.savedAt ?? 0) > STALE_AFTER_MS) return;
+      if (localStamp.current >= (draft.savedAt ?? 0)) return;
+      setState(resumeAmrap(draft.state, draft.elapsed, Date.now()));
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
   const [saving, setSaving] = useState(false);
@@ -51,6 +77,15 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
   useEffect(() => {
     onBusyChange(state !== null);
   }, [onBusyChange, state]);
+
+  // The rounds are written as they happen, to the phone and to the server.
+  useEffect(() => {
+    if (!state) return;
+    const at = Date.now();
+    writeSaved(storageKey, state, elapsedSeconds(state, at), at);
+  }, [state, storageKey]);
+
+  useDraftSync(userId, 'amrap', state, (current, now) => elapsedSeconds(current, now));
 
   useEffect(() => {
     if (!state || isTimeUp(state, now)) return;
@@ -115,6 +150,8 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
     setError(null);
     try {
       const session = await saveWorkoutSession(payload);
+      clearSaved(storageKey);
+      void clearDraft(userId);
       setSaved(session);
       setState(null);
       setChoices([]);
@@ -238,11 +275,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                   key={value}
                   type="button"
                   onClick={() => setMinutes(String(value))}
-                  className={
-                    minutes === String(value)
-                      ? 'rounded-pill border border-primary bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground'
-                      : 'rounded-pill border border-border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'
-                  }
+                  className={minutes === String(value) ? 'arc-chip arc-chip--selected' : 'arc-chip'}
                 >
                   {`${value} min`}
                 </button>
@@ -258,7 +291,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                   revealInput(event.currentTarget);
                 }}
                 aria-label="Total time in minutes"
-                className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="arc-input w-14 text-right"
               />
             </span>
           </div>
@@ -286,7 +319,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                       revealInput(event.currentTarget);
                     }}
                     aria-label={`Repetitions of ${choice.name} per round`}
-                    className="w-14 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="arc-input w-14 text-right"
                   />
                   <span className="text-[11px] text-muted-foreground">reps</span>
                   <input
@@ -337,7 +370,7 @@ export function AmrapScreen({ userId, onSaved, onBusyChange }: AmrapScreenProps)
                   className={
                     picked
                       ? 'flex w-full items-center justify-between gap-3 rounded-control border border-primary bg-accent px-3 py-2 text-left text-sm'
-                      : 'flex w-full items-center justify-between gap-3 rounded-control border border-border px-3 py-2 text-left text-sm disabled:opacity-50'
+                      : 'flex min-h-11 w-full items-center justify-between gap-3 rounded-control border border-border px-3 py-2 text-left text-sm disabled:opacity-50'
                   }
                 >
                   <span className="min-w-0 truncate font-medium">{entry.name}</span>

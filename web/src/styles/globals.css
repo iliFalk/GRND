@@ -19,11 +19,65 @@
   --pillar-core: #6929c4;
 }
 
-[data-theme='dark'] {
+[data-theme='dark'],
+[data-theme='arc'] {
   --pillar-pull: #4694ea;
   --pillar-push: #d5b26c;
   --pillar-legs: #4aa172;
   --pillar-core: #a775ff;
+}
+
+/* The ARC theme (Ilja, 2026-11-21): the product takes the design system's values, so every variable
+   below points at a --arc-* token and no colour is typed here. Zero radius, the system's two faces, its
+   accent and its alarm classes. The pillar colours stay the product's own palette (D9). */
+[data-theme='arc'] {
+  color-scheme: dark;
+  --background: var(--arc-bg-base);
+  --foreground: var(--arc-fg-high);
+  --card: var(--arc-bg-panel);
+  --card-foreground: var(--arc-fg-high);
+  --popover: var(--arc-bg-panel);
+  --popover-foreground: var(--arc-fg-high);
+  --primary: var(--arc-accent-primary);
+  --primary-foreground: var(--arc-fg-invert);
+  --secondary: var(--arc-bg-raised);
+  --secondary-foreground: var(--arc-fg-high);
+  --muted: var(--arc-bg-raised);
+  --muted-foreground: var(--arc-fg-medium);
+  --accent: var(--arc-bg-raised);
+  --accent-foreground: var(--arc-fg-high);
+  --destructive: var(--arc-status-error);
+  --destructive-foreground: var(--arc-fg-invert);
+  --border: var(--arc-line-hair);
+  --input: var(--arc-line-hair);
+  --ring: var(--arc-accent-primary);
+  --success: var(--arc-status-ok);
+  --warning: var(--arc-status-attention);
+  --danger: var(--arc-status-error);
+  --status-below: var(--arc-status-error);
+  --status-in: var(--arc-status-ok);
+  --status-above: var(--arc-status-attention);
+  --status-high: var(--arc-status-critical);
+  --app-radius-card: var(--arc-radius-none);
+  --app-radius-control: var(--arc-radius-none);
+  --app-radius-pill: var(--arc-radius-pill);
+  --on-solid: var(--arc-fg-invert);
+  /* Ilja, 2026-11-21: the pillars take the system's own hues in this theme, so a category and a status
+     speak one language. The product palette stays for the light and dark themes. */
+  --pillar-pull: var(--arc-accent-primary);
+  --pillar-push: var(--arc-status-attention);
+  --pillar-legs: var(--arc-status-ok);
+  --pillar-core: var(--arc-status-critical);
+}
+
+html[data-theme='arc'] {
+  font-family: var(--arc-font-ui);
+}
+
+html[data-theme='arc'] code,
+html[data-theme='arc'] pre,
+html[data-theme='arc'] .font-mono {
+  font-family: var(--arc-font-mono);
 }
 
 @theme inline {
@@ -56,6 +110,34 @@
   --radius-card: var(--app-radius-card);
   --radius-control: var(--app-radius-control);
   --radius-pill: var(--app-radius-pill);
+}
+
+/* The product's own shell: the system draws the bar and the app bar, the page places them. Positioning is
+   layout, not a design value, so it lives here and not in the element. */
+/* The element's own padding is a shorthand and it is loaded after this sheet, so the inset needs the
+   element's selector as well as the product's. */
+.app-bar.arc-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-inline: var(--arc-space-4);
+  background: var(--background);
+}
+
+.app-footer {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--background);
+}
+
+/* A statistics row names a movement the catalogue spells out in full — "Front foot on chair, jump on back
+   leg, side to side". The element cuts a title to one line with an ellipsis; here the title wraps and the
+   row grows, because a cut name answers nothing. Layout only: no colour, no type of its own. */
+.arc-item--wrap .arc-item__title {
+  white-space: normal;
 }
 
 @layer base {

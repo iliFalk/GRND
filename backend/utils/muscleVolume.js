@@ -136,7 +136,7 @@ class MuscleVolume {
     let counted = 0;
 
     for (const session of MuscleVolume.sessionList(sessions)) {
-      if (wantedUser && session.userId && String(session.userId) !== wantedUser) continue;
+      if (wantedUser && String(session.userId || '') !== wantedUser) continue;
       const date = MuscleVolume.sessionDate(session);
       if (!date || date < bounds.start || date >= bounds.end) continue;
       const exercises = session.completedExercises || session.exercises || [];

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiFetch } from './api';
 import type { CatalogueEntry } from './catalogue';
 
 export type PillarStatus = 'below' | 'in' | 'above' | 'high' | 'unknown';
@@ -209,7 +210,7 @@ export function loadPillars(userId: string): Promise<PillarsData> {
   if (existing?.data) return Promise.resolve(existing.data);
   if (existing?.promise) return existing.promise;
 
-  const promise = fetch(`/api/pillars/${encodeURIComponent(userId)}`)
+  const promise = apiFetch(`/api/pillars/${encodeURIComponent(userId)}`)
     .then(async (response) => {
       if (!response.ok) throw new Error(`/api/pillars/ returned ${response.status}`);
       return normalize(await response.json());

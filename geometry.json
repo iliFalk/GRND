@@ -1,0 +1,93 @@
+{
+  "_note": "The relations GRND's screens must satisfy under the ARC theme. Steps are the app's 4 px scale plus the system's spacing tokens, which the ARC theme resolves on the page; add a step here only when the design actually uses it.",
+  "steps": [
+    "--arc-space-1",
+    "--arc-space-2",
+    "--arc-space-3",
+    "--arc-space-4",
+    "--arc-space-5",
+    "--arc-space-6",
+    "--arc-space-8",
+    "--arc-control-height-m"
+  ],
+  "allow": [
+    20,
+    28,
+    36
+  ],
+  "rhythm": {
+    "scope": "main *"
+  },
+  "inset": [
+    {
+      "container": "main > section",
+      "child": ":scope > *"
+    },
+    {
+      "container": "main > div",
+      "child": ":scope > *"
+    }
+  ],
+  "rows": [
+    {
+      "container": ".arc-panel",
+      "child": ".arc-item",
+      "by": "text-lines"
+    },
+    {
+      "container": ".arc-listbox",
+      "child": ".arc-listbox__option"
+    }
+  ],
+  "control-height": [
+    {
+      "selector": ".arc-btn",
+      "heights": [
+        "--arc-control-height-m"
+      ]
+    }
+  ],
+  "columns": [
+    {
+      "grid": ".arc-table",
+      "row": ".arc-table__row"
+    }
+  ],
+  "padding": [
+    {
+      "selector": ".arc-panel",
+      "min": "--arc-space-4",
+      "sides": [
+        "top",
+        "left"
+      ]
+    },
+    {
+      "selector": ".arc-sheet",
+      "min": "--arc-space-4",
+      "sides": [
+        "left"
+      ]
+    },
+    {
+      "selector": ".arc-appbar",
+      "min": "--arc-space-4",
+      "sides": [
+        "left"
+      ]
+    }
+  ],
+  "truncate": [
+    {
+      "scope": "main .arc-item__title, main .arc-chip, main .arc-micro"
+    }
+  ],
+  "loss": [
+    {
+      "scope": "main p, main span, main h1, main h2, main h3"
+    }
+  ],
+  "snapshot": {
+    "scope": ".arc-panel, .arc-item, .arc-bar__item, .arc-readout, .arc-chip"
+  }
+}

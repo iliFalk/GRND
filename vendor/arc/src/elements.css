@@ -1,0 +1,2452 @@
+/* ARC — elements.
+   Three rules carry the look:
+   1. Zero radius. A fill is chamfered on two opposite corners; a frame is a hairline plus corner
+      brackets. The chamfer lives on a pseudo-element, so the element keeps an uncut focus ring.
+   2. One dominant accent per view. Cyan is the system accent, yellow is attention, magenta and red
+      are alarm only.
+   3. Glow is a semaphore, never decoration: it is static, and a pulse animates the opacity of a
+      separate layer instead of re-rasterizing a shadow. */
+
+/* ---------- button ---------- */
+
+.arc-btn {
+  --arc-btn-chamfer: var(--arc-radius-chamfer);
+  --arc-btn-clip: polygon(
+    var(--arc-btn-chamfer) 0,
+    100% 0,
+    100% calc(100% - var(--arc-btn-chamfer)),
+    calc(100% - var(--arc-btn-chamfer)) 100%,
+    0 100%,
+    0 var(--arc-btn-chamfer)
+  );
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arc-space-2);
+  min-height: var(--arc-control-height-m);
+  padding: 0 var(--arc-space-5);
+  border: 0;
+  background: none;
+  color: var(--arc-accent-primary);
+  font-family: var(--arc-font-ui);
+  font-size: var(--arc-fs-label);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--arc-motion-quick) var(--arc-ease-out),
+    filter var(--arc-motion-quick) var(--arc-ease-out);
+}
+
+.arc-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: var(--arc-btn-clip);
+  background: var(--arc-line-strong);
+}
+
+/* The frame variant: an outer clipped layer in accent, an inner one in the ground colour. */
+.arc-btn::after {
+  content: "";
+  position: absolute;
+  inset: var(--arc-stroke-hair);
+  z-index: -1;
+  clip-path: var(--arc-btn-clip);
+  background: var(--arc-bg-ambient);
+}
+
+.arc-btn--primary {
+  color: var(--arc-fg-invert);
+}
+.arc-btn--primary::before {
+  background: var(--arc-accent-primary);
+}
+.arc-btn--primary::after {
+  content: none;
+}
+
+.arc-btn--danger {
+  color: var(--arc-fg-invert);
+}
+.arc-btn--danger::before {
+  background: var(--arc-status-error);
+}
+.arc-btn--danger::after {
+  content: none;
+}
+
+/* The frame is the default look, so `--secondary` declares nothing new: it exists so the markup says
+   "not primary" instead of relying on the absence of a class. */
+.arc-btn--secondary {
+  color: var(--arc-accent-primary);
+}
+
+.arc-btn--ghost::before,
+.arc-btn--ghost::after {
+  content: none;
+}
+.arc-btn--ghost {
+  color: var(--arc-fg-medium);
+}
+
+.arc-btn--l {
+  min-height: var(--arc-control-height-l);
+  padding: 0 var(--arc-space-6);
+  font-size: var(--arc-fs-body);
+}
+
+.arc-btn:hover::before {
+  filter: var(--arc-effect-hover-glow);
+}
+.arc-btn--danger:hover::before {
+  filter: var(--arc-effect-hover-glow-danger);
+}
+.arc-btn:active {
+  transform: translateY(1px);
+}
+/* A disabled fill is not a dimmed accent: the accent says "this is the action" and a faded one still says it.
+   The fill takes the raised ground and the label the low ink, so the state reads by what the button is made
+   of, not by an opacity the reader has to compare with its neighbour. Measured: fg.low on bg.raised is 4.33
+   on the dark ground and 5.41 on paper, and the gate holds the pair at 3:1 because a disabled control is
+   exempt from 4.5 yet still has to be read. */
+.arc-btn:disabled {
+  cursor: not-allowed;
+  color: var(--arc-fg-low);
+}
+.arc-btn:disabled::before {
+  background: var(--arc-bg-raised);
+  filter: none;
+}
+.arc-btn[aria-pressed="true"] {
+  color: var(--arc-fg-invert);
+}
+.arc-btn[aria-pressed="true"]::before {
+  background: var(--arc-accent-strong);
+}
+
+/* ---------- panel: a hairline frame plus two hot corners ----------
+   The corners are neutral by default. Accent means the panel is the one the view is about; a page of
+   cyan corners spends the accent everywhere and says nothing. */
+
+.arc-panel {
+  --arc-panel-edge: var(--arc-line-hair);
+  position: relative;
+  display: grid;
+  gap: var(--arc-space-3);
+  padding: var(--arc-space-4);
+  background: var(--arc-bg-panel);
+  border: var(--arc-stroke-hair) solid var(--arc-panel-edge);
+}
+
+.arc-panel::before,
+.arc-panel::after {
+  content: "";
+  position: absolute;
+  width: var(--arc-space-3);
+  height: var(--arc-space-3);
+  border: var(--arc-stroke-focus) solid var(--arc-panel-edge);
+}
+
+.arc-panel--active {
+  --arc-panel-edge: var(--arc-accent-primary);
+}
+.arc-panel::before {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.arc-panel::after {
+  right: -1px;
+  bottom: -1px;
+  border-top: 0;
+  border-left: 0;
+}
+
+.arc-panel--flat {
+  background: var(--arc-bg-base);
+}
+.arc-panel--alarm {
+  --arc-panel-alarm: var(--arc-status-critical);
+  box-shadow: inset 0 var(--arc-stroke-focus) 0 var(--arc-panel-alarm);
+}
+.arc-panel--alarm::before,
+.arc-panel--alarm::after {
+  border-color: var(--arc-panel-alarm);
+}
+
+.arc-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-2);
+}
+
+/* ---------- rows and key/value pairs ---------- */
+
+.arc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+  padding: var(--arc-space-3) 0;
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+}
+.arc-row:last-child {
+  border-bottom: 0;
+}
+
+.arc-kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+}
+.arc-kv__key {
+  font-size: var(--arc-fs-micro);
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-medium);
+}
+.arc-kv__value {
+  font-family: var(--arc-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-high);
+}
+
+/* ---------- field: a form control keeps a full rectangular frame ---------- */
+
+.arc-field {
+  display: grid;
+  gap: var(--arc-space-2);
+}
+
+.arc-field__label {
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-medium);
+}
+
+.arc-field__hint {
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-low);
+}
+
+.arc-field__error {
+  display: flex;
+  gap: var(--arc-space-2);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-status-error);
+}
+
+.arc-input {
+  /* a phone has no pointer to drag a corner with: the box grows by its rows, never by a handle */
+  resize: none;
+  width: 100%;
+  min-height: var(--arc-control-height-m);
+  padding: 0 var(--arc-space-3);
+  background: var(--arc-bg-void);
+  border: var(--arc-stroke-hair) solid var(--arc-line-hair);
+  border-radius: var(--arc-radius-none);
+  color: var(--arc-fg-high);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-small);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A field that grows downward pads on both axes: a single-line input centres itself in the row, but a
+   textarea puts its first line where its padding says. Measured before the fix: inset 0 px at the top
+   against 11.87 at the side, so the text sat on the frame. */
+textarea.arc-input {
+  padding-block: var(--arc-space-2);
+  line-height: 1.45;
+}
+
+.arc-input::placeholder {
+  color: var(--arc-fg-low);
+}
+
+.arc-input:hover {
+  border-color: var(--arc-line-strong);
+}
+
+.arc-input:focus-visible {
+  border-color: var(--arc-accent-primary);
+}
+
+.arc-input[aria-invalid="true"] {
+  border-color: var(--arc-status-error);
+}
+
+/* ---------- field slot: a mark before the value, one action inside the frame ----------
+   The action sits inside the input's own frame, so the field never grows a second row. It keeps the
+   44 px floor on both axes, and the input reserves the space it occupies, so a value is never painted
+   under a control.
+   A field that carries an action is a `div`, never a `label`: a button is a labelable element, so it
+   may not sit inside a label. The label element points at the input with `for`.
+   The act carries a word where the sprite has no mark for it (SHOW / HIDE). A pictogram invented for
+   an act is a guess at arm's length; a word is not. */
+
+.arc-field__control {
+  position: relative;
+  display: grid;
+}
+
+.arc-field__icon {
+  position: absolute;
+  inset-inline-start: var(--arc-space-3);
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  color: var(--arc-fg-low);
+  pointer-events: none;
+}
+
+.arc-input--icon {
+  padding-inline-start: calc(var(--arc-space-3) + var(--arc-fs-body) + var(--arc-space-2));
+}
+
+.arc-input--action {
+  padding-inline-end: calc(var(--arc-control-height-m) + var(--arc-space-2));
+}
+
+.arc-input--action-word {
+  padding-inline-end: calc(var(--arc-control-height-m) + var(--arc-fs-body) + var(--arc-space-3));
+}
+
+/* A native search field draws its own cancel button. The system supplies one, so the platform's goes. */
+.arc-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.arc-field__action {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arc-space-1);
+  min-width: var(--arc-control-height-m);
+  min-height: var(--arc-control-height-m);
+  padding-inline: var(--arc-space-2);
+  border: 0;
+  background: none;
+  color: var(--arc-fg-medium);
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.arc-field__action--word {
+  padding-inline: var(--arc-space-3);
+}
+
+/* The mark in a field is read at arm's length beside the value, so it takes the body size rather than
+   the micro size the act's own type uses. */
+.arc-field__action .arc-icon {
+  width: var(--arc-fs-body);
+  height: var(--arc-fs-body);
+}
+
+.arc-field__action:hover {
+  color: var(--arc-accent-primary);
+}
+
+.arc-field__action[aria-pressed="true"] {
+  color: var(--arc-accent-primary);
+}
+
+.arc-field__action:disabled {
+  opacity: 0.55;
+}
+
+/* The ring stays inside the frame: a positive offset would cross the input's own border. */
+.arc-field__action:focus-visible {
+  outline-offset: calc(var(--arc-stroke-focus) * -2);
+}
+
+/* ---------- chip: the one place a chamfer marks a status ---------- */
+
+.arc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arc-space-2);
+  min-height: var(--arc-space-8);
+  padding: 0 var(--arc-space-3);
+  /* The ground is measured: every status ink is a declared pair against bg.base, and three of them fell
+     below 4.5:1 on bg.raised (dark critical 4.22, light attention 4.37, light error 3.95). A chip keeps a
+     recessed ground inside a panel and reads as a word and a dot on the page ground. */
+  background: var(--arc-bg-base);
+  color: var(--arc-fg-medium);
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.arc-chip__dot {
+  width: calc(var(--arc-fs-micro) / 2);
+  height: calc(var(--arc-fs-micro) / 2);
+  background: currentColor;
+  flex: none;
+}
+
+.arc-chip--accent {
+  color: var(--arc-accent-primary);
+}
+.arc-chip--attention {
+  color: var(--arc-status-attention);
+}
+.arc-chip--critical {
+  color: var(--arc-status-critical);
+}
+.arc-chip--error {
+  color: var(--arc-status-error);
+}
+.arc-chip--ok {
+  color: var(--arc-status-ok);
+}
+
+/* ---------- meter ---------- */
+
+.arc-meter {
+  display: grid;
+  gap: var(--arc-space-2);
+}
+
+.arc-meter__track {
+  position: relative;
+  height: var(--arc-space-2);
+  background: var(--arc-bg-raised);
+  /* the ring stays visible at 100 %, so a full bar still reads as a meter and not as a rule */
+  box-shadow: inset 0 0 0 var(--arc-stroke-hair) var(--arc-line-soft);
+  overflow: hidden;
+}
+
+.arc-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--arc-meter-value, 50%);
+  background: var(--arc-accent-primary);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - var(--arc-space-1)) 100%,
+    0 100%
+  );
+}
+.arc-meter--attention .arc-meter__fill {
+  background: var(--arc-status-attention-fill);
+}
+.arc-meter--critical .arc-meter__fill {
+  /* the ladder's fill step, not the text step: a filled shape answers the fill floor, and the text step is
+     two lightness points brighter than the fill may be */
+  background: var(--arc-status-critical-fill);
+}
+
+/* ---------- bottom bar ---------- */
+
+.arc-bar {
+  display: flex;
+  border-top: var(--arc-stroke-hair) solid var(--arc-line-hair);
+  background: var(--arc-bg-ambient);
+}
+
+.arc-bar__item {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: calc(var(--arc-space-1) / 2);
+  min-height: var(--arc-control-height-l);
+  padding: var(--arc-space-2) 0;
+  border: 0;
+  background: none;
+  color: var(--arc-fg-low);
+  font-family: var(--arc-font-ui);
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.arc-bar__item[aria-current="page"] {
+  color: var(--arc-accent-primary);
+  box-shadow: inset 0 var(--arc-stroke-focus) 0 var(--arc-accent-primary);
+}
+
+/* ---------- item: one row of a list, tappable or not ---------- */
+
+.arc-item {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  width: 100%;
+  min-height: var(--arc-control-height-l);
+  padding: var(--arc-space-2) 0;
+  border: 0;
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arc-item:last-child {
+  border-bottom: 0;
+}
+
+button.arc-item {
+  cursor: pointer;
+  transition: background var(--arc-motion-quick) var(--arc-ease-out);
+}
+
+button.arc-item:active {
+  background: var(--arc-bg-raised);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button.arc-item:hover {
+    background: var(--arc-bg-raised);
+  }
+}
+
+.arc-item__text {
+  display: grid;
+  gap: calc(var(--arc-space-1) / 2);
+  min-width: 0;
+}
+
+.arc-item__title {
+  font-size: var(--arc-fs-h3);
+  font-weight: 500;
+  color: var(--arc-fg-high);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arc-item__meta {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  color: var(--arc-fg-low);
+}
+
+.arc-item__end {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-2);
+  margin-left: auto;
+}
+
+.arc-item__chevron {
+  color: var(--arc-fg-low);
+  font-size: var(--arc-fs-label);
+}
+
+/* The mark in an item's end spans half the grid, so it needs a larger box than the label's own em to
+   read at the size a chevron reads: the typed `›` it replaces was a full character. */
+.arc-item__chevron .arc-icon {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+/* ---------- empty: a list with nothing in it still says what to do ---------- */
+
+.arc-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--arc-space-2);
+  padding: var(--arc-space-8) var(--arc-space-4);
+  text-align: center;
+}
+
+.arc-empty__text {
+  max-width: 28ch;
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-low);
+}
+
+/* ---------- dialog: the control layer ----------
+   A native <dialog> supplies the focus trap, the Escape key and the top layer. The system styles it
+   and never re-implements that behaviour in JavaScript. Do not put a clip-path on it. */
+
+dialog.arc-dialog {
+  width: calc(100% - var(--arc-space-8));
+  max-width: 32rem;
+  margin: auto auto var(--arc-space-4);
+  padding: var(--arc-space-4);
+  display: grid;
+  gap: var(--arc-space-3);
+  background: var(--arc-bg-panel);
+  border: var(--arc-stroke-hair) solid var(--arc-line-strong);
+  color: var(--arc-fg-high);
+  box-shadow: var(--arc-shadow-panel);
+}
+
+dialog.arc-dialog::backdrop {
+  background: var(--arc-overlay-scrim);
+}
+
+dialog.arc-dialog:not([open]) {
+  display: none;
+}
+
+.arc-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+}
+
+.arc-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--arc-space-2);
+}
+
+/* ---------- sheet: a dialog that arrives from the bottom ----------
+   Same platform behaviour as a dialog — the top layer, the focus trap, the Escape key — and a different
+   place on the screen. On a phone a choice from many is a sheet, not a dropdown: a popover list covers
+   the very content it is explaining, and a native select brings the platform's own look onto a screen
+   the system was asked to draw.
+   The sheet keeps one job — choosing, confirming, or a short list of actions — and it never grows past
+   four fifths of the frame: past that the body scrolls, the sheet does not. */
+
+dialog.arc-sheet {
+  width: 100%;
+  max-width: none;
+  max-height: 80svh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  background: var(--arc-bg-panel);
+  color: var(--arc-fg-high);
+  box-shadow: var(--arc-shadow-sheet);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+dialog.arc-sheet::backdrop {
+  background: var(--arc-overlay-scrim);
+}
+
+dialog.arc-sheet:not([open]) {
+  display: none;
+}
+
+/* The grabber says "this came from the edge" without a second control: it is a mark, not a handle the
+   reader has to hit. */
+.arc-sheet__handle {
+  width: calc(var(--arc-u) * 2);
+  height: var(--arc-space-1);
+  margin: var(--arc-space-2) auto var(--arc-space-1);
+  background: var(--arc-line-strong);
+  flex: none;
+}
+
+.arc-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+  padding: var(--arc-space-2) var(--arc-space-4) var(--arc-space-3);
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+  flex: none;
+}
+
+.arc-sheet__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(env(safe-area-inset-bottom), var(--arc-space-3));
+}
+
+.arc-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--arc-control-height-m);
+  min-height: var(--arc-control-height-m);
+  margin-inline-end: calc(var(--arc-space-2) * -1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--arc-fg-medium);
+  cursor: pointer;
+}
+
+.arc-sheet__close .arc-icon {
+  width: var(--arc-fs-body);
+  height: var(--arc-fs-body);
+}
+
+.arc-sheet__close:hover {
+  color: var(--arc-accent-primary);
+}
+
+/* ---------- select: a field that opens the sheet ----------
+   It looks like the input it sits beside — frame, void ground, mono value — and carries the mark that
+   says a list follows. `aria-haspopup="listbox"` and `aria-expanded` carry the state. */
+
+.arc-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+  width: 100%;
+  min-height: var(--arc-control-height-m);
+  padding: 0 var(--arc-space-3);
+  background: var(--arc-bg-void);
+  border: var(--arc-stroke-hair) solid var(--arc-line-hair);
+  border-radius: var(--arc-radius-none);
+  color: var(--arc-fg-high);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-small);
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+  cursor: pointer;
+}
+
+.arc-select:hover {
+  border-color: var(--arc-line-strong);
+}
+
+.arc-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arc-select__mark {
+  color: var(--arc-fg-low);
+  flex: none;
+}
+
+.arc-select[aria-expanded="true"] {
+  border-color: var(--arc-accent-primary);
+}
+
+.arc-select[aria-expanded="true"] .arc-select__mark {
+  color: var(--arc-accent-primary);
+}
+
+/* ---------- listbox: the options inside the sheet ----------
+   One row per option at the touch floor, hairline between, a check on the chosen one. The chosen row
+   carries the mark as well as `aria-selected`, because a colour alone is a state a reader can miss. */
+
+.arc-listbox {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arc-listbox__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+  min-height: var(--arc-control-height-m);
+  padding: var(--arc-space-2) var(--arc-space-4);
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-medium);
+  cursor: pointer;
+}
+
+.arc-listbox__option:last-child {
+  border-bottom: 0;
+}
+
+.arc-listbox__option:hover {
+  background: var(--arc-bg-raised);
+  color: var(--arc-fg-high);
+}
+
+.arc-listbox__option .arc-icon {
+  color: var(--arc-accent-primary);
+  flex: none;
+}
+
+.arc-listbox__option--selected {
+  color: var(--arc-fg-high);
+}
+
+/* ---------- icon-only action: a mark that is itself the control ----------
+   The floor belongs to the box, not to the drawing: 44 px of target around a 16 px mark. A mark with no
+   word needs an accessible name — `aria-label` — because a glyph alone is a guess at arm's length. */
+
+.arc-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--arc-control-height-m);
+  min-height: var(--arc-control-height-m);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--arc-fg-medium);
+  cursor: pointer;
+}
+
+.arc-icon-btn .arc-icon {
+  width: var(--arc-fs-body);
+  height: var(--arc-fs-body);
+}
+
+.arc-icon-btn:hover {
+  color: var(--arc-accent-primary);
+}
+
+.arc-icon-btn--danger:hover {
+  color: var(--arc-status-error);
+}
+
+/* ---------- check and radio: one choice per row ----------
+   The row is the target, the mark is 24 px inside it, and the native input stays the control: it is
+   focusable, it carries the state, and the label makes the whole row a hit area. The mark is drawn on a
+   sibling so the sprite can supply the check — a background image cannot follow `currentColor`. */
+
+.arc-check,
+.arc-radio {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  min-height: var(--arc-control-height-m);
+  cursor: pointer;
+}
+
+/* The native input stretches over the whole row: the row is the target, so the control that receives the
+   press is the control the finger lands on. The mark beside it is the picture, not the hit area. */
+.arc-check__input,
+.arc-radio__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.arc-check__mark,
+.arc-radio__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: calc(var(--arc-u) * 1.5);
+  height: calc(var(--arc-u) * 1.5);
+  background: var(--arc-bg-void);
+  color: var(--arc-fg-invert);
+  box-shadow: inset 0 0 0 var(--arc-stroke-hair) var(--arc-line-hair);
+}
+
+.arc-check__mark .arc-icon {
+  opacity: 0;
+  width: var(--arc-fs-body);
+  height: var(--arc-fs-body);
+}
+
+.arc-check__input:checked + .arc-check__mark {
+  background: var(--arc-accent-primary);
+  color: var(--arc-fg-invert);
+  box-shadow: inset 0 0 0 var(--arc-stroke-hair) var(--arc-accent-primary);
+}
+
+/* A chosen radio is a ring with a dot, not a punched disc: the ground stays visible between the mark and
+   the rim, which is how a reader tells a radio from a checkbox at 24 px.
+   The dot is a radial gradient, not a flex-centred pseudo-element: a percentage box centred by flex lands
+   on a fraction of a pixel and rounds to a different side at another zoom, which reads as a dot off its
+   centre. A gradient starts at the box's own centre and cannot drift. */
+.arc-radio__input:checked + .arc-radio__mark {
+  box-shadow: inset 0 0 0 var(--arc-stroke-focus) var(--arc-accent-primary);
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--arc-accent-primary) 0 44%,
+    var(--arc-bg-void) 46%
+  );
+}
+
+.arc-check__input:checked + .arc-check__mark .arc-icon {
+  opacity: 1;
+}
+
+.arc-radio__mark {
+  border-radius: var(--arc-radius-pill);
+  background: var(--arc-bg-void);
+}
+
+
+.arc-check__input:focus-visible + .arc-check__mark,
+.arc-radio__input:focus-visible + .arc-radio__mark {
+  outline: var(--arc-stroke-focus) solid var(--arc-accent-strong);
+  outline-offset: var(--arc-stroke-focus);
+}
+
+.arc-check__input:disabled ~ *,
+.arc-radio__input:disabled ~ * {
+  opacity: 0.55;
+}
+
+.arc-check__text {
+  display: grid;
+  gap: var(--arc-space-1);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-high);
+}
+
+.arc-check__meta {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  color: var(--arc-fg-low);
+}
+
+/* ---------- menu: a short list of actions ----------
+   On a phone a menu arrives as the sheet its trigger opens: the same platform behaviour, the same
+   `role="menu"` semantics, one row per act at the touch floor. A destructive act carries the error
+   colour and its own mark, so it never rests on colour alone. */
+
+.arc-menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arc-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  min-height: var(--arc-control-height-m);
+  padding: var(--arc-space-2) var(--arc-space-4);
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-medium);
+  cursor: pointer;
+}
+
+.arc-menu__item:last-child {
+  border-bottom: 0;
+}
+
+.arc-menu__item:hover {
+  background: var(--arc-bg-raised);
+  color: var(--arc-fg-high);
+}
+
+.arc-menu__item .arc-icon {
+  flex: none;
+  color: var(--arc-fg-low);
+}
+
+.arc-menu__item:hover .arc-icon {
+  color: currentColor;
+}
+
+.arc-menu__item--danger,
+.arc-menu__item--danger .arc-icon {
+  color: var(--arc-status-error);
+}
+
+/* ---------- slider: a value between a floor and a ceiling, dragged ----------
+   The native range keeps the keyboard, the drag and the accessible name; the stylesheet draws the track and
+   the thumb. The filled part needs the value, and Chrome has no progress pseudo-element, so the consumer sets
+   `--arc-slider-value` as a percentage and one gradient paints the rest. The thumb is square: the system has
+   no round corner, and a pill thumb would be the only circle on the screen. */
+
+.arc-slider {
+  display: grid;
+  gap: var(--arc-space-2);
+}
+
+.arc-slider__row {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-3);
+  min-height: var(--arc-control-height-m);
+}
+
+.arc-slider__input {
+  --arc-slider-value: 50%;
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* The box is the target, the track is 4 px inside it: the finger meets the whole row, the eye meets a line. */
+  height: var(--arc-control-height-m);
+  margin: 0;
+  background-image: linear-gradient(
+    to right,
+    var(--arc-accent-primary) 0 var(--arc-slider-value),
+    var(--arc-line-soft) var(--arc-slider-value) 100%
+  );
+  background-size: 100% var(--arc-space-1);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.arc-slider__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: calc(var(--arc-u) * 1.5);
+  height: calc(var(--arc-u) * 1.5);
+  border: 0;
+  background: var(--arc-accent-primary);
+  box-shadow: inset 0 0 0 var(--arc-stroke-focus) var(--arc-bg-void);
+}
+
+.arc-slider__input::-moz-range-thumb {
+  width: calc(var(--arc-u) * 1.5);
+  height: calc(var(--arc-u) * 1.5);
+  border: 0;
+  border-radius: var(--arc-radius-none);
+  background: var(--arc-accent-primary);
+  box-shadow: inset 0 0 0 var(--arc-stroke-focus) var(--arc-bg-void);
+}
+
+.arc-slider__input::-moz-range-track {
+  height: var(--arc-space-1);
+  background: var(--arc-line-soft);
+}
+
+.arc-slider__value {
+  min-width: 4ch;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--arc-fg-high);
+  text-align: end;
+}
+
+/* ---------- badge: a count on a mark that is already a target ----------
+   The badge is not a control: the bar item or the bell under it is. It therefore carries no floor of its
+   own — a 44 px badge would push the row apart — and it never carries a class without a word nearby. */
+
+.arc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A count sits beside a word and never touches it: the element owns the gap, because the word is the
+     consumer's text and cannot carry one. `vertical-align: middle` centres the box on the line's x-height
+     instead of standing it on the baseline, which reads as a badge floating above the word. */
+  margin-inline-start: var(--arc-space-2);
+  vertical-align: middle;
+  min-width: var(--arc-space-5);
+  height: var(--arc-space-5);
+  padding: 0 var(--arc-space-1);
+  background: var(--arc-accent-primary);
+  color: var(--arc-fg-invert);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.arc-badge--attention {
+  background: var(--arc-status-attention-fill);
+  color: var(--arc-fg-invert);
+}
+
+.arc-badge--error {
+  background: var(--arc-status-error-fill);
+  color: var(--arc-fg-on-dark);
+}
+
+/* A badge with nothing to count is a dot: the state without the number. */
+.arc-badge--dot {
+  min-width: 0;
+  width: var(--arc-space-2);
+  height: var(--arc-space-2);
+  padding: 0;
+  border-radius: var(--arc-radius-pill);
+}
+
+/* ---------- combobox: a field that suggests while you type ----------
+   The results sit under the field, in the flow — not in a sheet. A sheet would cover the lower half of the
+   frame, which is exactly where the keyboard stands, and the reader would type blind. The list scrolls at
+   seven rows and the options are listbox rows. */
+
+.arc-combobox {
+  display: grid;
+  gap: 0;
+}
+
+/* the list hangs off the field: no gap and no top rule, so the two read as one control that grew down */
+.arc-combobox__list {
+  border-top: 0;
+  max-height: calc(var(--arc-u) * 11);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--arc-bg-panel);
+  border: var(--arc-stroke-hair) solid var(--arc-line-hair);
+}
+
+.arc-combobox__list[hidden] {
+  display: none;
+}
+
+.arc-combobox__empty {
+  margin: 0;
+  padding: var(--arc-space-3);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-low);
+}
+
+/* ---------- form: a blocking summary over the action ----------
+   When two or more fields keep the form from submitting, the summary stands directly above the primary
+   action and names each failing field. The action is disabled, and the reason is on the screen — never in a
+   tooltip and never in the button's colour alone.
+   Rows are targets at the touch floor, not inline words: on a phone the summary is three taps, and a link
+   swallowed by a sentence is a tap a thumb misses. */
+
+.arc-form {
+  display: grid;
+  gap: var(--arc-space-4);
+}
+
+.arc-form__summary {
+  display: grid;
+  gap: var(--arc-space-2);
+  padding: var(--arc-space-3);
+  background: var(--arc-bg-panel);
+  border: var(--arc-stroke-hair) solid var(--arc-line-hair);
+  border-left-width: var(--arc-stroke-focus);
+  border-left-color: var(--arc-status-error);
+}
+
+.arc-form__summary[hidden] {
+  display: none;
+}
+
+.arc-form__summary-title {
+  margin: 0;
+  font-size: var(--arc-fs-small);
+  font-weight: 600;
+  color: var(--arc-status-error);
+}
+
+.arc-form__summary-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arc-form__summary-link {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-2);
+  min-height: var(--arc-control-height-m);
+  padding-inline: var(--arc-space-2);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-high);
+  text-decoration: underline;
+  text-decoration-thickness: var(--arc-stroke-hair);
+  text-underline-offset: calc(var(--arc-space-1) / 2);
+}
+
+.arc-form__summary-link:hover {
+  color: var(--arc-accent-primary);
+  text-decoration-thickness: var(--arc-stroke-focus);
+}
+
+.arc-form__more {
+  margin: 0;
+  font-size: var(--arc-fs-micro);
+  color: var(--arc-fg-low);
+}
+
+.arc-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arc-space-2);
+}
+
+/* ---------- group: one decision made of several choices ----------
+   A fieldset with a legend, because five radios under one heading are one decision and a screen reader has to
+   hear the question before the answers. The legend takes the field label's type; the hint takes the field's. */
+
+.arc-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: var(--arc-space-2);
+}
+
+.arc-group__legend {
+  padding: 0;
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-medium);
+}
+
+.arc-group__hint {
+  margin: 0;
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-low);
+}
+
+.arc-group__error {
+  display: flex;
+  gap: var(--arc-space-2);
+  margin: 0;
+  font-size: var(--arc-fs-small);
+  color: var(--arc-status-error);
+}
+
+.arc-group[aria-invalid="true"] .arc-group__legend {
+  color: var(--arc-status-error);
+}
+
+/* ---------- count: a limit that is said, not enforced by truncation ----------
+   `maxlength` cuts a pasted text without a word, and the reader cannot tell a rejection from a lost paste.
+   The field keeps its whole value, the count says what is left, and the last line says what is over. */
+
+.arc-count {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--arc-fg-low);
+}
+
+.arc-count--over {
+  color: var(--arc-status-error);
+}
+
+/* ---------- result: the screen that says what happened ----------
+   The mirror of the fault screen: a class word, a title in the past tense, one sentence, the thing that was
+   created, and one next action. It stands inside `.arc-screen`, centred, with the app bar left in place, so a
+   reader who does not want the next action can still leave.
+   It never carries navigation of its own and never celebrates: the reader came here to learn whether the work
+   landed. */
+
+.arc-result {
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: var(--arc-space-3);
+  min-height: 100%;
+  padding-block: var(--arc-space-6);
+}
+
+.arc-result > * {
+  margin: 0;
+}
+
+.arc-result__class {
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-result-class, var(--arc-status-ok));
+}
+
+.arc-result__body {
+  max-width: 28ch;
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-low);
+}
+
+/* The record of what was created: the one block a success screen owes, because "done" without the thing is
+   a claim and not a receipt. */
+.arc-result__record {
+  display: grid;
+  gap: var(--arc-space-2);
+  width: 100%;
+  padding: var(--arc-space-3);
+  background: var(--arc-bg-void);
+  border: var(--arc-stroke-hair) solid var(--arc-line-soft);
+}
+
+.arc-result__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arc-space-2);
+  padding-top: var(--arc-space-2);
+}
+
+.arc-result--ok {
+  --arc-result-class: var(--arc-status-ok);
+}
+
+.arc-result--attention {
+  --arc-result-class: var(--arc-status-attention);
+}
+
+/* ---------- tasks: a list of steps and where each stands ----------
+   One row per step at the touch floor, the step's name as the target, its state in words at the trailing edge.
+   A state is a word as well as a colour: "Done" in green and "In progress" in amber are told apart by the
+   letters when the colours are gone. */
+
+.arc-tasks {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arc-tasks__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+  min-height: var(--arc-control-height-m);
+  padding-block: var(--arc-space-2);
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+  color: var(--arc-fg-high);
+  text-decoration: none;
+}
+
+.arc-tasks__row:last-child {
+  border-bottom: 0;
+}
+
+.arc-tasks__row:hover .arc-tasks__title {
+  text-decoration: underline;
+  text-decoration-thickness: var(--arc-stroke-focus);
+}
+
+.arc-tasks__text {
+  display: grid;
+  gap: var(--arc-space-1);
+  min-width: 0;
+}
+
+.arc-tasks__title {
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-high);
+}
+
+.arc-tasks__meta {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  color: var(--arc-fg-low);
+}
+
+.arc-tasks__state {
+  flex: none;
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+}
+
+.arc-tasks__state--done {
+  color: var(--arc-status-ok);
+}
+
+.arc-tasks__state--now {
+  color: var(--arc-status-attention);
+}
+
+.arc-tasks__state--todo {
+  color: var(--arc-fg-low);
+}
+
+/* ---------- note: a block the eye must find without a frame ----------
+   The inset text of the government systems: a sentence set apart by a rule on the leading edge and nothing
+   else. A frame would make it a panel, and a panel says "this is the object", not "read this first". */
+
+.arc-note {
+  display: grid;
+  gap: var(--arc-space-2);
+  padding: var(--arc-space-2) 0 var(--arc-space-2) var(--arc-space-4);
+  /* a rule twice the focus stroke, and no fill: a ground of its own turns the note into a panel, and a panel
+     says "this is the object" rather than "read this first". Measured on the render — with the panel ground
+     the block read as an outlined box. */
+  border-left: calc(var(--arc-stroke-focus) * 2) solid var(--arc-line-hair);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-medium);
+}
+
+.arc-note > * {
+  margin: 0;
+}
+
+/* ---------- warning: a sentence that must not be missed ----------
+   A mark in the attention hue plus the sentence in the reading ink. It carries no frame and no fill, because
+   it stands inside the flow of a form and must read as part of it — but it never relies on the hue: the mark
+   is there so the sentence is found by the eye that skips. */
+
+.arc-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arc-space-2);
+  margin: 0;
+  font-size: var(--arc-fs-small);
+  font-weight: 600;
+  color: var(--arc-fg-high);
+}
+
+.arc-warning .arc-icon {
+  flex: none;
+  margin-top: calc(var(--arc-space-1) / 2);
+  color: var(--arc-status-attention);
+}
+
+/* ---------- disclosure: a group that folds, on the platform's own control ----------
+   A native `<details>` with a styled `<summary>`: the keyboard, the open state and the no-JS behaviour are the
+   platform's, exactly as the dialog and the sheet are. The mark turns with `transform`, because a rotating
+   glyph is a composited change and a rotating box-shadow is not. */
+
+.arc-disclosure {
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+}
+
+.arc-disclosure:last-child {
+  border-bottom: 0;
+}
+
+.arc-disclosure__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-3);
+  min-height: var(--arc-control-height-m);
+  padding-block: var(--arc-space-2);
+  font-size: var(--arc-fs-small);
+  font-weight: 600;
+  color: var(--arc-fg-high);
+  cursor: pointer;
+  list-style: none;
+}
+
+.arc-disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+
+.arc-disclosure__mark {
+  flex: none;
+  color: var(--arc-fg-low);
+  transition: transform var(--arc-motion-quick) var(--arc-ease-out);
+}
+
+.arc-disclosure[open] .arc-disclosure__mark {
+  transform: rotate(180deg);
+  color: var(--arc-accent-primary);
+}
+
+.arc-disclosure__body {
+  padding-block: 0 var(--arc-space-3);
+  display: grid;
+  gap: var(--arc-space-2);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-medium);
+}
+
+.arc-disclosure__body > * {
+  margin: 0;
+}
+
+/* ---------- field with an affix: the unit inside the frame ----------
+   The frame belongs to the control row, not to the input: a prefix sits in the flow, so no padding is guessed
+   and no width is typed. The input keeps its own focus ring. */
+
+.arc-field__control--joined {
+  display: flex;
+  align-items: center;
+  background: var(--arc-bg-void);
+  border: var(--arc-stroke-hair) solid var(--arc-line-hair);
+}
+
+.arc-field__control--joined .arc-input {
+  border: 0;
+  background: none;
+}
+
+.arc-field__affix {
+  flex: none;
+  padding-inline: var(--arc-space-3);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--arc-fg-low);
+}
+
+/* ---------- table: two or more comparable columns ----------
+   Fewer than two comparable columns is a key/value list, not a table. On a 390 px frame a table
+   holds three columns at most; more goes into .arc-table__scroll. */
+
+.arc-table {
+  /* One column template for every row. With `auto` columns each row sizes to its own content, so the
+     head and the numbers land on different axes — the defect this comment replaces. */
+  --arc-table-col: calc(var(--arc-fs-body) * 4);
+  display: grid;
+  gap: 0;
+  width: 100%;
+}
+
+.arc-table__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--arc-table-col) var(--arc-table-col);
+  align-items: center;
+  gap: var(--arc-space-3);
+  padding: var(--arc-space-2) 0;
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+}
+
+.arc-table__row:last-child {
+  border-bottom: 0;
+}
+
+.arc-table__row--head {
+  padding-bottom: var(--arc-space-1);
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-hair);
+}
+
+.arc-table__cell {
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-medium);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arc-table__cell--head {
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-low);
+}
+
+.arc-table__cell--num {
+  font-family: var(--arc-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--arc-fg-high);
+  text-align: right;
+}
+
+/* More columns than the three the frame holds: the row takes one column per cell and the container scrolls.
+   A fixed three-column template dropped the fourth cell onto a second implicit row — measured 69.27 px tall
+   against 35 for its neighbours. */
+.arc-table__scroll .arc-table__row {
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: var(--arc-table-col);
+}
+
+.arc-table__scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+/* ---------- tabs: a switch between views of the same data ---------- */
+
+.arc-tabs {
+  display: flex;
+  gap: var(--arc-space-4);
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-hair);
+}
+
+.arc-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--arc-control-height-m);
+  min-width: var(--arc-control-height-m);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--arc-fg-medium);
+  font-family: var(--arc-font-ui);
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arc-tabs__tab[aria-selected="true"] {
+  color: var(--arc-accent-primary);
+  box-shadow: inset 0 calc(var(--arc-stroke-focus) * -1) 0 var(--arc-accent-primary);
+}
+
+/* ---------- skeleton: the shape of the content that is coming ---------- */
+
+.arc-skeleton {
+  position: relative;
+  display: block;
+  height: var(--arc-fs-body);
+  width: var(--arc-skeleton-width, 100%);
+  background: var(--arc-bg-raised);
+  overflow: hidden;
+}
+
+.arc-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--arc-effect-shimmer),
+    transparent
+  );
+}
+
+/* transform only: the sweep never repaints the bar itself */
+@keyframes arc-skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arc-skeleton::after {
+    animation: none;
+    content: none;
+  }
+}
+
+/* ---------- toast: a status that arrives on its own ---------- */
+
+.arc-toast {
+  position: fixed;
+  /* the control band of §6: the toast is above the content and below a dialog */
+  z-index: 50;
+  left: var(--arc-space-4);
+  right: var(--arc-space-4);
+  bottom: calc(env(safe-area-inset-bottom) + var(--arc-control-height-l) + var(--arc-space-3));
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arc-space-2);
+  padding: var(--arc-space-3);
+  background: var(--arc-bg-panel);
+  border: var(--arc-stroke-hair) solid var(--arc-line-hair);
+  color: var(--arc-fg-high);
+  font-size: var(--arc-fs-small);
+  box-shadow: var(--arc-shadow-toast);
+}
+
+.arc-toast__mark {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-small);
+}
+
+.arc-toast--ok {
+  border-color: var(--arc-status-ok);
+}
+.arc-toast--ok .arc-toast__mark {
+  color: var(--arc-status-ok);
+}
+
+.arc-toast--attention {
+  border-color: var(--arc-status-attention);
+}
+.arc-toast--attention .arc-toast__mark {
+  color: var(--arc-status-attention);
+}
+
+.arc-toast--error {
+  border-color: var(--arc-status-error);
+}
+.arc-toast--error .arc-toast__mark {
+  color: var(--arc-status-error);
+}
+
+/* ---------- motion: three effects, one-shot, and only without a reduced-motion request ----------
+   Every animation in the system lives inside this block. A reader who asks for less motion gets no
+   animation at all, not a shortened one. Nothing here loops except the caret.
+   Limits (docs/CANON.md §7): one pass per event, overlays at 35 % alpha at most, a displacement of
+   3 px at most, never a brightness flash, never a saturated-red strobe. */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* the skeleton is the system's only loop that is not tied to an event; it lives here with the others */
+  .arc-skeleton::after {
+    animation: arc-skeleton-sweep var(--arc-motion-skeleton) var(--arc-ease-out) infinite;
+  }
+
+  /* a single bright band crosses the element once: a panel that appears or refreshes */
+  .arc-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arc-sweep::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--arc-effect-sweep), transparent);
+    transform: translateY(-100%);
+    animation: arc-sweep var(--arc-motion-sweep) var(--arc-ease-out) 1 both;
+  }
+
+  @keyframes arc-sweep {
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  /* two slices step sideways by 3 px for a quarter of a second: a state that disagrees with itself */
+  .arc-glitch {
+    position: relative;
+  }
+
+  .arc-glitch::before,
+  .arc-glitch::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .arc-glitch::before {
+    background: var(--arc-effect-glitch-a);
+    clip-path: inset(18% 0 58% 0);
+    animation: arc-glitch-a var(--arc-motion-glitch) var(--arc-ease-step) 1 both;
+  }
+
+  .arc-glitch::after {
+    background: var(--arc-effect-glitch-b);
+    clip-path: inset(62% 0 14% 0);
+    animation: arc-glitch-b var(--arc-motion-glitch) var(--arc-ease-step) 1 both;
+  }
+
+  @keyframes arc-glitch-a {
+    50% {
+      transform: translateX(-3px);
+    }
+  }
+
+  @keyframes arc-glitch-b {
+    50% {
+      transform: translateX(3px);
+    }
+  }
+
+  /* an element lands; siblings stagger through --arc-i */
+  .arc-reveal {
+    animation: arc-reveal var(--arc-motion-normal) var(--arc-ease-snap) both;
+    animation-delay: calc(var(--arc-i, 0) * 50ms);
+  }
+
+  @keyframes arc-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  /* the caret blinks at 1 Hz, far below the three-per-second limit */
+  .arc-caret::after {
+    content: "";
+    display: inline-block;
+    width: var(--arc-stroke-focus);
+    height: 1em;
+    margin-left: calc(var(--arc-space-1) / 2);
+    vertical-align: -0.1em;
+    background: var(--arc-accent-primary);
+    animation: arc-caret var(--arc-motion-caret) var(--arc-ease-step) infinite;
+  }
+
+  @keyframes arc-caret {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+/* ---------- switch: a setting that is on or off ----------
+   The track is small, the control is not: the button keeps the 44 px floor and only the painted
+   track is 24 px high. */
+
+.arc-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--arc-control-height-m) + var(--arc-space-2));
+  min-height: var(--arc-control-height-m);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arc-switch__track {
+  position: relative;
+  display: block;
+  width: calc(var(--arc-u) * 2.75);
+  height: calc(var(--arc-u) * 1.5);
+  background: var(--arc-bg-void);
+  /* a ring, not a border: a border would shrink the padding box by 1px per side and make the
+     knob's inset 4px on the leading edge against 2px on the trailing one */
+  box-shadow: inset 0 0 0 var(--arc-stroke-hair) var(--arc-line-hair);
+}
+
+.arc-switch__track::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--arc-u) * 0.25);
+  left: calc(var(--arc-u) * 0.25);
+  width: calc(var(--arc-u) * 1);
+  height: calc(var(--arc-u) * 1);
+  background: var(--arc-fg-low);
+  transition: transform var(--arc-motion-quick) var(--arc-ease-out),
+    background var(--arc-motion-quick) var(--arc-ease-out);
+}
+
+.arc-switch[aria-checked="true"] .arc-switch__track {
+  box-shadow: inset 0 0 0 var(--arc-stroke-hair) var(--arc-accent-primary);
+}
+
+.arc-switch[aria-checked="true"] .arc-switch__track::after {
+  background: var(--arc-accent-primary);
+  transform: translateX(calc(var(--arc-u) * 1.25));
+}
+
+/* ---------- code: a log or a payload ----------
+   `pre` keeps the columns of a log, and the block scrolls sideways rather than wrapping a record
+   into what looks like two records. */
+
+.arc-code {
+  display: block;
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--arc-space-2)), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - var(--arc-space-2)), transparent 100%);
+  margin: 0;
+  padding: var(--arc-space-2);
+  background: var(--arc-bg-void);
+  border: var(--arc-stroke-hair) solid var(--arc-line-soft);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  line-height: 1.5;
+  color: var(--arc-fg-medium);
+  white-space: pre;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  tab-size: 2;
+  /* The block scrolls inside its own frame. In a grid or flex parent its max-content width would
+     otherwise size the track and push the frame past the screen, so it never exceeds its container. */
+  max-width: 100%;
+}
+
+/* A wrapped record has nothing to scroll, so the mask that promises a scroll goes with it. The
+   wrap act in the bar reaches the same rule through `:has()`, so scroll stays the default for a
+   stream (E26) and the reader's press is the only thing that turns it into lines.
+   No hanging indent: `text-indent` indents the first line of the *block*, not of each record, so on
+   a `pre` that holds several records it pushes every line after the first — including the next
+   record's timestamp — to the continuation position and reads the block as one long record. */
+.arc-code--wrap,
+.arc-codeblock:has(.arc-code__act--wrap[aria-pressed="true"]) > .arc-code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ---------- code with a bar: a log that names itself and offers its two acts ----------
+   The bar is a control row at the touch floor, the pre keeps its own horizontal scroll and the mask
+   that says it scrolls. The frame moves to the wrapper, so the bar and the record share one box and
+   the record loses its second border.
+   An act carries a word; the glyph, where the sprite has it, stands before the word and never
+   replaces it. The system supplies the surface and the state attribute; the consumer supplies the
+   clipboard call and swaps the word, because a copy that reports itself only in colour is a copy the
+   reader cannot see happen. */
+
+.arc-codeblock {
+  display: grid;
+  background: var(--arc-bg-void);
+  border: var(--arc-stroke-hair) solid var(--arc-line-soft);
+}
+
+.arc-codeblock > .arc-code {
+  border: 0;
+}
+
+.arc-code__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--arc-space-2);
+  min-height: var(--arc-control-height-m);
+  padding-inline-start: var(--arc-space-2);
+  border-bottom: var(--arc-stroke-hair) solid var(--arc-line-soft);
+}
+
+.arc-code__word {
+  white-space: nowrap;
+}
+
+.arc-code__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-low);
+}
+
+.arc-code__acts {
+  display: flex;
+  flex: none;
+}
+
+.arc-code__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--arc-space-1);
+  min-width: var(--arc-control-height-m);
+  min-height: var(--arc-control-height-m);
+  padding-inline: var(--arc-space-2);
+  border: 0;
+  background: none;
+  color: var(--arc-fg-medium);
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.arc-code__act:hover {
+  color: var(--arc-accent-primary);
+}
+
+/* A paused live record is a state, so it keeps both a word and a mark: the word says PAUSED and the
+   glyph says which way the next press goes. */
+.arc-code__act[aria-pressed="true"] {
+  color: var(--arc-status-attention);
+}
+
+/* The act that just succeeded. The word changes with it; the colour alone would not report. */
+.arc-code__act--done {
+  color: var(--arc-status-ok);
+}
+
+.arc-code__act:disabled {
+  opacity: 0.55;
+}
+
+/* ---------- selected chip: a filter that is on ----------
+   Selection outranks status: a selected filter is filled, so a status chip beside it can never look
+   like the chosen one. */
+
+.arc-chip--selected {
+  background: var(--arc-accent-primary);
+  color: var(--arc-fg-invert);
+  font-weight: 600;
+}
+
+.arc-chip--selected .arc-chip__dot {
+  background: var(--arc-fg-invert);
+}
+
+/* ---------- section label: a group heading inside a panel ---------- */
+
+.arc-section-label {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-2);
+  margin: 0;
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-low);
+}
+
+.arc-section-label::after {
+  content: "";
+  flex: 1 1 auto;
+  height: var(--arc-stroke-hair);
+  background: var(--arc-line-soft);
+}
+
+/* ---------- readout: the one number a screen is about ----------
+   A timer, a distance, a mass. Tabular digits and no tracking, so a changing value never shifts the
+   line beside it; the unit sits on the same baseline at a smaller step. */
+
+.arc-readout {
+  display: grid;
+  gap: var(--arc-space-1);
+}
+
+.arc-readout__label {
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-low);
+}
+
+.arc-readout__value {
+  font-family: var(--arc-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  font-size: var(--arc-fs-readout);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--arc-fg-high);
+}
+
+.arc-readout__unit {
+  margin-left: var(--arc-space-1);
+  font-size: var(--arc-fs-h2);
+  color: var(--arc-fg-medium);
+}
+
+.arc-readout--center {
+  justify-items: center;
+  text-align: center;
+}
+
+.arc-readout--attention .arc-readout__value {
+  color: var(--arc-status-attention);
+}
+
+.arc-readout--critical .arc-readout__value {
+  color: var(--arc-status-critical);
+}
+
+/* ---------- icon: one sprite, stroke only ----------
+   An icon is one `em` square, so it follows the text step it sits beside. The colour is
+   `currentColor`: an icon never carries a colour of its own, and never a meaning alone. */
+
+.arc-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: none;
+  vertical-align: -0.125em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  /* Round caps and joins belong to the set: the catalogue is drawn for them, and a miter join on a
+     curved path grows a spike at small sizes. */
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.arc-icon--s {
+  width: 0.75em;
+  height: 0.75em;
+}
+
+.arc-icon--l {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+/* ---------- bars: a small chart, area only ----------
+   A bar is an area, so its height carries the value and its width carries nothing. Bars answer "which
+   one is bigger" and never "how much" — a chart that must answer the second needs a labelled axis,
+   and a line chart needs SVG. */
+
+.arc-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--arc-space-2);
+  height: calc(var(--arc-u) * 4);
+}
+
+.arc-bars__bar {
+  flex: 1 1 0;
+  height: var(--arc-bar-value, 0%);
+  min-height: var(--arc-stroke-focus);
+  background: var(--arc-bg-raised);
+  box-shadow: inset 0 0 0 var(--arc-stroke-hair) var(--arc-line-soft);
+}
+
+.arc-bars__bar--now {
+  background: var(--arc-accent-primary);
+}
+
+.arc-bars__bar--over {
+  background: var(--arc-status-attention-fill);
+}
+
+.arc-bars__labels {
+  display: flex;
+  gap: var(--arc-space-2);
+  margin-top: var(--arc-space-1);
+}
+
+.arc-bars__labels span {
+  flex: 1 1 0;
+  text-align: center;
+  font-size: var(--arc-fs-micro);
+  color: var(--arc-fg-low);
+}
+
+/* ---------- alert: a message that belongs to a screen, not to a field ---------- */
+
+.arc-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--arc-space-2);
+  padding: var(--arc-space-3);
+  background: var(--arc-bg-panel);
+  border: var(--arc-stroke-hair) solid var(--arc-line-hair);
+  border-left-width: var(--arc-stroke-focus);
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-medium);
+}
+
+.arc-alert__icon {
+  margin-top: calc(var(--arc-space-1) / 2);
+}
+
+.arc-alert--attention {
+  border-left-color: var(--arc-status-attention);
+}
+
+.arc-alert--error {
+  border-left-color: var(--arc-status-error);
+}
+
+.arc-alert--critical {
+  border-left-color: var(--arc-status-critical);
+}
+
+.arc-alert--ok {
+  border-left-color: var(--arc-status-ok);
+}
+
+/* ---------- fault: the screen that stands where the content failed ----------
+   A root screen keeps its app bar, so the reader can still leave; the fault block fills the scroll
+   region and centres its content in it. It carries its class twice — a mark and a word — and the
+   record in the code element, which scrolls and never wraps.
+   It never replaces the shell and never carries navigation of its own: a screen that offers four
+   destinations and a dead middle asks the reader to guess which half is broken.
+   One code, at most two actions, no stack trace. */
+
+.arc-fault {
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: var(--arc-space-2);
+  min-height: 100%;
+  padding-block: var(--arc-space-6);
+}
+
+/* The gap is the only space between the parts. A paragraph keeps the browser's own margin until it
+   is removed, and that margin is not a token: measured, it pulled the centred block 12 px off the
+   middle of the screen. */
+.arc-fault > * {
+  margin: 0;
+}
+
+.arc-fault__head {
+  display: flex;
+  align-items: center;
+  gap: var(--arc-space-2);
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fault-class, var(--arc-status-error));
+}
+
+/* The mark at one and a half fluid units: the size at which a class still reads from the shell and a
+   blur would not yet read as dirt. */
+.arc-fault__mark {
+  width: calc(var(--arc-u) * 1.5);
+  height: calc(var(--arc-u) * 1.5);
+}
+
+.arc-fault__text {
+  max-width: 28ch;
+  font-size: var(--arc-fs-small);
+  color: var(--arc-fg-low);
+}
+
+.arc-fault__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--arc-space-2);
+  padding-top: var(--arc-space-2);
+}
+
+.arc-fault--attention {
+  --arc-fault-class: var(--arc-status-attention);
+}
+
+.arc-fault--error {
+  --arc-fault-class: var(--arc-status-error);
+}
+
+.arc-fault--critical {
+  --arc-fault-class: var(--arc-status-critical);
+}
+
+/* ---------- link: an action in words ----------
+   A text action, never a picture. It keeps the touch floor on both axes, because the finger meets it
+   as a target even when the words are short; `vertical-align: middle` lets it stand in a sentence
+   without lifting the sentence off its baseline.
+   An action that is not the whole sentence is still this element: the sentence stays text beside it.
+   A mark after the words (`chevron-right`) says the action leaves this screen; a mark for its own
+   sake does not. */
+
+.arc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--arc-space-1);
+  min-width: var(--arc-control-height-m);
+  min-height: var(--arc-control-height-m);
+  vertical-align: middle;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--arc-accent-primary);
+  font-family: inherit;
+  font-size: var(--arc-fs-small);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: var(--arc-stroke-hair);
+  text-underline-offset: calc(var(--arc-space-1) / 2);
+  cursor: pointer;
+}
+
+.arc-link:hover,
+.arc-link:focus-visible {
+  text-decoration-thickness: var(--arc-stroke-focus);
+}
+
+/* The quieter step: a second action beside the one that leads. */
+.arc-link--quiet {
+  color: var(--arc-fg-medium);
+}
+
+.arc-link:disabled,
+.arc-link[aria-disabled="true"] {
+  color: var(--arc-fg-low);
+  text-decoration-color: var(--arc-line-soft);
+  cursor: default;
+}
+
+/* ---------- steps: where a wizard stands ----------
+   The picture is a row of segments; the meaning is the words above them, so the number survives a
+   reader who cannot separate the two greys. The current segment is taller as well as brighter — a
+   difference in shape, not in colour alone. */
+
+.arc-steps {
+  display: grid;
+  gap: var(--arc-space-2);
+}
+
+.arc-steps__label {
+  margin: 0;
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-low);
+}
+
+.arc-steps__track {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--arc-space-1);
+}
+
+.arc-steps__seg {
+  flex: 1 1 0;
+  height: var(--arc-space-1);
+  background: var(--arc-line-soft);
+}
+
+.arc-steps__seg--done {
+  background: var(--arc-accent-muted);
+}
+
+.arc-steps__seg--now {
+  height: calc(var(--arc-space-1) * 2);
+  background: var(--arc-accent-primary);
+}
+
+/* ---------- chart: a value over time, drawn in SVG ----------
+   The plot is one SVG in a 100 × 100 coordinate system, stretched by CSS: a path is a shape and
+   stretches, the strokes do not (`non-scaling-stroke`), and the marker is a zero-length round-capped
+   segment, which a stretched viewBox cannot turn into an ellipse.
+   The axis labels live in HTML around the plot, so their type keeps its size when the frame grows:
+   a wider viewport adds width, never a larger caption.
+   Numbers come from `tools/chart.py`; nothing in this block is typed by hand. */
+
+.arc-chart {
+  display: grid;
+  gap: var(--arc-space-2);
+  margin: 0;
+}
+
+.arc-chart__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--arc-space-2);
+}
+
+.arc-chart__label {
+  font-size: var(--arc-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-low);
+}
+
+.arc-chart__peak {
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--arc-fg-medium);
+  white-space: nowrap;
+}
+
+.arc-chart__body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--arc-space-2);
+  row-gap: var(--arc-space-1);
+}
+
+.arc-chart__y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: var(--arc-chart-height);
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--arc-fg-faint);
+  text-align: end;
+}
+
+/* A number belongs on its line, not under it: the flex row puts the first label's top edge on the
+   top gridline, so each label is lifted by half its own height. The overhang lands in the row gap. */
+.arc-chart__y span {
+  transform: translateY(-50%);
+}
+
+.arc-chart__plot {
+  width: 100%;
+  height: var(--arc-chart-height);
+  overflow: visible;
+}
+
+.arc-chart__grid line {
+  stroke: var(--arc-line-soft);
+  stroke-width: var(--arc-stroke-hair);
+  vector-effect: non-scaling-stroke;
+}
+
+.arc-chart__area {
+  fill: var(--arc-graphic-area);
+  stroke: none;
+}
+
+.arc-chart__line {
+  fill: none;
+  stroke: var(--arc-graphic-series);
+  stroke-width: var(--arc-stroke-chart);
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The marker sits on the newest value: a round cap on a zero-length segment, at twice the radius
+   in stroke width, so the dot stays round however wide the frame becomes. */
+.arc-chart__point {
+  fill: none;
+  stroke: var(--arc-graphic-series);
+  stroke-width: calc(var(--arc-chart-point) * 2);
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.arc-chart__x {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--arc-font-mono);
+  font-size: var(--arc-fs-micro);
+  letter-spacing: var(--arc-tracking-micro);
+  text-transform: uppercase;
+  color: var(--arc-fg-faint);
+}
+
+/* ---------- level glow: the top step of a ramp announces itself ----------
+   Taken from Ilja's picked intensity: a blurred copy at 4 px and 30 %, or a 3 px glyph shadow.
+   Rules (CANON §2 Rule 7):
+   1. Only the top step glows. The value decides, never the element's type.
+   2. The halo is a blurred copy of the shape in its own hue — never another colour, never an outline.
+   3. A shape glows from 24 px up; a value glows from the body size up. Below that the blur is dirt.
+   4. Static. An animated filter or shadow repaints the region every frame. */
+
+.arc-glow {
+  position: relative;
+  isolation: isolate;
+}
+
+.arc-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: currentColor;
+  filter: blur(var(--arc-glow-halo-blur));
+  opacity: var(--arc-glow-halo-opacity);
+}
+
+.arc-glow--soft::after {
+  filter: blur(calc(var(--arc-glow-halo-blur) / 2));
+  opacity: calc(var(--arc-glow-halo-opacity) * 0.7);
+}
+
+.arc-glow-text {
+  text-shadow: var(--arc-glow-text-1);
+}
+
+.arc-glow-text--soft {
+  text-shadow: var(--arc-glow-text-2);
+}
+
+/* The level glow belongs to the dark scheme: on paper a blurred dark copy reads as a smudge and a
+   glyph shadow as a printing error. The light scheme carries level by weight and by the value itself. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-scheme="dark"]) .arc-glow::after {
+    opacity: 0;
+  }
+  :root:not([data-scheme="dark"]) .arc-glow-text,
+  :root:not([data-scheme="dark"]) .arc-glow-text--soft {
+    text-shadow: none;
+  }
+}
+
+[data-scheme="light"] .arc-glow::after {
+  opacity: 0;
+}
+
+[data-scheme="light"] .arc-glow-text,
+[data-scheme="light"] .arc-glow-text--soft {
+  text-shadow: none;
+}

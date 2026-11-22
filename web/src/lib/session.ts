@@ -1,4 +1,5 @@
-import type { WorkoutState } from './workout';
+import { apiFetch } from './api';
+import { elapsedSeconds, type WorkoutState } from './workout';
 
 /** One session as `POST /api/workout-session` takes it. */
 export interface SessionPayload {
@@ -63,7 +64,7 @@ export function buildSessionPayload(
     userId,
     date: now.toISOString(),
     dayType: 'STANDARD',
-    duration: Math.max(0, Math.round((now.getTime() - state.startedAt) / 1000)),
+    duration: elapsedSeconds(state, now.getTime()),
     rest_seconds: state.restSeconds,
     completedExercises: done.map((exercise) => {
       const sharesABlock = exercise.sets.some((set) => (perBlock.get(set.block ?? 0) ?? 0) > 1);
@@ -83,7 +84,7 @@ export function buildSessionPayload(
 
 /** Posts the session once and reports what the server stored. A refusal throws with its reason. */
 export async function saveWorkoutSession(payload: SessionPayload): Promise<SavedSession> {
-  const response = await fetch('/api/workout-session', {
+  const response = await apiFetch('/api/workout-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)

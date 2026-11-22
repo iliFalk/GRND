@@ -7,6 +7,8 @@ interface TelegramWebAppUser {
 }
 
 interface TelegramWebApp {
+  /** The raw signed string the server verifies on every call. */
+  initData?: string;
   initDataUnsafe?: {
     user?: TelegramWebAppUser;
   };
@@ -17,11 +19,15 @@ interface TelegramWebApp {
   expand?: () => void;
   disableVerticalSwipes?: () => void;
   isVerticalSwipesEnabled?: boolean;
+  /** Colours the header Telegram draws above the page: 'bg_color', 'secondary_bg_color' or a hex. */
+  setHeaderColor?: (color: string) => void;
+  /** Colours the bar Telegram draws below the page (Bot API 7.10+). */
+  setBottomBarColor?: (color: string) => void;
+  setBackgroundColor?: (color: string) => void;
 }
 
 interface Window {
   Telegram?: {
     WebApp?: TelegramWebApp;
   };
-  __GRND_USER_ID__?: string | number;
 }

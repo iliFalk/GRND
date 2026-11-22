@@ -1,10 +1,10 @@
 interface PillarRingProps {
-  /** The pillar's id: it names the colour, so the ring and the day column match. */
+  /** The pillar's id: it names the colour, so the label and the week column match. */
   id: string;
   label: string;
   /** What has been done: sets of the week on the dashboard, sets of this workout in the train. */
   sets: number;
-  /** The floor the ring fills against. */
+  /** The floor the segments fill against: one segment per set. */
   floor: number;
   size?: 'sm' | 'md';
 }
@@ -18,49 +18,36 @@ export function pillarColor(id: string): string {
   return `var(--pillar-${id})`;
 }
 
-/** A ring that fills from nothing to the floor: a quarter at one set, full at four. */
+/**
+ * A pillar is a tile: the grid gives the shape, and inside it the floor is cut into segments — one per
+ * set, filled as the sets are done. The system has no ring (zero radius, no round form), and a meter
+ * would draw a fraction nobody trains. The name carries the hue, the segments carry the amount, the line
+ * under them carries the state in words.
+ */
 export function PillarRing({ id, label, sets, floor, size = 'md' }: PillarRingProps) {
   const done = floor > 0 && sets >= floor;
   const colour = pillarColor(id);
-  const percent = floor > 0 ? Math.min(100, (sets / floor) * 100) : 0;
-  const box = size === 'sm' ? 'h-12 w-12' : 'h-14 w-14';
+  const segments = Math.max(1, Math.round(floor || 1));
+  const filled = Math.min(segments, Math.round(sets));
+  const tight = size === 'sm';
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className={`relative ${box}`}>
-        <svg
-          viewBox="0 0 36 36"
-          className={box}
-          role="img"
-          aria-label={`${label}: ${formatNumber(sets)} sets, ${formatNumber(floor)} needed`}
-        >
-          <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--muted)" strokeWidth="3" />
-          <circle
-            cx="18"
-            cy="18"
-            r="15.5"
-            fill="none"
-            stroke={colour}
-            strokeWidth="3"
-            strokeLinecap="round"
-            pathLength={100}
-            strokeDasharray={`${percent} 100`}
-            transform="rotate(-90 18 18)"
-          />
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-semibold tabular-nums">
-          {formatNumber(sets)}
+    <div className="arc-panel arc-panel--flat">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className={tight ? 'arc-micro' : 'arc-label'} style={{ color: colour }}>
+          {label}
         </span>
+        <span className="arc-data">{`${formatNumber(sets)} / ${formatNumber(floor)}`}</span>
       </div>
-      <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: colour }}>
-        {label}
-      </span>
-      <span
-        className="text-[10px] font-semibold"
-        style={{ color: done ? 'var(--status-in)' : 'var(--status-below)' }}
-      >
-        {done ? 'OK' : `${formatNumber(Math.max(0, floor - sets))} more`}
-      </span>
+      <div className="arc-steps__track" aria-hidden="true">
+        {Array.from({ length: segments }, (_, index) => (
+          <span
+            key={index}
+            className={index < filled ? 'arc-steps__seg arc-steps__seg--done' : 'arc-steps__seg'}
+          />
+        ))}
+      </div>
+      <span className="arc-micro">{done ? 'Floor met' : `${formatNumber(Math.max(0, floor - sets))} more`}</span>
     </div>
   );
 }

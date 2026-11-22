@@ -52,6 +52,11 @@ export function setPartial(state: AmrapState, count: number): AmrapState {
   return { ...state, partial: clamped };
 }
 
+/** A circuit that survived a closed app: its clock picks up where it stopped. */
+export function resumeAmrap(state: AmrapState, elapsed: number, now: number): AmrapState {
+  return { ...state, startedAt: now - Math.max(0, Math.round(elapsed)) * 1000 };
+}
+
 export function elapsedSeconds(state: AmrapState, now: number): number {
   return Math.max(0, Math.floor((now - state.startedAt) / 1000));
 }

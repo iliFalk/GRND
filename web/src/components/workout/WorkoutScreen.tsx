@@ -1,16 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { setsEntries, useExerciseCatalogue } from '../../lib/catalogue';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
+import { clearDraft, loadDraft, useDraftSync } from '../../lib/draft';
+import { STALE_AFTER_MS, clearSaved, readSaved, writeSaved } from '../../lib/persistence';
+import { orderForPillar, usePillars } from '../../lib/pillars';
+import { useUserProfile } from '../../lib/profile';
 import {
   activeExercise,
   countReps,
+  elapsedSeconds,
   hasWork,
   isResting,
   nextBlock,
   openCounters,
   pause,
   restSeconds,
+  resumeWorkout,
   selectExercise,
   setsOf,
   startWorkout,
@@ -19,9 +25,7 @@ import {
   type WorkoutChoice,
   type WorkoutState
 } from '../../lib/workout';
-import { orderForPillar, usePillars } from '../../lib/pillars';
 import { AmrapScreen } from './AmrapScreen';
-import { useUserProfile } from '../../lib/profile';
 import { ExercisePicker } from '../plan/ExercisePicker';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -56,8 +60,8 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => 
           onClick={() => onChange(entry.id)}
           className={
             mode === entry.id
-              ? 'rounded-control bg-primary px-2 py-1.5 text-sm font-semibold text-primary-foreground'
-              : 'rounded-control px-2 py-1.5 text-sm font-medium text-muted-foreground'
+              ? 'inline-flex min-h-11 min-w-11 items-center justify-center rounded-control bg-primary px-2 text-sm font-semibold text-primary-foreground'
+              : 'inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-2 text-sm font-medium text-muted-foreground'
           }
         >
           {entry.label}
@@ -81,12 +85,38 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const profile = useUserProfile(userId);
   const [editingWeight, setEditingWeight] = useState(false);
   const [pillarFilter, setPillarFilter] = useState<string | null>(null);
-  const [mode, setMode] = useState<Mode>('sets');
+  // ?mode=amrap renders the circuit state: a headless render cannot press a switch it cannot reach.
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof location === 'undefined') return 'sets';
+    return new URLSearchParams(location.search).get('mode') === 'amrap' ? 'amrap' : 'sets';
+  });
   const [amrapBusy, setAmrapBusy] = useState(false);
   const [weightDraft, setWeightDraft] = useState('');
   const [weightError, setWeightError] = useState<string | null>(null);
+  const storageKey = `grnd-workout-${userId}`;
+  const localStamp = useRef(0);
   const [chosen, setChosen] = useState<WorkoutChoice[]>([]);
-  const [state, setState] = useState<WorkoutState | null>(null);
+  const [state, setState] = useState<WorkoutState | null>(() => {
+    // A workout that was running when the app closed comes back where it stopped.
+    const saved = readSaved<WorkoutState>(storageKey, Date.now());
+    if (!saved) return null;
+    localStamp.current = saved.savedAt;
+    return resumeWorkout(saved.value, saved.elapsed, Date.now());
+  });
+
+  // The server draft outlives the WebView store, so it wins when it is the newer one.
+  useEffect(() => {
+    let active = true;
+    void loadDraft<WorkoutState>(userId).then((draft) => {
+      if (!active || !draft || draft.mode !== 'sets') return;
+      if (Date.now() - (draft.savedAt ?? 0) > STALE_AFTER_MS) return;
+      if (localStamp.current >= (draft.savedAt ?? 0)) return;
+      setState(resumeWorkout(draft.state, draft.elapsed, Date.now()));
+    });
+    return () => {
+      active = false;
+    };
+  }, [userId]);
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
   const [saving, setSaving] = useState(false);
@@ -98,6 +128,15 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     const handle = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(handle);
   }, [state]);
+
+  // Every counted repetition is written twice: to the phone and, half a second later, to the server.
+  useEffect(() => {
+    if (!state) return;
+    const at = Date.now();
+    writeSaved(storageKey, state, elapsedSeconds(state, at), at);
+  }, [state, storageKey]);
+
+  useDraftSync(userId, 'sets', state, (current, now) => elapsedSeconds(current, now));
 
   const entries = catalogue.data ?? [];
 
@@ -163,6 +202,8 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     setError(null);
     try {
       const session = await saveWorkoutSession(payload);
+      clearSaved(storageKey);
+      void clearDraft(userId);
       setSaved(session);
       setState(null);
       onSaved();
@@ -171,7 +212,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     } finally {
       setSaving(false);
     }
-  }, [onSaved, state, userId]);
+  }, [onSaved, state, storageKey, userId]);
 
   if (catalogue.error) {
     return (
@@ -249,11 +290,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setPillarFilter(active ? null : row.id)}
-                  className={
-                    active
-                      ? 'rounded-pill border border-primary bg-primary px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-foreground'
-                      : 'rounded-pill border border-border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground'
-                  }
+                  className={active ? 'arc-chip arc-chip--selected' : 'arc-chip'}
                 >
                   {row.status === 'below' ? <span aria-hidden="true">• </span> : null}
                   {row.label}
@@ -269,10 +306,10 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               <CardTitle>{`Chosen · ${chosen.length}`}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-muted-foreground">Bodyweight</span>
+              <div className="arc-row">
+                <span className="arc-kv__key">Bodyweight</span>
                 {editingWeight ? (
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-2">
                     <input
                       type="number"
                       inputMode="decimal"
@@ -287,24 +324,24 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                         revealInput(event.currentTarget);
                       }}
                       aria-label="Bodyweight in kg"
-                      className="w-16 rounded-control border border-border bg-background px-1.5 py-0.5 text-right text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="arc-input w-20 text-right"
                     />
-                    <span className="text-[11px] text-muted-foreground">kg</span>
-                    <Button size="sm" className="h-6 px-2 text-[11px]" onClick={saveBodyweight}>
+                    <span className="arc-kv__value">kg</span>
+                    <button type="button" className="arc-btn arc-btn--primary" onClick={saveBodyweight}>
                       Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-[11px]"
+                    </button>
+                    <button
+                      type="button"
+                      className="arc-btn arc-btn--ghost"
                       onClick={() => setEditingWeight(false)}
                     >
                       Cancel
-                    </Button>
+                    </button>
                   </span>
                 ) : (
                   <button
                     type="button"
+                    className="arc-btn arc-btn--ghost"
                     onClick={() => {
                       setWeightDraft(
                         profile.profile?.bodyweight ? String(profile.profile.bodyweight) : ''
@@ -312,7 +349,6 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                       setWeightError(null);
                       setEditingWeight(true);
                     }}
-                    className="rounded-control px-1 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {profile.loading
                       ? '…'
@@ -322,7 +358,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                   </button>
                 )}
               </div>
-              {weightError ? <p className="text-xs text-destructive">{weightError}</p> : null}
+              {weightError ? <div className="arc-alert arc-alert--error">{weightError}</div> : null}
               <div className="h-px bg-border" aria-hidden="true" />
 
               {chosen.map((choice) => (
@@ -427,15 +463,15 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
       </ul>
 
       {resting ? (
-        <Card>
-          <CardContent className="space-y-3 py-5 text-center">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Rest</p>
-            <p className="font-mono text-5xl tabular-nums">{formatClock(rest)}</p>
-            <Button onClick={() => setState(nextBlock(state, Date.now()))}>
+        <div className="arc-panel">
+          <div className="arc-readout arc-readout--center arc-readout--attention">
+            <span className="arc-readout__label">Rest</span>
+            <span className="arc-readout__value">{formatClock(rest)}</span>
+          </div>
+            <button type="button" className="arc-btn arc-btn--primary" onClick={() => setState(nextBlock(state, Date.now()))}>
               {`Start block ${state.block + 1}`}
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+        </div>
       ) : (
         <Card>
           <CardContent className="space-y-3 py-4 text-center">
@@ -445,13 +481,16 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
                 {exercise?.weight === undefined ? 'bodyweight' : `${formatNumber(exercise.weight)} kg`}
               </span>
             </div>
-            <p className="font-mono text-6xl tabular-nums">{exercise?.counter ?? 0}</p>
+            <div className="arc-readout arc-readout--center">
+              <span className="arc-readout__label">Reps</span>
+              <span className="arc-readout__value">{exercise?.counter ?? 0}</span>
+            </div>
             <div className="flex justify-center gap-3">
-              <Button className="h-16 flex-1 text-lg" onClick={() => setState(countReps(state, 1))}>
-                +1
+              <Button className="h-16 flex-1" onClick={() => setState(countReps(state, 1))}>
+                <span className="arc-h1">+1</span>
               </Button>
-              <Button className="h-16 flex-1 text-lg" onClick={() => setState(countReps(state, 3))}>
-                +3
+              <Button className="h-16 flex-1" onClick={() => setState(countReps(state, 3))}>
+                <span className="arc-h1">+3</span>
               </Button>
             </div>
             <Button

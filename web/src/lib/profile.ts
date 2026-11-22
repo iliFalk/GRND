@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from './api';
 
 /** The profile facts the volume needs: the body that moved during bodyweight work. */
 export interface UserProfile {
@@ -32,7 +33,7 @@ export function useUserProfile(userId: string) {
 
   const reload = useCallback(async () => {
     try {
-      const response = await fetch(`/api/user-profile/${encodeURIComponent(userId)}`);
+      const response = await apiFetch(`/api/user-profile/${encodeURIComponent(userId)}`);
       if (response.status === 404) {
         setState({ profile: null, loading: false, error: null });
         return;
@@ -55,7 +56,7 @@ export function useUserProfile(userId: string) {
 
   const saveBodyweight = useCallback(
     async (kg: number) => {
-      const response = await fetch(`/api/user-profile/${encodeURIComponent(userId)}`, {
+      const response = await apiFetch(`/api/user-profile/${encodeURIComponent(userId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, bodyweight: kg })

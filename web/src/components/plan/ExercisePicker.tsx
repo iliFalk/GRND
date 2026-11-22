@@ -48,7 +48,7 @@ export function ExercisePicker({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search exercises"
-          className="w-full rounded-control border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="w-full min-h-11 rounded-control border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </label>
 
@@ -87,14 +87,7 @@ export function ExercisePicker({
                         .join(' · ')}
                     </span>
                   </span>
-                  <span
-                    className={cn(
-                      'shrink-0 rounded-pill border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-                      chosen
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border text-muted-foreground'
-                    )}
-                  >
+                  <span className={chosen ? 'shrink-0 arc-chip arc-chip--selected' : 'shrink-0 arc-chip'}>
                     {chosen ? 'chosen' : 'add'}
                   </span>
                 </button>

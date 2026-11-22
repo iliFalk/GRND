@@ -105,7 +105,8 @@ web/node_modules/
 # Personal runtime data — never in a public repository. The reference files in data/ stay:
 # the catalogue, the taxonomy, the pillars, the targets and the equipment.
 data/workout-sessions.json
-data/workout-drafts.json
+# The draft file and every aside a damaged read leaves beside it (`.corrupt-<now>`).
+data/workout-drafts.json*
 data/user-profiles.json
 data/training-plans.json
 data/1.json

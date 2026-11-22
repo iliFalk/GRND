@@ -5,6 +5,7 @@ import {
   completeRound,
   isTimeUp,
   remainingSeconds,
+  resumeAmrap,
   setPartial,
   setsFor,
   startAmrap
@@ -54,6 +55,16 @@ it('test_no_more_than_three_exercises_enter_a_circuit', () => {
 
 it('test_a_circuit_without_a_round_is_nothing_to_save', () => {
   expect(buildAmrapPayload(startAmrap(choices, 600, start), '931142831')).toBeNull();
+});
+
+it('test_a_closed_app_resumes_the_circuit_clock', () => {
+  const state = completeRound(startAmrap(choices, 600, start));
+  const reopened = start + 3_600_000;
+  const resumed = resumeAmrap(state, 120, reopened);
+
+  expect(resumed.rounds).toBe(1);
+  expect(remainingSeconds(resumed, reopened)).toBe(480);
+  expect(isTimeUp(resumed, reopened)).toBe(false);
 });
 
 it('test_a_circuit_may_carry_a_weight', () => {

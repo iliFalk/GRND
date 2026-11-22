@@ -1532,5 +1532,15 @@ app.use((error, req, res, next) => {
     return res.status(400).json({ error: error.message });
   }
 
+  // body-parser rejects an oversized or malformed body before any route runs. Its error carries no
+  // `status` in this version, only a `type`, so the type decides: a 100 KB+ body is a 413 and a body
+  // that does not parse is a 400. Reporting both as 500 hides which bound the caller hit.
+  if (error.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'The request body is too large' });
+  }
+  if (error.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'The request body is not valid JSON' });
+  }
+
   res.status(500).json({ error: 'Internal server error' });
 });

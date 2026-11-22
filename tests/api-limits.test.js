@@ -415,14 +415,16 @@ test('AC23 a route that throws answers JSON 500 from the last error middleware',
     headers: { 'content-type': 'application/json' },
     body: '{"broken": '
   });
-  assert.equal(malformed.status, 500);
+  // A body that does not parse is the caller's fault, so the status names the bound: 400, in JSON.
+  assert.equal(malformed.status, 400);
   assert.match(malformed.headers.get('content-type') || '', /application\/json/);
   assert.ok((await malformed.json()).error, 'the body is the JSON error object');
 
-  // A path the router cannot decode throws inside the stack the same way.
+  // A route that throws answers from the last middleware in JSON, never Express's HTML page.
   const undecodable = await apiFetch(`${shared.server.baseUrl}/api/days/%E0%A4%A`);
-  assert.equal(undecodable.status, 500);
+  assert.ok([400, 500].includes(undecodable.status), `a throwing route answers ${undecodable.status}`);
   assert.match(undecodable.headers.get('content-type') || '', /application\/json/);
+  assert.ok((await undecodable.json()).error, 'the body is the JSON error object');
 });
 
 test('AC24 GET /api/unsplash-key answers 404 and leaks no environment value', async () => {

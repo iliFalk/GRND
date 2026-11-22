@@ -1,3 +1,4 @@
+import { apiFetch } from './api';
 import { elapsedSeconds, type WorkoutState } from './workout';
 
 /** One session as `POST /api/workout-session` takes it. */
@@ -83,7 +84,7 @@ export function buildSessionPayload(
 
 /** Posts the session once and reports what the server stored. A refusal throws with its reason. */
 export async function saveWorkoutSession(payload: SessionPayload): Promise<SavedSession> {
-  const response = await fetch('/api/workout-session', {
+  const response = await apiFetch('/api/workout-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from './api';
 import type { CatalogueEntry } from './catalogue';
 
 /** A step of a plan block. The name is the snapshot the plan stored; the catalogue id is optional. */
@@ -228,7 +229,7 @@ function normalizePlans(payload: unknown): TrainingPlan[] {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await apiFetch(url);
   if (!response.ok) throw new Error(`${url} returned ${response.status}`);
   return (await response.json()) as T;
 }
@@ -345,7 +346,7 @@ async function failureReason(response: Response): Promise<string> {
 /** Saves the whole plan and reports what the server stored. A failure throws with the server's reason. */
 export async function saveTrainingPlan(plan: TrainingPlan): Promise<TrainingPlan> {
   const url = `/api/training-plans/${encodeURIComponent(plan.id)}`;
-  const response = await fetch(url, {
+  const response = await apiFetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(buildPlanUpdatePayload(plan))

@@ -10,7 +10,7 @@ import { invalidateHistory } from './lib/history';
 import { useTrainingPlans } from './lib/plans';
 import { useTheme } from './lib/theme';
 import { usePillars } from './lib/pillars';
-import { resolveUserId } from './lib/user';
+import { useIdentity } from './lib/user';
 
 function PlanScreen() {
   const { data, loading, error, reload } = useTrainingPlans();
@@ -25,10 +25,10 @@ function initialPage(): PageId {
   return asked && known.includes(asked as PageId) ? (asked as PageId) : 'dashboard';
 }
 
-export default function App() {
+/** The Mini App for the account the server named: every screen reads that account, no other. */
+function MiniApp({ userId }: { userId: string }) {
   const [page, setPage] = useState<PageId>(initialPage);
   const { theme, setTheme } = useTheme();
-  const userId = resolveUserId();
   const { data, loading, error, reload } = usePillars(userId);
   const weekRange = data ? formatWeekRange(data.week_start, data.week_end) : null;
 
@@ -55,4 +55,38 @@ export default function App() {
       <FooterNav active={page} onChange={setPage} />
     </div>
   );
+}
+
+/** What the app says when it has no account to read. */
+function Notice({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
+      <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-4">
+        <div className="arc-panel">
+          <div className="arc-empty">
+            <p className="arc-h3">{title}</p>
+            <p className="arc-empty__text">{text}</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default function App() {
+  const identity = useIdentity();
+
+  if (identity.status === 'ready') return <MiniApp userId={identity.userId} />;
+  if (identity.status === 'error') {
+    return <Notice title="The app could not prove who it is" text={identity.error} />;
+  }
+  if (identity.status === 'outside-telegram') {
+    return (
+      <Notice
+        title="Open this inside Telegram"
+        text="The week is the one of the account Telegram signs in, and outside the client there is none to read."
+      />
+    );
+  }
+  return <Notice title="Checking who this is" text="Telegram is verifying the Mini App." />;
 }

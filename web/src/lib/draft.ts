@@ -6,6 +6,7 @@
  * follows, so the server is the truth and the phone's copy is the fast path.
  */
 import { useEffect, useRef } from 'react';
+import { apiFetch } from './api';
 
 export type DraftMode = 'sets' | 'amrap';
 
@@ -22,7 +23,7 @@ export interface Draft<T> {
 
 export async function loadDraft<T>(userId: string): Promise<Draft<T> | null> {
   try {
-    const response = await fetch(`/api/workout-draft/${encodeURIComponent(userId)}`);
+    const response = await apiFetch(`/api/workout-draft/${encodeURIComponent(userId)}`);
     if (!response.ok) return null;
     const body = (await response.json()) as { draft?: Draft<T> };
     return body?.draft ?? null;
@@ -34,7 +35,7 @@ export async function loadDraft<T>(userId: string): Promise<Draft<T> | null> {
 /** Best effort: a draft that cannot be written costs the resume, never the workout in progress. */
 export async function saveDraft<T>(userId: string, draft: Draft<T>): Promise<void> {
   try {
-    await fetch(`/api/workout-draft/${encodeURIComponent(userId)}`, {
+    await apiFetch(`/api/workout-draft/${encodeURIComponent(userId)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(draft)
@@ -86,7 +87,7 @@ export function useDraftSync<T>(
 
 export async function clearDraft(userId: string): Promise<void> {
   try {
-    await fetch(`/api/workout-draft/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+    await apiFetch(`/api/workout-draft/${encodeURIComponent(userId)}`, { method: 'DELETE' });
   } catch {
     // A stale draft expires on its own after a day.
   }

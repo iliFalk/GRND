@@ -96,6 +96,25 @@ export function writeTheme(theme: string): void {
   }
 }
 
+export const STATS_PERIOD_KEY = 'grnd-stats-period';
+
+/** The period the dashboard was left on, as it was written. */
+export function readStatsPeriod(): string | null {
+  try {
+    return storage()?.getItem(STATS_PERIOD_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeStatsPeriod(period: string): void {
+  try {
+    storage()?.setItem(STATS_PERIOD_KEY, period);
+  } catch {
+    // A blocked storage costs the remembered choice, not the numbers.
+  }
+}
+
 /** What was written, or `null` when nothing is there, it is another version, or it is too old. */
 export function readSaved<T>(
   key: string,

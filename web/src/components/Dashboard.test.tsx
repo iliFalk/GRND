@@ -51,7 +51,7 @@ const data: PillarsData = {
 };
 
 it('test_a_tile_names_the_floor_and_the_gap_to_it', () => {
-  const html = renderToString(<Dashboard data={data} loading={false} onRetry={() => {}} />);
+  const html = renderToString(<Dashboard userId="1" data={data} loading={false} onRetry={() => {}} />);
 
   // Five sets against a floor of four, and one set against the same floor.
   expect(html).toContain('5 / 4');

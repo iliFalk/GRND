@@ -12,6 +12,7 @@ const { suggestForReport } = require('./backend/utils/muscleSuggestions');
 const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = require('./backend/utils/pairings');
 const { computeSessionVolume } = require('./backend/utils/sessionVolume');
 const { weeklyPillars } = require('./backend/utils/pillars');
+const { statsFor, periodDays, DEFAULT_PERIOD } = require('./backend/utils/stats');
 const { getDraft, putDraft, removeDraft } = require('./backend/utils/drafts');
 const { readJson, writeJson, updateJson, StoreError } = require('./backend/utils/store');
 const { mergePlanWeeks } = require('./backend/utils/planMerge');
@@ -305,7 +306,7 @@ app.use('/api', requirePrincipal);
 // `/:userId` with an empty value does not reach its route; it still must answer 400, not 404.
 app.use('/api', (req, res, next) => {
   if (!req.path.endsWith('/')) return next();
-  if (/^\/(workout-data|user-profile|workout-draft|workout-sessions|muscle-volume|pillars|suggestions)\/$/.test(req.path)) {
+  if (/^\/(workout-data|user-profile|workout-draft|workout-sessions|muscle-volume|pillars|suggestions|stats)\/$/.test(req.path)) {
     return res.status(400).json({ error: 'Invalid userId' });
   }
   next();
@@ -761,6 +762,31 @@ app.get('/api/pillars/:userId', validateUserIdParam, requireOwnUserId, async (re
   } catch (error) {
     console.error('Error building the weekly pillars:', error);
     res.status(500).json({ error: 'Failed to build the weekly pillars' });
+  }
+});
+
+// Sets, reps and the working weight of every exercise, over a window that ends now.
+// The period is one of the app's own names: week, month, 3m, 6m, y.
+app.get('/api/stats/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const period = req.query.period === undefined ? DEFAULT_PERIOD : String(req.query.period);
+    // An unknown name is refused, never read as the default: a typo would answer another period.
+    if (periodDays(period) === null) {
+      return res.status(400).json({ error: `period must be one of week, month, 3m, 6m, y` });
+    }
+
+    let sessions = [];
+    try {
+      const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
+      sessions = journalSessions(JSON.parse(data));
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    res.json(statsFor(sessions, { period, userId }));
+  } catch (error) {
+    console.error('Error building the statistics:', error);
+    res.status(500).json({ error: 'Failed to build the statistics' });
   }
 });
 

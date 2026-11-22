@@ -31,7 +31,8 @@
   "rows": [
     {
       "container": ".arc-panel",
-      "child": ".arc-item"
+      "child": ".arc-item",
+      "by": "text-lines"
     },
     {
       "container": ".arc-listbox",

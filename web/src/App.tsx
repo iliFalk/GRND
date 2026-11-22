@@ -7,6 +7,7 @@ import { PlanView } from './components/plan/PlanView';
 import { WorkoutScreen } from './components/workout/WorkoutScreen';
 import { formatWeekRange } from './lib/format';
 import { invalidateHistory } from './lib/history';
+import { invalidateStats } from './lib/stats';
 import { useTrainingPlans } from './lib/plans';
 import { useTheme } from './lib/theme';
 import { usePillars } from './lib/pillars';
@@ -32,9 +33,10 @@ function MiniApp({ userId }: { userId: string }) {
   const { data, loading, error, reload } = usePillars(userId);
   const weekRange = data ? formatWeekRange(data.week_start, data.week_end) : null;
 
-  // A saved workout changes the week and the history, so both are read again.
+  // A saved workout changes the week, the history and the statistics, so all three are read again.
   const saved = useCallback(() => {
     invalidateHistory(userId);
+    invalidateStats(userId);
     reload();
   }, [reload, userId]);
 
@@ -43,7 +45,7 @@ function MiniApp({ userId }: { userId: string }) {
       <Header weekRange={weekRange} theme={theme} onTheme={setTheme} />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-28 pt-4">
         {page === 'dashboard' ? (
-          <Dashboard data={data} loading={loading} error={error} onRetry={reload} />
+          <Dashboard userId={userId} data={data} loading={loading} error={error} onRetry={reload} />
         ) : page === 'plan' ? (
           <PlanScreen />
         ) : page === 'workout' ? (

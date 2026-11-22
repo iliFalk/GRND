@@ -133,6 +133,13 @@ html[data-theme='arc'] .font-mono {
   background: var(--background);
 }
 
+/* A statistics row names a movement the catalogue spells out in full — "Front foot on chair, jump on back
+   leg, side to side". The element cuts a title to one line with an ellipsis; here the title wraps and the
+   row grows, because a cut name answers nothing. Layout only: no colour, no type of its own. */
+.arc-item--wrap .arc-item__title {
+  white-space: normal;
+}
+
 @layer base {
   html {
     font-family:

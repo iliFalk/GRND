@@ -1,6 +1,6 @@
-import { useExerciseCatalogue, type CatalogueEntry } from '../lib/catalogue';
 import type { DayRow, PillarRow, PillarsData } from '../lib/pillars';
 import { PillarRing, pillarColor } from './PillarRing';
+import { StatsPanel } from './StatsPanel';
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -10,22 +10,6 @@ function formatClock(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const rest = Math.round(seconds % 60);
   return `${minutes}:${String(rest).padStart(2, '0')}`;
-}
-
-/** What closes a pillar at home: the catalogue's movements are the pillar's own list. */
-function candidatesFor(entries: CatalogueEntry[], movements: string[], limit = 3): string[] {
-  const wanted = movements.map((movement) => movement.toLowerCase());
-  return entries
-    .filter((entry) => entry.excluded !== true)
-    .filter((entry) => wanted.includes(String(entry.movement ?? '').toLowerCase()))
-    // The base first: it is what the pillar rests on, the rest completes it.
-    .sort((a, b) => {
-      const baseA = a.role === 'base' ? 0 : 1;
-      const baseB = b.role === 'base' ? 0 : 1;
-      return baseA - baseB || a.name.localeCompare(b.name);
-    })
-    .map((entry) => entry.name)
-    .slice(0, limit);
 }
 
 /** The week by day: what each day carried, today in the accent colour. */
@@ -85,15 +69,14 @@ function WeekBars({ days, pillars }: { days: DayRow[]; pillars: PillarRow[] }) {
 }
 
 interface DashboardProps {
+  userId: string;
   data?: PillarsData;
   loading: boolean;
   error?: Error;
   onRetry: () => void;
 }
 
-export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
-  const catalogue = useExerciseCatalogue();
-
+export function Dashboard({ userId, data, loading, error, onRetry }: DashboardProps) {
   if (error) {
     return (
       <div className="arc-panel">
@@ -118,7 +101,6 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
     );
   }
 
-  const entries = catalogue.data ?? [];
   const short = data.pillars.filter((row) => row.status === 'below');
   const circuits = data.circuit_rounds;
 
@@ -151,27 +133,7 @@ export function Dashboard({ data, loading, error, onRetry }: DashboardProps) {
 
       {data.days.length > 0 ? <WeekBars days={data.days} pillars={data.pillars} /> : null}
 
-      <div className="arc-panel arc-panel--flat">
-        <p className="arc-section-label">{short.length === 0 ? 'Nothing is short' : 'What to add'}</p>
-        {short.length === 0 ? (
-          <p className="arc-empty__text">Every pillar has its four sets.</p>
-        ) : (
-          short.map((row) => {
-            // The base first: it is what the pillar rests on.
-            const names = candidatesFor(entries, row.movements, 4);
-            // A stack of its own, not a list row: the candidates wrap to as many lines as they need, and an
-            // item row owes its neighbours one height.
-            return (
-              <div key={row.id}>
-                <p className="arc-label">{row.label}</p>
-                <p className="arc-small arc-muted">
-                  {names.length > 0 ? names.join(' · ') : 'nothing at home closes this'}
-                </p>
-              </div>
-            );
-          })
-        )}
-      </div>
+      <StatsPanel userId={userId} />
 
       {circuits > 0 ? (
         <div className="arc-panel">

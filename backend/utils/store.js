@@ -36,7 +36,9 @@ async function writeAtomic(file, data) {
   // same temp file, the first rename ate it and the second failed with ENOENT.
   const stamp = Math.random().toString(36).slice(2, 8);
   const temp = `${file}.${process.pid}.${Date.now()}.${stamp}.tmp`;
-  await fs.writeFile(temp, JSON.stringify(data, null, 2));
+  // The temp is created `0600` and the rename keeps its mode, so every store file is readable by its
+  // owner only — a world-readable journal on a shared machine leaks every session. Ilja, 2026-11-23.
+  await fs.writeFile(temp, JSON.stringify(data, null, 2), { mode: 0o600 });
   await fs.rename(temp, file);
 }
 

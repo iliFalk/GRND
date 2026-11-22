@@ -11,6 +11,7 @@
  * working.
  */
 const fs = require('fs').promises;
+const path = require('path');
 
 const { readJson, updateJson } = require('./store');
 
@@ -29,17 +30,47 @@ function prune(drafts, now) {
   return next;
 }
 
+/** The marker a damaged file is moved aside under: `${file}.corrupt-<now>`. */
+const ASIDE = '.corrupt-';
+
+/**
+ * Deletes every aside left next to `file`. One copy of the damage is worth keeping; after the file
+ * parses again the copy is only a file nobody reads that grows the disk forever. Best effort: a housekeeping
+ * failure must not fail a write that already landed.
+ */
+async function dropAsides(file) {
+  const dir = path.dirname(file);
+  const prefix = `${path.basename(file)}${ASIDE}`;
+  try {
+    const names = await fs.readdir(dir);
+    await Promise.all(
+      names
+        .filter((name) => name.startsWith(prefix))
+        .map((name) => fs.unlink(path.join(dir, name)).catch(() => {}))
+    );
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.warn(`drafts: the asides of ${file} were not cleaned (${error.message})`);
+    }
+  }
+}
+
 /**
  * One queued change of the draft file. A damaged file is renamed aside and the change runs on an empty
  * one: overwriting it loses the damage and every draft with it.
  */
 async function withDrafts(file, now, change) {
   try {
-    return await updateJson(file, {}, (current) => change(prune(current, now)));
+    const drafts = await updateJson(file, {}, (current) => change(prune(current, now)));
+    // A write that worked is the moment to drop the aside an earlier damage left behind.
+    await dropAsides(file);
+    return drafts;
   } catch (error) {
     if (error.name !== 'StoreError') throw error;
 
-    const aside = `${file}.corrupt-${now}`;
+    // An older aside would sit next to the new one unread, so at most one survives.
+    await dropAsides(file);
+    const aside = `${file}${ASIDE}${now}`;
     await fs.rename(file, aside).catch(() => {});
     console.warn(`drafts: ${file} was damaged and moved to ${aside}`);
     return updateJson(file, {}, (current) => change(prune(current, now)));

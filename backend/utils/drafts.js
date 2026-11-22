@@ -6,6 +6,7 @@
  * open whatever killed the page. One draft per user, replaced as it changes, forgotten after a day.
  */
 const fs = require('fs').promises;
+const { writeAtomic } = require('./store');
 
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -25,7 +26,7 @@ async function readAll(file) {
 }
 
 async function writeAll(file, drafts) {
-  await fs.writeFile(file, JSON.stringify(drafts, null, 2));
+  await writeAtomic(file, drafts);
 }
 
 function isFresh(draft, now) {

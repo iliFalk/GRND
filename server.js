@@ -11,6 +11,7 @@ const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = requir
 const { computeSessionVolume } = require('./backend/utils/sessionVolume');
 const { weeklyPillars } = require('./backend/utils/pillars');
 const { getDraft, putDraft, removeDraft } = require('./backend/utils/drafts');
+const { readJson, writeJson, updateJson, StoreError } = require('./backend/utils/store');
 const { mergePlanWeeks } = require('./backend/utils/planMerge');
 require('dotenv').config();
 
@@ -298,7 +299,7 @@ app.post('/api/workout-data/:userId', async (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
-    await fs.writeFile(filePath, JSON.stringify(dataToSave, null, 2));
+    await writeJson(filePath, dataToSave);
 
     res.json({
       success: true,
@@ -587,30 +588,14 @@ app.post('/api/user-profile/:userId', validateUserId, async (req, res) => {
 
     const filePath = path.join(__dirname, 'data', 'user-profiles.json');
 
-    // Read existing profiles
-    let profiles = {};
-    try {
-      const data = await fs.readFile(filePath, 'utf8');
-      try {
-        profiles = JSON.parse(data);
-      } catch (parseError) {
-        console.error('JSON parse error in user profiles data:', parseError);
-        profiles = {}; // Start with empty object if JSON is invalid
+    const profiles = await updateJson(filePath, {}, (current) => ({
+      ...current,
+      [userId]: {
+        ...profile,
+        createdAt: current[userId] ? current[userId].createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-      // File doesn't exist, start with empty object
-    }
-
-    // Update or create profile
-    profiles[userId] = {
-      ...profile,
-      createdAt: profiles[userId] ? profiles[userId].createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Write back to file
-    await fs.writeFile(filePath, JSON.stringify(profiles, null, 2));
+    }));
 
     res.json({
       success: true,
@@ -643,11 +628,11 @@ app.delete('/api/user-profile/:userId', async (req, res) => {
         return res.status(404).json({ error: 'User profile not found' });
       }
 
-      // Delete the profile
-      delete profiles[userId];
-
-      // Write back to file
-      await fs.writeFile(filePath, JSON.stringify(profiles, null, 2));
+      await updateJson(filePath, {}, (current) => {
+        const next = { ...current };
+        delete next[userId];
+        return next;
+      });
 
       res.json({
         success: true,
@@ -781,21 +766,10 @@ app.get('/api/training-plans', async (req, res) => {
 
     // Persist to data/training-plans.json (array)
     const plansPath = path.join(__dirname, 'data', 'training-plans.json');
-    let plans = [];
-    try {
-      const existing = await fs.readFile(plansPath, 'utf8');
-      plans = JSON.parse(existing);
-      if (!Array.isArray(plans)) plans = [];
-    } catch (err) {
-      if (err.code !== 'ENOENT') throw err;
-      // file doesn't exist -- we'll create it
-      plans = [];
-    }
-
-    plans.push(newPlan);
-
-    await fs.mkdir(path.dirname(plansPath), { recursive: true });
-    await fs.writeFile(plansPath, JSON.stringify(plans, null, 2));
+    await updateJson(plansPath, [], (current) => [
+      ...(Array.isArray(current) ? current : []),
+      newPlan
+    ]);
 
     res.status(201).json(newPlan);
   } catch (error) {
@@ -815,45 +789,42 @@ app.put('/api/training-plans/:planId', async (req, res) => {
     }
 
     const plansPath = path.join(__dirname, 'data', 'training-plans.json');
-    let plans = [];
-    try {
-      const existing = await fs.readFile(plansPath, 'utf8');
-      plans = JSON.parse(existing);
-      if (!Array.isArray(plans)) plans = [];
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        return res.status(404).json({ error: 'No plans found' });
-      }
-      throw err;
-    }
-
-    const idx = plans.findIndex(p => p.id === planId);
-    if (idx === -1) {
-      return res.status(404).json({ error: 'Training plan not found' });
-    }
-
-    // Merge payload into existing plan but preserve immutable fields
-    const existingPlan = plans[idx];
-    const updatedPlan = {
-      ...existingPlan,
-      ...payload,
-      id: existingPlan.id,
-      createdAt: existingPlan.createdAt || existingPlan.createdAt,
-      updatedAt: new Date().toISOString()
-    };
 
     // The editor sends the fields it renders. Merging by id keeps the ones it never sees, like
     // `dayOfWeek` on a day and `planId` on a week.
-    if (Array.isArray(payload.weeks)) {
-      updatedPlan.weeks = mergePlanWeeks(existingPlan.weeks, payload.weeks);
-    }
+    const updatedPlan = await updateJson(plansPath, [], (current) => {
+      const plans = Array.isArray(current) ? current : [];
+      const idx = plans.findIndex((plan) => plan.id === planId);
+      if (idx === -1) {
+        const missing = new Error('plan not found');
+        missing.code = 'NOT_FOUND';
+        throw missing;
+      }
 
-    plans[idx] = updatedPlan;
+      const existingPlan = plans[idx];
+      const merged = {
+        ...existingPlan,
+        ...payload,
+        id: existingPlan.id,
+        updatedAt: new Date().toISOString()
+      };
+      if (Array.isArray(payload.weeks)) {
+        merged.weeks = mergePlanWeeks(existingPlan.weeks, payload.weeks);
+      }
 
-    await fs.writeFile(plansPath, JSON.stringify(plans, null, 2));
+      const next = [...plans];
+      next[idx] = merged;
+      return next;
+    }).then((plans) => plans.find((plan) => plan.id === planId));
 
     res.json(updatedPlan);
   } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Training plan not found' });
+    }
+    if (error.name === 'StoreError') {
+      return res.status(500).json({ error: 'The plan file is damaged', details: error.message });
+    }
     console.error('Error updating training plan:', error);
     res.status(500).json({ error: 'Failed to update training plan' });
   }
@@ -1066,28 +1037,12 @@ app.post('/api/workout-session', async (req, res) => {
       total_volume_kg: computed.totalVolume
     };
 
-    const filePath = getWorkoutSessionsPath();
-
-    // Read existing sessions
-    let sessionsData = { sessions: [] };
-    try {
-      const data = await fs.readFile(filePath, 'utf8');
-      try {
-        sessionsData = JSON.parse(data);
-      } catch (parseError) {
-        console.error('JSON parse error in workout sessions data:', parseError);
-        sessionsData = { sessions: [] }; // Start with empty array if JSON is invalid
-      }
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error;
-      // File doesn't exist, start with empty array
-    }
-
-    // Add the new session
-    sessionsData.sessions.push(newSession);
-
-    // Write back to file
-    await fs.writeFile(filePath, JSON.stringify(sessionsData, null, 2));
+    // One queued read-change-write: two saves that arrive together must both land, and a damaged
+    // journal must stop here instead of being overwritten with a single session.
+    await updateJson(getWorkoutSessionsPath(), { sessions: [] }, (current) => ({
+      ...current,
+      sessions: [...(Array.isArray(current.sessions) ? current.sessions : []), newSession]
+    }));
 
     res.json({
       success: true,
@@ -1179,27 +1134,16 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
     const filePath = getWorkoutSessionsPath();
 
     try {
-      const data = await fs.readFile(filePath, 'utf8');
-      let sessionsData;
-      try {
-        sessionsData = JSON.parse(data);
-      } catch (parseError) {
-        console.error('JSON parse error in workout sessions data:', parseError);
-        return res.status(500).json({ error: 'Invalid JSON format in workout sessions data' });
-      }
+      const removed = await updateJson(filePath, { sessions: [] }, (current) => {
+        const sessions = Array.isArray(current.sessions) ? current.sessions : [];
+        if (!sessions.some((session) => session.id === sessionId)) {
+          const missing = new Error('not found');
+          missing.code = 'NOT_FOUND';
+          throw missing;
+        }
+        return { ...current, sessions: sessions.filter((session) => session.id !== sessionId) };
+      });
 
-      // Find the session index
-      const sessionIndex = sessionsData.sessions.findIndex(session => session.id === sessionId);
-
-      if (sessionIndex === -1) {
-        return res.status(404).json({ error: 'Workout session not found' });
-      }
-
-      // Remove the session
-      sessionsData.sessions.splice(sessionIndex, 1);
-
-      // Write back to file
-      await fs.writeFile(filePath, JSON.stringify(sessionsData, null, 2));
 
       res.json({
         success: true,
@@ -1209,9 +1153,11 @@ app.delete('/api/workout-session/:sessionId', async (req, res) => {
       if (error.code === 'ENOENT') {
         // File doesn't exist, return 404
         return res.status(404).json({ error: 'Workout session not found' });
-      } else {
-        throw error;
       }
+      if (error.name === 'StoreError') {
+        return res.status(500).json({ error: 'The session journal is damaged', details: error.message });
+      }
+      throw error;
     }
   } catch (error) {
     console.error('Error deleting workout session:', error);

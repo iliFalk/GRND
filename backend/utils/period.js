@@ -197,7 +197,11 @@ function blockReport(sessions, options = {}) {
       sessions: totals.sessions,
       sets: totals.sets,
       reps: totals.reps,
-      change: previous && previous.work > 0 ? round1((totals.work / previous.work - 1) * 100) : null
+      // A week still running always reads low: its change appears once the week is over.
+      change:
+        previous && previous.work > 0 && end <= now
+          ? round1((totals.work / previous.work - 1) * 100)
+          : null
     });
   }
 

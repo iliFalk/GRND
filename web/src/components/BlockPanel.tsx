@@ -31,6 +31,14 @@ function tonnes(value: number): string {
   return `${(value / 1000).toFixed(1)} t`;
 }
 
+/** Up, down or level: one mark beside an index, so the direction needs no arithmetic. */
+function trend(value: number | null): { icon: string; tone: string } {
+  if (value === null) return { icon: 'minus', tone: 'arc-muted' };
+  if (value >= 105) return { icon: 'arrow-up', tone: 'text-status-in' };
+  if (value <= 95) return { icon: 'arrow-down', tone: 'arc-muted' };
+  return { icon: 'minus', tone: 'arc-muted' };
+}
+
 function behind(value: number | null): string {
   const text = signed(value);
   return text === '' ? '' : ` ${text}`;
@@ -57,10 +65,10 @@ function WeekCell({ week }: { week: BlockWeek }) {
       <span className={week.closed ? 'text-[10px] text-muted-foreground' : 'text-[10px] font-semibold text-primary'}>
         {`W${week.week}`}
       </span>
-      <span className="text-[10px] tabular-nums text-muted-foreground">
+      <span className="text-xs tabular-nums text-foreground">
         {week.work > 0 ? tonnes(week.work) : '—'}
       </span>
-      <span className="arc-item__meta">
+      <span className="text-[11px] tabular-nums text-muted-foreground">
         {week.work > 0 ? (week.closed ? (signed(week.change) === '' ? '' : `${signed(week.change)} %`) : `${week.sessions}/3`) : ''}
       </span>
     </div>
@@ -136,13 +144,16 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         ))}
       </div>
 
-      <p className="arc-small arc-muted">Tonnes per week · change vs last week · 1/3 sessions done</p>
-
       <div className="grid grid-cols-2 gap-2">
         <div className="arc-readout">
-          <span className="arc-readout__label">{data.measured === 'level' ? 'Work' : 'Pace'}</span>
+          <span className="arc-readout__label flex items-center gap-1">
+            {data.measured === 'level' ? 'Work' : 'Pace'}
+            <svg className={`arc-icon ${trend(data.work_index).tone}`} aria-hidden="true">
+              <use href={`/icons.svg#${trend(data.work_index).icon}`} />
+            </svg>
+          </span>
           <span className="arc-readout__value">
-            {data.work_index === null ? '—' : formatNumber(data.work_index)}
+            {data.work_index === null ? '—' : String(Math.round(data.work_index))}
           </span>
           <span className="arc-small arc-muted">
             {data.work_index === null
@@ -153,9 +164,14 @@ export function BlockPanel({ userId }: BlockPanelProps) {
           </span>
         </div>
         <div className="arc-readout">
-          <span className="arc-readout__label">Peak</span>
+          <span className="arc-readout__label flex items-center gap-1">
+            Peak
+            <svg className={`arc-icon ${trend(data.peak_index).tone}`} aria-hidden="true">
+              <use href={`/icons.svg#${trend(data.peak_index).icon}`} />
+            </svg>
+          </span>
           <span className="arc-readout__value">
-            {data.peak_index === null ? '—' : formatNumber(data.peak_index)}
+            {data.peak_index === null ? '—' : String(Math.round(data.peak_index))}
           </span>
           <span className="arc-small arc-muted">
             {data.peak_index === null ? 'best set, per exercise' : 'best set, per exercise'}
@@ -177,7 +193,9 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         <span className="arc-item__text">
           <span className="arc-item__title">Exercises</span>
           <span className="arc-item__meta">
-            {data.base ? `${shortRange(data.from, data.to)} · vs previous block` : shortRange(data.from, data.to)}
+            {data.base
+              ? `${shortRange(data.from, data.to)} / ${shortRange(data.base.from, data.base.to)}`
+              : shortRange(data.from, data.to)}
           </span>
         </span>
         <span className="arc-item__end">

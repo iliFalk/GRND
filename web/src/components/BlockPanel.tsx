@@ -155,8 +155,8 @@ export function BlockPanel({ userId }: BlockPanelProps) {
       {/* One grid for both metrics: the labels, the values and the captions sit on three shared rows,
           so a caption that wraps never lifts its neighbour out of line. */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-        <span className="arc-readout__label">{data.measured === 'level' ? 'Work' : 'Pace'}</span>
-        <span className="arc-readout__label">Best set</span>
+        <span className="arc-readout__label">Volume</span>
+        <span className="arc-readout__label">Top set</span>
 
         <span className="flex items-center gap-1">
           <span className="arc-readout__value">

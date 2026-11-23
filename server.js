@@ -13,6 +13,7 @@ const { suggestPairs, suggestCircuit, alternativesForMissingEquipment } = requir
 const { computeSessionVolume } = require('./backend/utils/sessionVolume');
 const { weeklyPillars } = require('./backend/utils/pillars');
 const { statsFor, periodDays, DEFAULT_PERIOD } = require('./backend/utils/stats');
+const { blockReport, EFFORT } = require('./backend/utils/period');
 const { getDraft, putDraft, removeDraft } = require('./backend/utils/drafts');
 const { readJson, writeJson, updateJson, StoreError } = require('./backend/utils/store');
 const { mergePlanWeeks } = require('./backend/utils/planMerge');
@@ -306,7 +307,7 @@ app.use('/api', requirePrincipal);
 // `/:userId` with an empty value does not reach its route; it still must answer 400, not 404.
 app.use('/api', (req, res, next) => {
   if (!req.path.endsWith('/')) return next();
-  if (/^\/(workout-data|user-profile|workout-draft|workout-sessions|muscle-volume|pillars|suggestions|stats)\/$/.test(req.path)) {
+  if (/^\/(workout-data|user-profile|workout-draft|workout-sessions|muscle-volume|pillars|suggestions|stats|block)\/$/.test(req.path)) {
     return res.status(400).json({ error: 'Invalid userId' });
   }
   next();
@@ -787,6 +788,60 @@ app.get('/api/stats/:userId', validateUserIdParam, requireOwnUserId, async (req,
   } catch (error) {
     console.error('Error building the statistics:', error);
     res.status(500).json({ error: 'Failed to build the statistics' });
+  }
+});
+
+// One block of the grid: its four weeks, its work, its peak, and the change against the block before.
+app.get('/api/block/:userId', validateUserIdParam, requireOwnUserId, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    let sessions = [];
+    try {
+      const data = await fs.readFile(getWorkoutSessionsPath(), 'utf8');
+      sessions = journalSessions(JSON.parse(data));
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    const bodyweight = await readUserBodyweight(userId);
+    res.json(blockReport(sessions, { userId, bodyweight }));
+  } catch (error) {
+    console.error('Error building the block report:', error);
+    res.status(500).json({ error: 'Failed to build the block report' });
+  }
+});
+
+// How hard the session was, in the app's own three words. One tap, no numbers to read.
+app.patch('/api/workout-session/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const effort = String((req.body || {}).effort || '').trim();
+    if (!EFFORT[effort]) {
+      return res.status(400).json({ error: 'effort must be failure, near or easy' });
+    }
+
+    const updated = await updateJson(getWorkoutSessionsPath(), { sessions: [] }, (current) => {
+      const sessions = journalSessions(current);
+      const target = sessions.find((session) => session.id === sessionId);
+      // A missing session and another account's session are one answer: 404, journal untouched.
+      if (!target || target.userId !== req.userId) {
+        const missing = new Error('not found');
+        missing.code = 'NOT_FOUND';
+        throw missing;
+      }
+      return {
+        schema: 2,
+        sessions: sessions.map((session) => (session.id === sessionId ? { ...session, effort } : session))
+      };
+    });
+
+    res.json({ success: true, effort, session: updated.sessions.find((session) => session.id === sessionId) });
+  } catch (error) {
+    if (error.code === 'NOT_FOUND') return res.status(404).json({ error: 'Workout session not found' });
+    if (error.name === 'StoreError') {
+      return res.status(500).json({ error: 'The session journal is damaged', details: error.message });
+    }
+    console.error('Error recording the effort:', error);
+    res.status(500).json({ error: 'Failed to record the effort' });
   }
 });
 

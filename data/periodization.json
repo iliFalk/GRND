@@ -1,0 +1,6 @@
+{
+  "note": "The grid the dashboard draws. One anchor fixes every block and week: block = 28 days, four blocks in a cycle. Ilja, 2026-11-23: the cycle starts on Monday 23 November 2026, and the anchor is his to change.",
+  "anchor": "2026-11-23",
+  "block_days": 28,
+  "blocks_per_cycle": 4
+}

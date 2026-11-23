@@ -1,5 +1,6 @@
 import type { DayRow, PillarRow, PillarsData } from '../lib/pillars';
 import { PillarRing, pillarColor } from './PillarRing';
+import { BlockPanel } from './BlockPanel';
 import { StatsPanel } from './StatsPanel';
 
 function formatNumber(value: number): string {
@@ -132,6 +133,8 @@ export function Dashboard({ userId, data, loading, error, onRetry }: DashboardPr
       </div>
 
       {data.days.length > 0 ? <WeekBars days={data.days} pillars={data.pillars} /> : null}
+
+      <BlockPanel userId={userId} />
 
       <StatsPanel userId={userId} />
 

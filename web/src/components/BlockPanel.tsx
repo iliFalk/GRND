@@ -177,9 +177,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         <span className="arc-item__text">
           <span className="arc-item__title">Exercises</span>
           <span className="arc-item__meta">
-            {data.base
-              ? `${shortRange(data.from, data.to)} vs ${shortRange(data.base.from, data.base.to)}`
-              : shortRange(data.from, data.to)}
+            {data.base ? `${shortRange(data.from, data.to)} · vs previous block` : shortRange(data.from, data.to)}
           </span>
         </span>
         <span className="arc-item__end">

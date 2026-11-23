@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { formatWeekRange } from '../lib/format';
 import { useBlock, type BlockExercise, type BlockWeek, type Verdict } from '../lib/block';
 
@@ -8,6 +9,11 @@ function formatNumber(value: number): string {
 /** Thousands with a thin space: the number stays one word on a phone. */
 function formatBig(value: number): string {
   return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+/** A block of work in tonnes: 7 732 kg is 7.7 t, and one decimal is all a week needs. */
+function tonnes(value: number): string {
+  return `${(value / 1000).toFixed(1)} t`;
 }
 
 function behind(value: number | null): string {
@@ -37,10 +43,10 @@ function WeekCell({ week }: { week: BlockWeek }) {
         {`W${week.week}`}
       </span>
       <span className="text-[10px] tabular-nums text-muted-foreground">
-        {week.work > 0 ? formatBig(week.work) : '—'}
+        {week.work > 0 ? tonnes(week.work) : '—'}
       </span>
       <span className="arc-item__meta">
-        {week.work > 0 ? (week.closed ? signed(week.change) : `${week.sessions}/3`) : ''}
+        {week.work > 0 ? (week.closed ? (signed(week.change) === '' ? '' : `${signed(week.change)} %`) : `${week.sessions}/3`) : ''}
       </span>
     </div>
   );
@@ -76,6 +82,7 @@ function ExerciseRow({ row }: { row: BlockExercise }) {
 
 export function BlockPanel({ userId }: BlockPanelProps) {
   const block = useBlock(userId);
+  const [open, setOpen] = useState(false);
   const data = block.data;
   const range = data ? formatWeekRange(data.from, data.to) : null;
   const verdict = data ? VERDICT[data.verdict] : null;
@@ -104,7 +111,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
   return (
     <div className="arc-panel">
       <div className="arc-panel__head">
-        <p className="arc-section-label">{`Block ${data.block + 1} · week ${data.week} of 4`}</p>
+        <p className="arc-section-label">{`Week ${data.week} of 4`}</p>
         {range ? <span className="arc-small arc-muted">{range}</span> : null}
       </div>
 
@@ -114,6 +121,8 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         ))}
       </div>
 
+      <p className="arc-small arc-muted">Tonnes per week · change vs last week · 1/3 sessions done</p>
+
       <div className="grid grid-cols-2 gap-2">
         <div className="arc-readout">
           <span className="arc-readout__label">{data.measured === 'level' ? 'Work' : 'Pace'}</span>
@@ -121,7 +130,11 @@ export function BlockPanel({ userId }: BlockPanelProps) {
             {data.work_index === null ? '—' : formatNumber(data.work_index)}
           </span>
           <span className="arc-small arc-muted">
-            {data.work_index === null ? 'no block before' : '100 = the block before'}
+            {data.work_index === null
+              ? 'no block before'
+              : data.base
+                ? `100 = block ${formatWeekRange(data.base.from, data.base.to) ?? 'before'}`
+                : '100 = the block before'}
           </span>
         </div>
         <div className="arc-readout">
@@ -145,11 +158,32 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         <span className="arc-small arc-muted">{`${data.sessions} sessions · ${formatBig(data.work)} kg`}</span>
       </div>
 
-      {data.exercises.length === 0 ? (
-        <p className="arc-empty__text">No set is recorded in this block.</p>
-      ) : (
-        data.exercises.map((row) => <ExerciseRow key={row.name} row={row} />)
-      )}
+      <button
+        type="button"
+        className="arc-item"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <span className="arc-item__text">
+          <span className="arc-item__title">{`Exercises (${data.exercises.length})`}</span>
+          <span className="arc-item__meta">
+            {data.base
+              ? `${formatWeekRange(data.from, data.to)} vs ${formatWeekRange(data.base.from, data.base.to)}`
+              : `${formatWeekRange(data.from, data.to)}`}
+          </span>
+        </span>
+        <span className="arc-item__end">
+          <span className="arc-kv__value">{open ? '−' : '+'}</span>
+        </span>
+      </button>
+
+      {open ? (
+        data.exercises.length === 0 ? (
+          <p className="arc-empty__text">No set is recorded in this block.</p>
+        ) : (
+          data.exercises.map((row) => <ExerciseRow key={row.name} row={row} />)
+        )
+      ) : null}
 
       {data.plateau ? (
         <p className="arc-small arc-muted">Two blocks at the same level: the same work stops paying.</p>

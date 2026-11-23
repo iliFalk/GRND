@@ -63,7 +63,13 @@ function WeekCell({ week }: { week: BlockWeek }) {
         {week.work > 0 ? tonnes(week.work) : '—'}
       </span>
       <span className="text-[11px] tabular-nums text-muted-foreground">
-        {week.work > 0 ? (week.closed ? (signed(week.change) === '' ? '' : `${signed(week.change)} %`) : `${week.sessions}/3`) : ''}
+        {week.work > 0
+          ? week.closed
+            ? signed(week.change) === ''
+              ? 'level'
+              : `${signed(week.change)} % w/w`
+            : `${week.sessions}/3 done`
+          : ''}
       </span>
     </div>
   );
@@ -148,12 +154,14 @@ export function BlockPanel({ userId }: BlockPanelProps) {
           <svg className={`arc-icon ${trend(data.work_index).tone}`} aria-hidden="true">
             <use href={`/icons.svg#${trend(data.work_index).icon}`} />
           </svg>
+          <span className="arc-small arc-muted">4 wk</span>
         </span>
         <span className="arc-readout__label flex items-center gap-1">
           Best set
           <svg className={`arc-icon ${trend(data.peak_index).tone}`} aria-hidden="true">
             <use href={`/icons.svg#${trend(data.peak_index).icon}`} />
           </svg>
+          <span className="arc-small arc-muted">4 wk</span>
         </span>
 
         <span className="arc-readout__value">

@@ -17,6 +17,7 @@ const path = require('path');
 
 const catalogue = require('./exerciseCatalogue');
 const MuscleVolume = require('./muscleVolume');
+const { pillarForMovement } = require('./pillars');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -37,6 +38,12 @@ function readJson(name, fallback) {
     console.warn(`period: cannot read ${name}: ${error.message}`);
     return fallback;
   }
+}
+
+/** The pillars, in the order the screen shows them. */
+function pillarRows() {
+  const table = readJson('pillars.json', { pillars: [] });
+  return Array.isArray(table.pillars) ? table.pillars : [];
 }
 
 function config() {
@@ -81,6 +88,14 @@ function blockFor(date, settings) {
   const start = new Date(anchor.getTime() + block * blockDays * DAY_MS);
   const end = new Date(start.getTime() + blockDays * DAY_MS);
   return { block, week, dayInBlock, start, end };
+}
+
+/** The pillar a movement belongs to, or `null` when no pillar claims it. */
+function pillarIdOf(exercise) {
+  const entry = catalogue.entryFor(exercise);
+  if (!entry) return null;
+  const pillar = pillarForMovement(entry.movement, pillarRows());
+  return pillar ? pillar.id : null;
 }
 
 /** The kilograms one set carries: the bell, plus the body the movement lifts. */
@@ -146,7 +161,14 @@ function blockTotals(sessions, bounds, options) {
         if (!name) continue;
         peak.set(name, Math.max(peak.get(name) || 0, load * count));
 
-        const row = rows.get(name) || { name: label, sets: 0, reps: 0, top: 0, bodyweight: catalogue.bodyweightFactor(exercise) !== undefined };
+        const row = rows.get(name) || {
+          name: label,
+          sets: 0,
+          reps: 0,
+          top: 0,
+          bodyweight: catalogue.bodyweightFactor(exercise) !== undefined,
+          pillar: pillarIdOf(exercise)
+        };
         row.sets += 1;
         row.reps += count;
         const weight = Number(set && set.weight);
@@ -266,6 +288,7 @@ function blockReport(sessions, options = {}) {
       const was = base ? base.rows.get(key) : null;
       return {
         name: row.name,
+        pillar: row.pillar,
         sets: row.sets,
         reps: round1(row.reps),
         bodyweight: row.bodyweight,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatWeekRange } from '../lib/format';
 import { useBlock, type BlockExercise, type BlockWeek, type Verdict } from '../lib/block';
+import { pillarColor } from './PillarRing';
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -10,6 +11,20 @@ function formatNumber(value: number): string {
 function formatBig(value: number): string {
   return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
+
+/** `2–29 Nov`, without the year: a comparison never crosses one, and the year is noise here. */
+function shortRange(from: string | null, to: string | null): string {
+  const full = formatWeekRange(from, to);
+  return full === null ? '' : full.replace(/\s\d{4}$/, '');
+}
+
+/** The pillars in the order the screen shows them; a movement outside them comes last. */
+const PILLARS: { id: string; label: string }[] = [
+  { id: 'pull', label: 'Pull' },
+  { id: 'push', label: 'Push' },
+  { id: 'legs', label: 'Legs' },
+  { id: 'core', label: 'Core' }
+];
 
 /** A block of work in tonnes: 7 732 kg is 7.7 t, and one decimal is all a week needs. */
 function tonnes(value: number): string {
@@ -84,7 +99,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
   const block = useBlock(userId);
   const [open, setOpen] = useState(false);
   const data = block.data;
-  const range = data ? formatWeekRange(data.from, data.to) : null;
+  const range = data ? shortRange(data.from, data.to) : null;
   const verdict = data ? VERDICT[data.verdict] : null;
 
   if (block.error) {
@@ -158,22 +173,28 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         <span className="arc-small arc-muted">{`${data.sessions} sessions · ${formatBig(data.work)} kg`}</span>
       </div>
 
-      <button
-        type="button"
-        className="arc-item"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-      >
+      <button type="button" className="arc-item" aria-expanded={open} onClick={() => setOpen(!open)}>
         <span className="arc-item__text">
-          <span className="arc-item__title">{`Exercises (${data.exercises.length})`}</span>
+          <span className="arc-item__title">Exercises</span>
           <span className="arc-item__meta">
             {data.base
-              ? `${formatWeekRange(data.from, data.to)} vs ${formatWeekRange(data.base.from, data.base.to)}`
-              : `${formatWeekRange(data.from, data.to)}`}
+              ? `${shortRange(data.from, data.to)} vs ${shortRange(data.base.from, data.base.to)}`
+              : shortRange(data.from, data.to)}
           </span>
         </span>
         <span className="arc-item__end">
-          <span className="arc-kv__value">{open ? '−' : '+'}</span>
+          {PILLARS.map((pillar, index) => {
+            const count = data.exercises.filter((row) => row.pillar === pillar.id).length;
+            if (count === 0) return null;
+            return (
+              <span key={pillar.id} className="arc-kv__value" style={{ color: pillarColor(pillar.id) }}>
+                {index === 0 ? count : `· ${count}`}
+              </span>
+            );
+          })}
+          <svg className="arc-icon arc-item__chevron" aria-hidden="true">
+            <use href={`/icons.svg#chevron-${open ? 'up' : 'down'}`} />
+          </svg>
         </span>
       </button>
 
@@ -181,7 +202,24 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         data.exercises.length === 0 ? (
           <p className="arc-empty__text">No set is recorded in this block.</p>
         ) : (
-          data.exercises.map((row) => <ExerciseRow key={row.name} row={row} />)
+          [...PILLARS, { id: 'other', label: 'Outside the pillars' }].map((pillar) => {
+            const rows =
+              pillar.id === 'other'
+                ? data.exercises.filter((row) => !PILLARS.some((known) => known.id === row.pillar))
+                : data.exercises.filter((row) => row.pillar === pillar.id);
+            if (rows.length === 0) return null;
+
+            return (
+              <div key={pillar.id} className="flex flex-col">
+                <p className="arc-section-label" style={{ color: pillarColor(pillar.id) }}>
+                  {pillar.label}
+                </p>
+                {rows.map((row) => (
+                  <ExerciseRow key={row.name} row={row} />
+                ))}
+              </div>
+            );
+          })
         )
       ) : null}
 

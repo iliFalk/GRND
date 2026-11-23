@@ -33,6 +33,8 @@ export interface BlockWeek {
 
 export interface BlockExercise {
   name: string;
+  /** The pillar the movement belongs to, or `null` when none claims it. */
+  pillar: string | null;
   sets: number;
   reps: number;
   bodyweight: boolean;
@@ -143,6 +145,7 @@ function normalize(payload: unknown): BlockData {
       .filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object')
       .map((row) => ({
         name: String(row.name ?? ''),
+        pillar: typeof row.pillar === 'string' ? row.pillar : null,
         sets: numberOr(row.sets, 0),
         reps: numberOr(row.reps, 0),
         bodyweight: row.bodyweight === true,

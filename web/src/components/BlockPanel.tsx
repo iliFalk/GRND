@@ -1,14 +1,5 @@
-import { useState } from 'react';
 import { formatWeekRange } from '../lib/format';
-import { formatSessionDate } from '../lib/history';
-import {
-  EFFORTS,
-  recordEffort,
-  useBlock,
-  type BlockWeek,
-  type Effort,
-  type Verdict
-} from '../lib/block';
+import { useBlock, type BlockExercise, type BlockWeek, type Verdict } from '../lib/block';
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -17,6 +8,11 @@ function formatNumber(value: number): string {
 /** Thousands with a thin space: the number stays one word on a phone. */
 function formatBig(value: number): string {
   return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function behind(value: number | null): string {
+  const text = signed(value);
+  return text === '' ? '' : ` ${text}`;
 }
 
 function signed(value: number | null): string {
@@ -33,16 +29,18 @@ const VERDICT: Record<Verdict, { label: string; tone: string }> = {
   open: { label: 'First block', tone: 'arc-chip' }
 };
 
-/** One week of the block: its work, and the change against the week before it. */
+/** One week of the block: its label, its work, and the change against the week before it. */
 function WeekCell({ week }: { week: BlockWeek }) {
   return (
     <div className="flex flex-col items-center gap-1">
+      <span className={week.closed ? 'text-[10px] text-muted-foreground' : 'text-[10px] font-semibold text-primary'}>
+        {`W${week.week}`}
+      </span>
       <span className="text-[10px] tabular-nums text-muted-foreground">
         {week.work > 0 ? formatBig(week.work) : '—'}
       </span>
-      <span className="arc-item__meta">{week.work > 0 ? signed(week.change) : ''}</span>
-      <span className={week.closed ? 'text-[10px] text-muted-foreground' : 'text-[10px] font-semibold text-primary'}>
-        {`W${week.week}`}
+      <span className="arc-item__meta">
+        {week.work > 0 ? (week.closed ? signed(week.change) : `${week.sessions}/3`) : ''}
       </span>
     </div>
   );
@@ -58,29 +56,29 @@ interface BlockPanelProps {
  * Ilja, 2026-11-23: an open block is a pace, a closed one is a level — the screen names which. The
  * effort tap sits here because it changes what the block is worth, and one tap is the whole cost.
  */
+/** One exercise of the block: its sets and reps, the heaviest weight, and the change against the base. */
+function ExerciseRow({ row }: { row: BlockExercise }) {
+  const weight = row.bodyweight ? 'bw' : row.top_weight === null ? '—' : `${formatNumber(row.top_weight)} kg`;
+  return (
+    <div className="arc-item arc-item--wrap">
+      <span className="arc-item__text">
+        <span className="arc-item__title">{row.name}</span>
+        <span className="arc-item__meta">
+          {`${formatNumber(row.sets)} sets${behind(row.delta_sets)} · ${formatNumber(row.reps)} reps${behind(row.delta_reps)}`}
+        </span>
+      </span>
+      <span className="arc-item__end">
+        <span className="arc-kv__value">{`${weight}${row.bodyweight ? '' : behind(row.delta_top_weight)}`}</span>
+      </span>
+    </div>
+  );
+}
+
 export function BlockPanel({ userId }: BlockPanelProps) {
   const block = useBlock(userId);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const data = block.data;
   const range = data ? formatWeekRange(data.from, data.to) : null;
   const verdict = data ? VERDICT[data.verdict] : null;
-  const tapNeeded = data && data.last_session && !data.last_session.effort ? data.last_session : null;
-
-  const tap = async (effort: Effort) => {
-    if (!tapNeeded || saving) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await recordEffort(tapNeeded.id, effort);
-      block.reload();
-    } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (block.error) {
     return (
@@ -147,26 +145,12 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         <span className="arc-small arc-muted">{`${data.sessions} sessions · ${formatBig(data.work)} kg`}</span>
       </div>
 
-      {tapNeeded ? (
-        <>
-          <p className="arc-small arc-muted">{`How hard was ${formatSessionDate(tapNeeded.date)}?`}</p>
-          <div className="flex flex-wrap gap-1">
-            {EFFORTS.map((effort) => (
-              <button
-                key={effort.id}
-                type="button"
-                className="arc-chip"
-                disabled={saving}
-                onClick={() => void tap(effort.id)}
-              >
-                {effort.label}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : null}
+      {data.exercises.length === 0 ? (
+        <p className="arc-empty__text">No set is recorded in this block.</p>
+      ) : (
+        data.exercises.map((row) => <ExerciseRow key={row.name} row={row} />)
+      )}
 
-      {error ? <p className="arc-empty__text">{error}</p> : null}
       {data.plateau ? (
         <p className="arc-small arc-muted">Two blocks at the same level: the same work stops paying.</p>
       ) : null}

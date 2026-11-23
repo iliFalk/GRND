@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setsEntries, useExerciseCatalogue } from '../../lib/catalogue';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
+import { EFFORTS, invalidateBlock, recordEffort, type Effort } from '../../lib/block';
 import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
 import { clearDraft, loadDraft, useDraftSync } from '../../lib/draft';
 import { STALE_AFTER_MS, clearSaved, readSaved, writeSaved } from '../../lib/persistence';
@@ -193,6 +194,20 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     setError(null);
   }, [chosen]);
 
+  const [efforts, setEfforts] = useState<Record<string, Effort>>({});
+
+  /** One tap per exercise: it writes the effort into the journal and the block reads it next time. */
+  const tapEffort = async (exercise: string, effort: Effort) => {
+    if (!saved) return;
+    setEfforts((current) => ({ ...current, [exercise]: effort }));
+    try {
+      await recordEffort(saved.id, effort, exercise);
+      invalidateBlock(userId);
+    } catch (cause: unknown) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
   const finish = useCallback(async () => {
     if (!state) return;
     const payload = buildSessionPayload(state, userId);
@@ -225,6 +240,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   }
 
   if (saved) {
+    const list = saved.completedExercises ?? [];
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -234,10 +250,36 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
           <p className="text-muted-foreground">
             {`${formatNumber(saved.totalSets ?? 0)} sets · ${formatNumber(saved.totalVolume ?? 0)} kg of volume`}
           </p>
+          {list.length > 0 ? (
+            <>
+              {/* Ilja, 2026-11-23: the tap is per exercise, and it is asked here, while the session is fresh. */}
+              <p className="text-muted-foreground">How hard was each exercise?</p>
+              {list.map((exercise) => (
+                <div className="flex flex-col gap-1" key={exercise.name}>
+                  <span className="arc-item__title">{exercise.name}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {EFFORTS.map((effort) => (
+                      <button
+                        key={effort.id}
+                        type="button"
+                        className={
+                          efforts[exercise.name] === effort.id ? 'arc-chip arc-chip--selected' : 'arc-chip'
+                        }
+                        onClick={() => void tapEffort(exercise.name, effort.id)}
+                      >
+                        {effort.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : null}
           <Button
             onClick={() => {
               setSaved(null);
               setChosen([]);
+              setEfforts({});
             }}
           >
             New workout

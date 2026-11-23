@@ -31,6 +31,18 @@ export interface BlockWeek {
   change: number | null;
 }
 
+export interface BlockExercise {
+  name: string;
+  sets: number;
+  reps: number;
+  bodyweight: boolean;
+  top_weight: number | null;
+  compared: boolean;
+  delta_sets: number | null;
+  delta_reps: number | null;
+  delta_top_weight: number | null;
+}
+
 export interface BlockBase {
   block: number;
   from: string;
@@ -55,6 +67,8 @@ export interface BlockData {
   work_index: number | null;
   /** The median change of the best set of every exercise, 100 = unchanged. */
   peak_index: number | null;
+  /** One row per exercise of this block, with its change against the base. */
+  exercises: BlockExercise[];
   verdict: Verdict;
   plateau: boolean;
   /** `level` for a closed block, `pace` while the block is still running. */
@@ -97,6 +111,7 @@ function normalize(payload: unknown): BlockData {
   const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {};
   const weeks = Array.isArray(record.weeks) ? record.weeks : [];
   const base = record.base && typeof record.base === 'object' ? (record.base as Record<string, unknown>) : null;
+  const rows = Array.isArray(record.exercises) ? record.exercises : [];
 
   return {
     anchor: String(record.anchor ?? ''),
@@ -124,6 +139,19 @@ function normalize(payload: unknown): BlockData {
     reps: numberOr(record.reps, 0),
     work_index: numberOrNull(record.work_index),
     peak_index: numberOrNull(record.peak_index),
+    exercises: rows
+      .filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object')
+      .map((row) => ({
+        name: String(row.name ?? ''),
+        sets: numberOr(row.sets, 0),
+        reps: numberOr(row.reps, 0),
+        bodyweight: row.bodyweight === true,
+        top_weight: numberOrNull(row.top_weight),
+        compared: row.compared === true,
+        delta_sets: numberOrNull(row.delta_sets),
+        delta_reps: numberOrNull(row.delta_reps),
+        delta_top_weight: numberOrNull(row.delta_top_weight)
+      })),
     verdict: verdictOr(record.verdict),
     plateau: record.plateau === true,
     measured: record.measured === 'level' ? 'level' : 'pace',
@@ -205,11 +233,11 @@ export function loadBlock(userId: string): Promise<BlockData> {
 }
 
 /** How hard the last session was, in one tap. The journal keeps it; the next read shows the change. */
-export async function recordEffort(sessionId: string, effort: Effort): Promise<void> {
+export async function recordEffort(sessionId: string, effort: Effort, exercise?: string): Promise<void> {
   const response = await apiFetch(`/api/workout-session/${encodeURIComponent(sessionId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ effort })
+    body: JSON.stringify(exercise === undefined ? { effort } : { effort, exercise })
   });
   if (!response.ok) throw new Error(`the effort was not saved (${response.status})`);
 }

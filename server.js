@@ -814,10 +814,13 @@ app.get('/api/block/:userId', validateUserIdParam, requireOwnUserId, async (req,
 app.patch('/api/workout-session/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const effort = String((req.body || {}).effort || '').trim();
+    const body = req.body || {};
+    const effort = String(body.effort || '').trim();
     if (!EFFORT[effort]) {
       return res.status(400).json({ error: 'effort must be failure, near or easy' });
     }
+    // The tap belongs to one exercise; without a name it answers for the whole session.
+    const exercise = body.exercise === undefined || body.exercise === null ? null : String(body.exercise).trim();
 
     const updated = await updateJson(getWorkoutSessionsPath(), { sessions: [] }, (current) => {
       const sessions = journalSessions(current);
@@ -828,13 +831,30 @@ app.patch('/api/workout-session/:sessionId', async (req, res) => {
         missing.code = 'NOT_FOUND';
         throw missing;
       }
+      const list = target.completedExercises || target.exercises || [];
+      if (exercise !== null && !list.some((entry) => String(entry.name || entry.exercise_name || '') === exercise)) {
+        const missing = new Error('exercise not found');
+        missing.code = 'NOT_FOUND';
+        throw missing;
+      }
+
+      const patched =
+        exercise === null
+          ? { ...target, effort }
+          : {
+              ...target,
+              completedExercises: list.map((entry) =>
+                String(entry.name || entry.exercise_name || '') === exercise ? { ...entry, effort } : entry
+              )
+            };
+
       return {
         schema: 2,
-        sessions: sessions.map((session) => (session.id === sessionId ? { ...session, effort } : session))
+        sessions: sessions.map((session) => (session.id === sessionId ? patched : session))
       };
     });
 
-    res.json({ success: true, effort, session: updated.sessions.find((session) => session.id === sessionId) });
+    res.json({ success: true, effort, exercise, session: updated.sessions.find((session) => session.id === sessionId) });
   } catch (error) {
     if (error.code === 'NOT_FOUND') return res.status(404).json({ error: 'Workout session not found' });
     if (error.name === 'StoreError') {

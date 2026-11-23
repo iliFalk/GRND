@@ -60,10 +60,14 @@ function median(values) {
   return list.length % 2 === 1 ? list[middle] : round1((list[middle - 1] + list[middle]) / 2);
 }
 
-/** The factor a session's sets carry: the tap he gave, or full weight when he gave none. */
-function effortOf(session) {
-  const tapped = EFFORT[String(session && session.effort ? session.effort : '').trim()];
-  return tapped || { factor: 1, percent: 100, label: null };
+/**
+ * The factor a set carries: the tap of its exercise, else the tap of its session, else full weight.
+ * Ilja, 2026-11-23: the tap is per exercise, and a skipped tap is an allowance, not a discount.
+ */
+function effortOf(session, exercise) {
+  const own = String(exercise && exercise.effort ? exercise.effort : '').trim();
+  const whole = String(session && session.effort ? session.effort : '').trim();
+  return EFFORT[own] || EFFORT[whole] || { factor: 1, percent: 100, label: null };
 }
 
 /** Where a date sits in the grid: the block, the week inside it, and the block's bounds. */
@@ -102,6 +106,7 @@ function blockTotals(sessions, bounds, options) {
   const wantedUser = options.userId ? String(options.userId) : '';
   const bodyweight = options.bodyweight;
   const peak = new Map();
+  const rows = new Map();
   const days = new Map();
   let work = 0;
   let counted = 0;
@@ -114,11 +119,11 @@ function blockTotals(sessions, bounds, options) {
     if (!date || date < bounds.start || date >= bounds.end) continue;
     if (MuscleVolume.isCircuit(session)) continue;
 
-    const effort = effortOf(session).factor;
     let worked = 0;
     let sessionWork = 0;
 
     for (const exercise of session.completedExercises || session.exercises || []) {
+      const effort = effortOf(session, exercise).factor;
       const list = Array.isArray(exercise.completed_sets) ? exercise.completed_sets : [];
       for (const set of list) {
         // A warm-up set is not work: it is not counted, not weighed and not the peak.
@@ -134,10 +139,19 @@ function blockTotals(sessions, bounds, options) {
         reps += count;
         worked += 1;
 
-        const name = String(
+        const label = String(
           (catalogue.entryFor(exercise) || {}).name || exercise.name || exercise.exercise_name || ''
-        ).trim().toLowerCase();
-        if (name) peak.set(name, Math.max(peak.get(name) || 0, load * count));
+        ).trim();
+        const name = label.toLowerCase();
+        if (!name) continue;
+        peak.set(name, Math.max(peak.get(name) || 0, load * count));
+
+        const row = rows.get(name) || { name: label, sets: 0, reps: 0, top: 0, bodyweight: catalogue.bodyweightFactor(exercise) !== undefined };
+        row.sets += 1;
+        row.reps += count;
+        const weight = Number(set && set.weight);
+        if (Number.isFinite(weight) && weight > row.top) row.top = weight;
+        rows.set(name, row);
       }
     }
 
@@ -148,7 +162,7 @@ function blockTotals(sessions, bounds, options) {
     }
   }
 
-  return { work: round1(work), sessions: counted, sets, reps, peak, days };
+  return { work: round1(work), sessions: counted, sets, reps, peak, rows, days };
 }
 
 /** Mean over standard deviation of a week's daily load: how identical the days are. */
@@ -222,6 +236,7 @@ function blockReport(sessions, options = {}) {
       sets: totals.sets,
       reps: totals.reps,
       peak: totals.peak,
+      rows: totals.rows,
       closed: isClosed(bounds, now)
     });
   }
@@ -244,6 +259,24 @@ function blockReport(sessions, options = {}) {
     }
   }
   const peakIndex = peakChanges.length > 0 ? round1(median(peakChanges) + 100) : null;
+
+  // The rows the panel lists: one per exercise of this block, with the change against the base.
+  const exercises = [...currentTotals.rows.entries()]
+    .map(([key, row]) => {
+      const was = base ? base.rows.get(key) : null;
+      return {
+        name: row.name,
+        sets: row.sets,
+        reps: round1(row.reps),
+        bodyweight: row.bodyweight,
+        top_weight: row.top > 0 ? round1(row.top) : null,
+        compared: Boolean(was),
+        delta_sets: was ? row.sets - was.sets : null,
+        delta_reps: was ? round1(row.reps - was.reps) : null,
+        delta_top_weight: was && row.top > 0 && was.top > 0 ? round1(row.top - was.top) : null
+      };
+    })
+    .sort((a, b) => b.sets - a.sets || b.reps - a.reps || a.name.localeCompare(b.name));
   const workIndex =
     baseWeek && baseWeek > 0 && currentTotals.work > 0 ? round1((currentWeek / baseWeek) * 100) : null;
 
@@ -291,6 +324,7 @@ function blockReport(sessions, options = {}) {
     sessions: currentTotals.sessions,
     sets: currentTotals.sets,
     reps: currentTotals.reps,
+    exercises,
     work_index: workIndex,
     measured: isClosed(current, now) ? 'level' : 'pace',
     peak_index: peakIndex,
@@ -299,7 +333,7 @@ function blockReport(sessions, options = {}) {
     base: base
       ? { block: base.block, from: base.from, to: base.to, work: base.work, week_mean: round1(baseWeek) }
       : null,
-    before: closed.map(({ peak, ...rest }) => rest),
+    before: closed.map(({ peak, rows, ...rest }) => rest),
     monotony: monotonyOf(currentTotals.days)
   };
 }

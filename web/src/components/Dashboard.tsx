@@ -1,7 +1,6 @@
 import type { DayRow, PillarRow, PillarsData } from '../lib/pillars';
 import { PillarRing, pillarColor } from './PillarRing';
 import { BlockPanel } from './BlockPanel';
-import { StatsPanel } from './StatsPanel';
 
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -135,8 +134,6 @@ export function Dashboard({ userId, data, loading, error, onRetry }: DashboardPr
       {data.days.length > 0 ? <WeekBars days={data.days} pillars={data.pillars} /> : null}
 
       <BlockPanel userId={userId} />
-
-      <StatsPanel userId={userId} />
 
       {circuits > 0 ? (
         <div className="arc-panel">

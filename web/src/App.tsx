@@ -6,8 +6,8 @@ import { HistoryScreen } from './components/history/HistoryScreen';
 import { PlanView } from './components/plan/PlanView';
 import { WorkoutScreen } from './components/workout/WorkoutScreen';
 import { formatWeekRange } from './lib/format';
+import { invalidateBlock } from './lib/block';
 import { invalidateHistory } from './lib/history';
-import { invalidateStats } from './lib/stats';
 import { useTrainingPlans } from './lib/plans';
 import { useTheme } from './lib/theme';
 import { usePillars } from './lib/pillars';
@@ -33,10 +33,10 @@ function MiniApp({ userId }: { userId: string }) {
   const { data, loading, error, reload } = usePillars(userId);
   const weekRange = data ? formatWeekRange(data.week_start, data.week_end) : null;
 
-  // A saved workout changes the week, the history and the statistics, so all three are read again.
+  // A saved workout changes the week, the history and the block, so all three are read again.
   const saved = useCallback(() => {
     invalidateHistory(userId);
-    invalidateStats(userId);
+    invalidateBlock(userId);
     reload();
   }, [reload, userId]);
 

@@ -303,12 +303,18 @@ function blockReport(sessions, options = {}) {
   const workIndex =
     baseWeek && baseWeek > 0 && currentTotals.work > 0 ? round1((currentWeek / baseWeek) * 100) : null;
 
+  // Ilja, 2026-11-23: three words, one rule each. One axis up without the other falling is progress;
+  // both inside 95–105 is a plateau; either below 95 is a regression.
   let verdict = 'open';
   if (workIndex !== null) {
-    if (peakIndex !== null && peakIndex < 95) verdict = 'down';
-    else if (workIndex >= 105) verdict = 'progress';
-    else if (workIndex >= 95) verdict = 'hold';
-    else verdict = 'less';
+    const peakDown = peakIndex !== null && peakIndex < 95;
+    const workDown = workIndex < 95;
+    const workUp = workIndex > 105;
+    const peakUp = peakIndex !== null && peakIndex > 105;
+
+    if (peakDown || workDown) verdict = 'regress';
+    else if (workUp || peakUp) verdict = 'progress';
+    else verdict = 'plateau';
   }
 
   // Two blocks at the same level in a row is a plateau, not a rest: the same stimulus stops paying.

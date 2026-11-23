@@ -155,7 +155,7 @@ test('test_a_falling_peak_outranks_a_rising_volume', () => {
     now: at(3, 12)
   });
 
-  assert.equal(report.verdict, 'down');
+  assert.equal(report.verdict, 'regress');
 });
 
 test('test_an_empty_journal_says_open_not_zero', () => {

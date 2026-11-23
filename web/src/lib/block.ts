@@ -16,7 +16,7 @@ export const EFFORTS: { id: Effort; label: string; percent: number }[] = [
   { id: 'easy', label: '3+ left', percent: 70 }
 ];
 
-export type Verdict = 'progress' | 'hold' | 'less' | 'down' | 'open';
+export type Verdict = 'progress' | 'plateau' | 'regress' | 'open';
 
 export interface BlockWeek {
   week: number;
@@ -105,7 +105,7 @@ function numberOrNull(value: unknown): number | null {
 }
 
 function verdictOr(value: unknown): Verdict {
-  const known: Verdict[] = ['progress', 'hold', 'less', 'down', 'open'];
+  const known: Verdict[] = ['progress', 'plateau', 'regress', 'open'];
   return known.includes(value as Verdict) ? (value as Verdict) : 'open';
 }
 

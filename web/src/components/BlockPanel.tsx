@@ -44,12 +44,11 @@ function signed(value: number | null): string {
   return value > 0 ? `+${formatNumber(value)}` : `-${formatNumber(Math.abs(value))}`;
 }
 
-/** The three levels, in the words of the screen. `down` outranks volume: the top set fell. */
+/** Three words and one more for "nothing to compare with yet"; the window sits beside them. */
 const VERDICT: Record<Verdict, { label: string; tone: string }> = {
   progress: { label: 'Progress', tone: 'arc-chip arc-chip--ok' },
-  hold: { label: 'Holding', tone: 'arc-chip' },
-  less: { label: 'Less work', tone: 'arc-chip arc-chip--attention' },
-  down: { label: 'Backing off', tone: 'arc-chip arc-chip--attention' },
+  plateau: { label: 'Plateau', tone: 'arc-chip' },
+  regress: { label: 'Regress', tone: 'arc-chip arc-chip--attention' },
   open: { label: 'First block', tone: 'arc-chip' }
 };
 
@@ -158,7 +157,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         </div>
         <div className="arc-readout">
           <span className="arc-readout__label flex items-center gap-1">
-            Peak
+            Best set
             <svg className={`arc-icon ${trend(data.peak_index).tone}`} aria-hidden="true">
               <use href={`/icons.svg#${trend(data.peak_index).icon}`} />
             </svg>
@@ -167,17 +166,22 @@ export function BlockPanel({ userId }: BlockPanelProps) {
             {data.peak_index === null ? '—' : String(Math.round(data.peak_index))}
           </span>
           <span className="arc-small arc-muted">
-            {data.peak_index === null ? 'best set, per exercise' : baseShort ? `best set vs ${baseShort}` : 'best set, per exercise'}
+            {baseShort ? `strongest set \u00d7 reps vs ${baseShort}` : 'strongest set of the block'}
           </span>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {verdict ? (
-          <span className={verdict.tone}>
-            <i className="arc-chip__dot" />
-            {data.plateau ? 'Plateau' : verdict.label}
-          </span>
+          <>
+            <span className={verdict.tone}>
+              <i className="arc-chip__dot" />
+              {verdict.label}
+            </span>
+            <span className="arc-small arc-muted">
+              {baseShort && data.verdict !== 'open' ? `vs ${baseShort}` : `no block before`}
+            </span>
+          </>
         ) : null}
         <span className="arc-small arc-muted">{`${data.sessions} sessions · ${tonnes(data.work)}`}</span>
       </div>

@@ -23,6 +23,8 @@ export interface BlockWeek {
   from: string;
   to: string;
   closed: boolean;
+  /** The week has begun: a week before it shows nothing at all. */
+  started: boolean;
   work: number;
   sessions: number;
   sets: number;
@@ -133,6 +135,7 @@ function normalize(payload: unknown): BlockData {
         from: String(week.from ?? ''),
         to: String(week.to ?? ''),
         closed: week.closed === true,
+        started: week.started === true,
         work: numberOr(week.work, 0),
         sessions: numberOr(week.sessions, 0),
         sets: numberOr(week.sets, 0),

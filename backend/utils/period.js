@@ -229,6 +229,7 @@ function blockReport(sessions, options = {}) {
       from: dayKey(start),
       to: dayKey(new Date(end.getTime() - 1)),
       closed: end <= now,
+      started: start <= now,
       work: totals.work,
       sessions: totals.sessions,
       sets: totals.sets,

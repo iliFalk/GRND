@@ -59,17 +59,15 @@ function WeekCell({ week }: { week: BlockWeek }) {
       <span className={week.closed ? 'text-[10px] text-muted-foreground' : 'text-[10px] font-semibold text-primary'}>
         {`W${week.week}`}
       </span>
-      <span className="text-xs tabular-nums text-foreground">
-        {week.work > 0 ? tonnes(week.work) : '—'}
-      </span>
+      <span className="text-xs tabular-nums text-foreground">{week.started ? tonnes(week.work) : '—'}</span>
       <span className="text-[11px] tabular-nums text-muted-foreground">
-        {week.work > 0
-          ? week.closed
+        {!week.started
+          ? ''
+          : week.closed
             ? signed(week.change) === ''
               ? 'level'
               : `${signed(week.change)} % w/w`
-            : `${week.sessions}/3 done`
-          : ''}
+            : `${week.sessions} ${week.sessions === 1 ? 'session' : 'sessions'}`}
       </span>
     </div>
   );
@@ -188,9 +186,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
               <i className="arc-chip__dot" />
               {verdict.label}
             </span>
-            <span className="arc-small arc-muted">
-              {baseShort && data.verdict !== 'open' ? `vs ${baseShort}` : `no block before`}
-            </span>
+
           </>
         ) : null}
         <span className="arc-small arc-muted">{`${data.sessions} sessions · ${tonnes(data.work)}`}</span>
@@ -200,9 +196,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         <span className="arc-item__text">
           <span className="arc-item__title">Exercises</span>
           <span className="arc-item__meta">
-            {data.base
-              ? `${shortRange(data.from, data.to)} / ${shortRange(data.base.from, data.base.to)}`
-              : shortRange(data.from, data.to)}
+            {data.base ? 'vs previous block' : shortRange(data.from, data.to)}
           </span>
         </span>
         <span className="arc-item__end">

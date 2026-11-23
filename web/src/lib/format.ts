@@ -36,13 +36,13 @@ export function formatWeekRange(start: string | null, end: string | null): strin
   const fromYear = from.getUTCFullYear();
   const toYear = to.getUTCFullYear();
 
-  // One shape for every range, with the dash spaced on both sides. The tight dash of a same-month
-  // range sat next to a spaced one in the same line and read as two different gaps (Ilja, 2026-11-23).
+  // One shape for every range, and the dash sits tight on both sides: a range is one word, and the
+  // second reading of the same line is never a different gap (Ilja, 2026-11-23).
   if (fromYear === toYear && fromMonth === toMonth) {
-    return `${fromDay} – ${toDay} ${toMonth} ${toYear}`;
+    return `${fromDay}–${toDay} ${toMonth} ${toYear}`;
   }
   if (fromYear === toYear) {
-    return `${fromDay} ${fromMonth} – ${toDay} ${toMonth} ${toYear}`;
+    return `${fromDay} ${fromMonth}–${toDay} ${toMonth} ${toYear}`;
   }
-  return `${fromDay} ${fromMonth} ${fromYear} – ${toDay} ${toMonth} ${toYear}`;
+  return `${fromDay} ${fromMonth} ${fromYear}–${toDay} ${toMonth} ${toYear}`;
 }

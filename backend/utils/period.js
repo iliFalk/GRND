@@ -281,6 +281,9 @@ function blockReport(sessions, options = {}) {
     }
   }
   const peakIndex = peakChanges.length > 0 ? round1(median(peakChanges) + 100) : null;
+  // The tally makes the peak concrete: how many exercises moved up, down, or not at all.
+  const peakUp = peakChanges.filter((change) => change > 1).length;
+  const peakDown = peakChanges.filter((change) => change < -1).length;
 
   // The rows the panel lists: one per exercise of this block, with the change against the base.
   const exercises = [...currentTotals.rows.entries()]
@@ -357,6 +360,9 @@ function blockReport(sessions, options = {}) {
     work_index: workIndex,
     measured: isClosed(current, now) ? 'level' : 'pace',
     peak_index: peakIndex,
+    peak_up: peakUp,
+    peak_down: peakDown,
+    peak_total: peakChanges.length,
     verdict,
     plateau,
     base: base

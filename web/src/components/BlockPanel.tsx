@@ -140,35 +140,37 @@ export function BlockPanel({ userId }: BlockPanelProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="arc-readout">
-          <span className="arc-readout__label flex items-center gap-1">
-            {data.measured === 'level' ? 'Work' : 'Pace'}
-            <svg className={`arc-icon ${trend(data.work_index).tone}`} aria-hidden="true">
-              <use href={`/icons.svg#${trend(data.work_index).icon}`} />
-            </svg>
-          </span>
-          <span className="arc-readout__value">
-            {data.work_index === null ? '—' : String(Math.round(data.work_index))}
-          </span>
-          <span className="arc-small arc-muted">
-            {data.work_index === null ? 'no block before' : baseShort ? `% of ${baseShort}` : '100 = the block before'}
-          </span>
-        </div>
-        <div className="arc-readout">
-          <span className="arc-readout__label flex items-center gap-1">
-            Best set
-            <svg className={`arc-icon ${trend(data.peak_index).tone}`} aria-hidden="true">
-              <use href={`/icons.svg#${trend(data.peak_index).icon}`} />
-            </svg>
-          </span>
-          <span className="arc-readout__value">
-            {data.peak_index === null ? '—' : String(Math.round(data.peak_index))}
-          </span>
-          <span className="arc-small arc-muted">
-            {baseShort ? `strongest set \u00d7 reps vs ${baseShort}` : 'strongest set of the block'}
-          </span>
-        </div>
+      {/* One grid for both metrics: the labels, the values and the captions sit on three shared rows,
+          so a caption that wraps never lifts its neighbour out of line. */}
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+        <span className="arc-readout__label flex items-center gap-1">
+          {data.measured === 'level' ? 'Work' : 'Pace'}
+          <svg className={`arc-icon ${trend(data.work_index).tone}`} aria-hidden="true">
+            <use href={`/icons.svg#${trend(data.work_index).icon}`} />
+          </svg>
+        </span>
+        <span className="arc-readout__label flex items-center gap-1">
+          Best set
+          <svg className={`arc-icon ${trend(data.peak_index).tone}`} aria-hidden="true">
+            <use href={`/icons.svg#${trend(data.peak_index).icon}`} />
+          </svg>
+        </span>
+
+        <span className="arc-readout__value">
+          {data.work_index === null ? '—' : String(Math.round(data.work_index))}
+        </span>
+        <span className="arc-readout__value">
+          {data.peak_index === null ? '—' : String(Math.round(data.peak_index))}
+        </span>
+
+        <span className="arc-small arc-muted">
+          {data.work_index === null ? 'no block before' : baseShort ? `% of block ${baseShort}` : '100 = the block before'}
+        </span>
+        <span className="arc-small arc-muted">
+          {data.peak_total === 0
+            ? 'strongest set vs the block before'
+            : `${data.peak_up} up · ${data.peak_down} down of ${data.peak_total}`}
+        </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

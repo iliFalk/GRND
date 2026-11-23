@@ -71,6 +71,10 @@ export interface BlockData {
   peak_index: number | null;
   /** One row per exercise of this block, with its change against the base. */
   exercises: BlockExercise[];
+  /** How many exercises lifted their best set, and how many lost it. */
+  peak_up: number;
+  peak_down: number;
+  peak_total: number;
   verdict: Verdict;
   plateau: boolean;
   /** `level` for a closed block, `pace` while the block is still running. */
@@ -141,6 +145,9 @@ function normalize(payload: unknown): BlockData {
     reps: numberOr(record.reps, 0),
     work_index: numberOrNull(record.work_index),
     peak_index: numberOrNull(record.peak_index),
+    peak_up: numberOr(record.peak_up, 0),
+    peak_down: numberOr(record.peak_down, 0),
+    peak_total: numberOr(record.peak_total, 0),
     exercises: rows
       .filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object')
       .map((row) => ({

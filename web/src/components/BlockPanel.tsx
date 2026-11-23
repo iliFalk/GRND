@@ -7,11 +7,6 @@ function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-/** Thousands with a thin space: the number stays one word on a phone. */
-function formatBig(value: number): string {
-  return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
 /** `2–29 Nov`, without the year: a comparison never crosses one, and the year is noise here. */
 function shortRange(from: string | null, to: string | null): string {
   const full = formatWeekRange(from, to);
@@ -108,6 +103,8 @@ export function BlockPanel({ userId }: BlockPanelProps) {
   const [open, setOpen] = useState(false);
   const data = block.data;
   const range = data ? shortRange(data.from, data.to) : null;
+  // Both indices are read against the block before, so its dates stand beside each number.
+  const baseShort = data && data.base ? shortRange(data.base.from, data.base.to) : null;
   const verdict = data ? VERDICT[data.verdict] : null;
 
   if (block.error) {
@@ -156,11 +153,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
             {data.work_index === null ? '—' : String(Math.round(data.work_index))}
           </span>
           <span className="arc-small arc-muted">
-            {data.work_index === null
-              ? 'no block before'
-              : data.base
-                ? `100 = block ${formatWeekRange(data.base.from, data.base.to) ?? 'before'}`
-                : '100 = the block before'}
+            {data.work_index === null ? 'no block before' : baseShort ? `% of ${baseShort}` : '100 = the block before'}
           </span>
         </div>
         <div className="arc-readout">
@@ -174,7 +167,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
             {data.peak_index === null ? '—' : String(Math.round(data.peak_index))}
           </span>
           <span className="arc-small arc-muted">
-            {data.peak_index === null ? 'best set, per exercise' : 'best set, per exercise'}
+            {data.peak_index === null ? 'best set, per exercise' : baseShort ? `best set vs ${baseShort}` : 'best set, per exercise'}
           </span>
         </div>
       </div>
@@ -186,7 +179,7 @@ export function BlockPanel({ userId }: BlockPanelProps) {
             {data.plateau ? 'Plateau' : verdict.label}
           </span>
         ) : null}
-        <span className="arc-small arc-muted">{`${data.sessions} sessions · ${formatBig(data.work)} kg`}</span>
+        <span className="arc-small arc-muted">{`${data.sessions} sessions · ${tonnes(data.work)}`}</span>
       </div>
 
       <button type="button" className="arc-item" aria-expanded={open} onClick={() => setOpen(!open)}>

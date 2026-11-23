@@ -1,26 +1,25 @@
 /**
- * The statistics of a window: sets, reps, and the weight each exercise carried.
+ * The statistics of a block: sets, reps, the weight each exercise carried, and the difference to the
+ * block before.
  *
- * Ilja, 2026-11-22: the dashboard answers «how many sets, how many reps, what weight». The server owns
- * the arithmetic (`backend/utils/stats.js`); this module asks it once per period and keeps the answer.
+ * Ilja, 2026-11-22: the dashboard answers «how many sets, how many reps, what weight», in blocks of four
+ * weeks and four months, and each number says what changed against the block before it. The server owns
+ * the arithmetic (`backend/utils/stats.js`); this module asks it once per block and keeps the answer.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from './api';
 import { readStatsPeriod, writeStatsPeriod } from './persistence';
 
-export const PERIODS = ['week', 'month', '3m', '6m', 'y'] as const;
+export const PERIODS = ['4w', '4m'] as const;
 export type Period = (typeof PERIODS)[number];
 
-/** The word on the chip: the five periods he asked for, short enough for one row of a 430-pixel frame. */
+/** The word on the chip: a training block and a season. */
 export const PERIOD_LABELS: Record<Period, string> = {
-  week: 'W',
-  month: 'M',
-  '3m': '3M',
-  '6m': '6M',
-  y: 'Y'
+  '4w': '4W',
+  '4m': '4M'
 };
 
-export const DEFAULT_PERIOD: Period = 'month';
+export const DEFAULT_PERIOD: Period = '4w';
 
 export function isPeriod(value: unknown): value is Period {
   return typeof value === 'string' && (PERIODS as readonly string[]).includes(value);
@@ -34,6 +33,11 @@ export interface StatsExercise {
   bodyweight: boolean;
   top_weight: number | null;
   last_weight: number | null;
+  /** The earlier block carried this movement, so the differences mean something. */
+  compared: boolean;
+  delta_sets: number | null;
+  delta_reps: number | null;
+  delta_top_weight: number | null;
 }
 
 export interface StatsData {
@@ -41,9 +45,15 @@ export interface StatsData {
   days: number;
   from: string;
   to: string;
+  /** The block the differences are measured against: the same length, ending where this one begins. */
+  before_from: string;
+  before_to: string;
   sessions: number;
   sets: number;
   reps: number;
+  delta_sessions: number | null;
+  delta_sets: number | null;
+  delta_reps: number | null;
   exercises: StatsExercise[];
 }
 
@@ -79,9 +89,14 @@ function normalize(payload: unknown): StatsData {
     days: numberOr(record.days, 0),
     from: String(record.from ?? ''),
     to: String(record.to ?? ''),
+    before_from: String(record.before_from ?? ''),
+    before_to: String(record.before_to ?? ''),
     sessions: numberOr(record.sessions, 0),
     sets: numberOr(record.sets, 0),
     reps: numberOr(record.reps, 0),
+    delta_sessions: weightOr(record.delta_sessions),
+    delta_sets: weightOr(record.delta_sets),
+    delta_reps: weightOr(record.delta_reps),
     exercises: rows
       .filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object')
       .map((row) => ({
@@ -90,7 +105,11 @@ function normalize(payload: unknown): StatsData {
         reps: numberOr(row.reps, 0),
         bodyweight: row.bodyweight === true,
         top_weight: weightOr(row.top_weight),
-        last_weight: weightOr(row.last_weight)
+        last_weight: weightOr(row.last_weight),
+        compared: row.compared === true,
+        delta_sets: weightOr(row.delta_sets),
+        delta_reps: weightOr(row.delta_reps),
+        delta_top_weight: weightOr(row.delta_top_weight)
       }))
   };
 }

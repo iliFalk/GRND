@@ -6,33 +6,35 @@
  * one set. A circuit is endurance work and stays out of the figures, so an AMRAP round never reads as
  * a set here.
  *
- * The period is a rolling window that ends now, in days. A calendar period would read zero on the
- * first day of a month, and the screen exists to show the work that happened.
+ * Ilja, 2026-11-22, second pass: a period is a block of four weeks or of four months, and every number
+ * carries its difference against the block before it — four weeks against the four weeks before, four
+ * months against the four months before. A block is a rolling window that ends now, so the block on
+ * the screen is the one he is training in.
  */
 const catalogue = require('./exerciseCatalogue');
 const MuscleVolume = require('./muscleVolume');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** The periods the screen offers, named as the app names them, in days back from now. */
-const PERIODS = { week: 7, month: 30, '3m': 90, '6m': 180, y: 365 };
-const DEFAULT_PERIOD = 'month';
+/** The blocks the screen offers, in days. Four weeks is a training block; four months is a season. */
+const PERIODS = { '4w': 28, '4m': 120 };
+const DEFAULT_PERIOD = '4w';
 
 function round1(value) {
   return Math.round((value + Number.EPSILON) * 10) / 10;
 }
 
-/** The length of a named period in days, or `null` when the name is not one of them. */
+/** The length of a named block in days, or `null` when the name is not one of them. */
 function periodDays(period) {
   const days = PERIODS[String(period || '').trim()];
   return typeof days === 'number' ? days : null;
 }
 
-/** A window of `days` that ends at `now`. */
-function windowFor(days, now) {
-  const end = new Date(now.getTime());
-  const start = new Date(end.getTime() - days * DAY_MS);
-  return { start, end };
+/** A window of `days` that ends at `end`. */
+function windowFor(end, days) {
+  const to = new Date(end.getTime());
+  const from = new Date(to.getTime() - days * DAY_MS);
+  return { from, to };
 }
 
 /** The sets of one exercise that are work: a warm-up is not. */
@@ -49,21 +51,10 @@ function isBodyweight(exercise) {
 }
 
 /**
- * @param {Array|Object} sessions - the journal, as stored
- * @param {{period?: string, userId?: string, now?: string|Date}} [options]
- * @returns {null|{period: string, days: number, from: string, to: string, sessions: number,
- *   sets: number, reps: number, exercises: Array}} - `null` for a period the app does not offer
+ * Sets, reps and weights of every exercise inside one window.
+ * @returns {{sessions: number, sets: number, reps: number, exercises: Map}}
  */
-function statsFor(sessions, options = {}) {
-  const period = String(options.period || DEFAULT_PERIOD).trim();
-  const days = periodDays(period);
-  // The caller refuses an unknown period; this is the second lock on the same door.
-  if (days === null) return null;
-
-  const now = options.now ? new Date(options.now) : new Date();
-  const { start, end } = windowFor(days, now);
-  const wantedUser = options.userId ? String(options.userId) : '';
-
+function collect(sessions, window, wantedUser) {
   const rows = new Map();
   let counted = 0;
   let setsTotal = 0;
@@ -72,7 +63,8 @@ function statsFor(sessions, options = {}) {
   for (const session of MuscleVolume.sessionList(sessions)) {
     if (wantedUser && String(session.userId || '') !== wantedUser) continue;
     const date = MuscleVolume.sessionDate(session);
-    if (!date || date < start || date > end) continue;
+    // A window holds its end and not its beginning, so two neighbouring blocks never count one session twice.
+    if (!date || date <= window.from || date > window.to) continue;
     // A circuit moves no set of this report: it is rounds and time under load.
     if (MuscleVolume.isCircuit(session)) continue;
 
@@ -130,26 +122,69 @@ function statsFor(sessions, options = {}) {
     if (worked > 0) counted += 1;
   }
 
-  const exercises = [...rows.values()]
-    .map((row) => ({
-      name: row.name,
-      sets: row.sets,
-      reps: round1(row.reps),
-      bodyweight: row.bodyweight,
-      top_weight: row.top_weight === null ? null : round1(row.top_weight),
-      last_weight: row.last_weight === null ? null : round1(row.last_weight)
-    }))
+  return { sessions: counted, sets: setsTotal, reps: repsTotal, exercises: rows };
+}
+
+/** The difference between two numbers, or `null` when one of them is missing. */
+function difference(now, before) {
+  if (now === null || now === undefined || before === null || before === undefined) return null;
+  return round1(now - before);
+}
+
+/**
+ * @param {Array|Object} sessions - the journal, as stored
+ * @param {{period?: string, userId?: string, now?: string|Date}} [options]
+ * @returns {null|object} - `null` for a block the app does not offer
+ */
+function statsFor(sessions, options = {}) {
+  const period = String(options.period || DEFAULT_PERIOD).trim();
+  const days = periodDays(period);
+  // The caller refuses an unknown block; this is the second lock on the same door.
+  if (days === null) return null;
+
+  const now = options.now ? new Date(options.now) : new Date();
+  const wantedUser = options.userId ? String(options.userId) : '';
+
+  const current = windowFor(now, days);
+  // The block before this one: the same length, ending where this one begins.
+  const earlier = windowFor(current.from, days);
+
+  const today = collect(sessions, current, wantedUser);
+  const before = collect(sessions, earlier, wantedUser);
+
+  const exercises = [...today.exercises.values()]
+    .map((row) => {
+      const was = before.exercises.get(row.name.trim().toLowerCase());
+      return {
+        name: row.name,
+        sets: row.sets,
+        reps: round1(row.reps),
+        bodyweight: row.bodyweight,
+        top_weight: row.top_weight === null ? null : round1(row.top_weight),
+        last_weight: row.last_weight === null ? null : round1(row.last_weight),
+        // A movement the earlier block never carried has nothing to compare with.
+        compared: Boolean(was),
+        delta_sets: was ? difference(row.sets, was.sets) : null,
+        delta_reps: was ? difference(row.reps, was.reps) : null,
+        delta_top_weight: was ? difference(row.top_weight, was.top_weight) : null
+      };
+    })
     // The exercise with the most work first: the list answers «what did I do», not «what is its name».
     .sort((a, b) => b.sets - a.sets || b.reps - a.reps || a.name.localeCompare(b.name));
 
   return {
     period,
     days,
-    from: start.toISOString().slice(0, 10),
-    to: end.toISOString().slice(0, 10),
-    sessions: counted,
-    sets: setsTotal,
-    reps: round1(repsTotal),
+    from: current.from.toISOString().slice(0, 10),
+    to: current.to.toISOString().slice(0, 10),
+    before_from: earlier.from.toISOString().slice(0, 10),
+    before_to: earlier.to.toISOString().slice(0, 10),
+    sessions: today.sessions,
+    sets: today.sets,
+    reps: round1(today.reps),
+    delta_sessions: difference(today.sessions, before.sessions),
+    delta_sets: difference(today.sets, before.sets),
+    delta_reps: difference(today.reps, before.reps),
     exercises
   };
 }

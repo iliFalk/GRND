@@ -1,6 +1,6 @@
 {
-  "note": "The grid the dashboard draws. One anchor fixes every block and week: block = 28 days, four blocks in a cycle. A demo anchor while the journal holds reviewed sessions; change this one line.",
-  "anchor": "2026-11-02",
+  "note": "The grid the dashboard draws. One anchor fixes every block and week: block = 28 days, four blocks in a cycle. The anchor is the first day of the first block (Ilja started 2026-11-23); change this one line.",
+  "anchor": "2026-11-23",
   "block_days": 28,
   "blocks_per_cycle": 4
 }

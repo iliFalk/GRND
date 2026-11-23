@@ -56,8 +56,16 @@ const VERDICT: Record<Verdict, { label: string; tone: string }> = {
 function WeekCell({ week }: { week: BlockWeek }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className={week.closed ? 'text-[10px] text-muted-foreground' : 'text-[10px] font-semibold text-primary'}>
-        {`W${week.week}`}
+      <span
+        className={
+          week.closed
+            ? 'whitespace-nowrap text-[10px] text-muted-foreground line-through'
+            : week.started
+              ? 'whitespace-nowrap text-[10px] font-semibold text-primary'
+              : 'whitespace-nowrap text-[10px] text-muted-foreground'
+        }
+      >
+        {shortRange(week.from, week.to)}
       </span>
       <span className="text-xs tabular-nums text-foreground">{week.started ? tonnes(week.work) : '—'}</span>
       <span className="text-[11px] tabular-nums text-muted-foreground">
@@ -147,26 +155,24 @@ export function BlockPanel({ userId }: BlockPanelProps) {
       {/* One grid for both metrics: the labels, the values and the captions sit on three shared rows,
           so a caption that wraps never lifts its neighbour out of line. */}
       <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-        <span className="arc-readout__label flex items-center gap-1">
-          {data.measured === 'level' ? 'Work' : 'Pace'}
+        <span className="arc-readout__label">{data.measured === 'level' ? 'Work' : 'Pace'}</span>
+        <span className="arc-readout__label">Best set</span>
+
+        <span className="flex items-center gap-1">
+          <span className="arc-readout__value">
+            {data.work_index === null ? '—' : String(Math.round(data.work_index))}
+          </span>
           <svg className={`arc-icon ${trend(data.work_index).tone}`} aria-hidden="true">
             <use href={`/icons.svg#${trend(data.work_index).icon}`} />
           </svg>
-          <span className="arc-small arc-muted">4 wk</span>
         </span>
-        <span className="arc-readout__label flex items-center gap-1">
-          Best set
+        <span className="flex items-center gap-1">
+          <span className="arc-readout__value">
+            {data.peak_index === null ? '—' : String(Math.round(data.peak_index))}
+          </span>
           <svg className={`arc-icon ${trend(data.peak_index).tone}`} aria-hidden="true">
             <use href={`/icons.svg#${trend(data.peak_index).icon}`} />
           </svg>
-          <span className="arc-small arc-muted">4 wk</span>
-        </span>
-
-        <span className="arc-readout__value">
-          {data.work_index === null ? '—' : String(Math.round(data.work_index))}
-        </span>
-        <span className="arc-readout__value">
-          {data.peak_index === null ? '—' : String(Math.round(data.peak_index))}
         </span>
 
         <span className="arc-small arc-muted">

@@ -8,7 +8,6 @@ interface HeaderProps {
 
 const THEMES: { id: Theme; label: string }[] = [
   { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
   { id: 'arc', label: 'ARC' }
 ];
 

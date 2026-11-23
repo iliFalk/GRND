@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { readTheme, writeTheme } from './persistence';
 
-export type Theme = 'light' | 'dark' | 'arc';
+export type Theme = 'light' | 'arc';
 
 function telegramWebApp(): TelegramWebApp | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -9,7 +9,9 @@ function telegramWebApp(): TelegramWebApp | undefined {
 }
 
 function isTheme(value: unknown): value is Theme {
-  return value === 'light' || value === 'dark' || value === 'arc';
+  // Ilja, 2026-11-23: two themes only — light and ARC. A saved `dark` from an older build is not a
+  // theme any more, so it reads as no choice at all.
+  return value === 'light' || value === 'arc';
 }
 
 /** The theme he picked himself, or `undefined` when he never picked one. */
@@ -36,11 +38,13 @@ function preferredTheme(): Theme {
   const stored = storedTheme();
   if (stored) return stored;
 
+  // Before his first pick the client decides: a dark client gets ARC, which is the dark one now.
   const scheme = telegramWebApp()?.colorScheme;
-  if (scheme === 'light' || scheme === 'dark') return scheme;
+  if (scheme === 'light') return 'light';
+  if (scheme === 'dark') return 'arc';
 
   if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
+    return 'arc';
   }
 
   return 'light';
@@ -121,7 +125,7 @@ export function useTheme(): { theme: Theme; setTheme: (theme: Theme) => void; to
 
   const toggleTheme = useCallback(() => {
     setThemeState((current) => {
-      const next: Theme = current === 'dark' ? 'light' : 'dark';
+      const next: Theme = current === 'arc' ? 'light' : 'arc';
       storeTheme(next);
       return next;
     });

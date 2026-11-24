@@ -46,6 +46,11 @@
       "id": "chair",
       "label": "Стул",
       "available": true
+    },
+    {
+      "id": "bench",
+      "label": "Скамья / римский стул",
+      "available": true
     }
   ]
 }

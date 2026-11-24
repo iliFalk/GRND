@@ -45,6 +45,24 @@
   ],
   "exercises": [
     {
+      "id": "back-extensions-roman-chair",
+      "name": "Back extensions (Roman chair)",
+      "equipment": "bench",
+      "primary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary": [
+        "core",
+        "back"
+      ],
+      "bodyweight_factor": 0.5,
+      "movement": "hinge",
+      "role": "support",
+      "order": 2,
+      "note": "Ilja, 2026-11-24: Roman chair, in Legs at place two. Bodyweight, and the weight field takes a load added to the body. The factor 0.5 is the upper body that moves; change it here."
+    },
+    {
       "id": "air-squats",
       "name": "Air squats",
       "equipment": "bodyweight",
@@ -81,7 +99,7 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "order": 7,
+      "order": 8,
       "note": "Ilja, 2026-11-19: stays in Legs as power work; not offered in the AMRAP list."
     },
     {
@@ -208,7 +226,7 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "order": 6,
+      "order": 7,
       "note": "Ilja, 2026-11-19: stays in Legs as power work; not offered in the AMRAP list."
     },
     {
@@ -229,7 +247,7 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "order": 5,
+      "order": 6,
       "note": "Ilja, 2026-11-19: stays in Legs as power work; not offered in the AMRAP list."
     },
     {
@@ -279,7 +297,7 @@
       "role": "support",
       "power": true,
       "bodyweight_factor": 1.0,
-      "order": 4,
+      "order": 5,
       "note": "Ilja, 2026-11-19: stays in Legs as power work; not offered in the AMRAP list."
     },
     {
@@ -320,7 +338,7 @@
       "role": "support",
       "power": true,
       "is_circuit": true,
-      "order": 3
+      "order": 4
     },
     {
       "id": "one-arm-kettlebell-row",
@@ -384,7 +402,7 @@
       "is_heavy_basic": true,
       "movement": "hinge",
       "role": "support",
-      "order": 2
+      "order": 3
     }
   ]
 }

@@ -27,6 +27,17 @@
       ],
       "equipment": "bodyweight"
     },
+    "Back extensions (Roman chair)": {
+      "primary": [
+        "glutes",
+        "hamstrings"
+      ],
+      "secondary": [
+        "core",
+        "back"
+      ],
+      "equipment": "bench"
+    },
     "Back foot on chair — light jumps on front leg": {
       "primary": [
         "quads",

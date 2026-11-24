@@ -92,9 +92,15 @@ it('test_the_next_block_starts_with_zeroed_counters', () => {
   expect(next.exercises.map((exercise) => exercise.sets.length)).toEqual([1, 1]);
 });
 
-it('test_a_count_of_zero_or_below_adds_nothing', () => {
+it('test_a_count_of_nothing_leaves_the_counters_alone', () => {
   expect(activeExercise(countReps(started(), 0))?.counter).toBe(0);
-  expect(activeExercise(countReps(countReps(started(), 5), -3))?.counter).toBe(5);
+});
+
+it('test_a_negative_count_takes_repetitions_back', () => {
+  // Ilja, 2026-11-24: a wrong tap on the way up is taken back on the way down.
+  expect(activeExercise(countReps(countReps(started(), 5), -3))?.counter).toBe(2);
+  expect(activeExercise(countReps(started(), -1))?.counter).toBe(0);
+  expect(activeExercise(countReps(countReps(started(), 2), -3))?.counter).toBe(0);
 });
 
 it('test_the_counter_does_not_move_during_a_rest', () => {

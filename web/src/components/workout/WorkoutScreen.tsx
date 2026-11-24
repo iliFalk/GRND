@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { setsEntries, useExerciseCatalogue } from '../../lib/catalogue';
 import { revealInput, selectAllOnFocus } from '../../lib/focus';
 import { EFFORTS, invalidateBlock, recordEffort, type Effort } from '../../lib/block';
-import { buildSessionPayload, saveWorkoutSession, type SavedSession } from '../../lib/session';
+import { buildSessionPayload, discardSession, saveWorkoutSession, type SavedSession } from '../../lib/session';
 import { clearDraft, loadDraft, useDraftSync } from '../../lib/draft';
 import { STALE_AFTER_MS, clearSaved, readSaved, writeSaved } from '../../lib/persistence';
 import { orderForPillar, usePillars } from '../../lib/pillars';
@@ -121,13 +121,23 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
   const [now, setNow] = useState(() => Date.now());
   const [saved, setSaved] = useState<SavedSession | null>(null);
   const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  // The finish button asks before it ends the workout: the question takes its own place.
+  const [confirming, setConfirming] = useState(false);
+  // The state of the workout the app has just stored, kept so he can step back into it.
+  const lastState = useRef<WorkoutState | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // The rest timer counts up, so the screen ticks while a rest is running.
+  // The screen carries a running clock, so it ticks while the workout runs and while a rest runs.
   useEffect(() => {
-    if (!state || !isResting(state)) return;
+    if (!state) return;
     const handle = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(handle);
+  }, [state]);
+
+  // Any counted repetition answers the finish question by itself: he is still working.
+  useEffect(() => {
+    setConfirming(false);
   }, [state]);
 
   // Every counted repetition is written twice: to the phone and, half a second later, to the server.
@@ -219,6 +229,8 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
       const session = await saveWorkoutSession(payload);
       clearSaved(storageKey);
       void clearDraft(userId);
+      // The workout is kept in memory, so the effort screen can hand it back.
+      lastState.current = state;
       setSaved(session);
       setState(null);
       onSaved();
@@ -228,6 +240,33 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
       setSaving(false);
     }
   }, [onSaved, state, storageKey, userId]);
+
+  /**
+   * Back from the effort screen into the workout it came from: the stored session leaves the journal
+   * first, then the workout continues where it stopped. A refused delete keeps him on this screen —
+   * finishing twice must never store the same work twice.
+   */
+  const backToWorkout = useCallback(async () => {
+    if (!saved) return;
+    const restored = lastState.current;
+    if (!restored) return;
+
+    setRestoring(true);
+    setError(null);
+    try {
+      await discardSession(saved.id);
+      setSaved(null);
+      setEfforts({});
+      setState(restored);
+      setNow(Date.now());
+      invalidateBlock(userId);
+      onSaved();
+    } catch (cause: unknown) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setRestoring(false);
+    }
+  }, [onSaved, saved, userId]);
 
   if (catalogue.error) {
     return (
@@ -275,15 +314,25 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               ))}
             </>
           ) : null}
-          <Button
-            onClick={() => {
-              setSaved(null);
-              setChosen([]);
-              setEfforts({});
-            }}
-          >
-            New workout
-          </Button>
+          {/* Ilja, 2026-11-24: a finish tapped too early is undone here — the workout continues. */}
+          <div className="flex flex-wrap gap-2">
+            {lastState.current ? (
+              <Button variant="secondary" onClick={() => void backToWorkout()} disabled={restoring}>
+                {restoring ? 'Opening…' : 'Back to the workout'}
+              </Button>
+            ) : null}
+            <Button
+              onClick={() => {
+                lastState.current = null;
+                setSaved(null);
+                setChosen([]);
+                setEfforts({});
+              }}
+            >
+              New workout
+            </Button>
+          </div>
+          {error ? <p className="text-xs text-destructive">{error}</p> : null}
         </CardContent>
       </Card>
     );
@@ -462,7 +511,16 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
     <section aria-labelledby="workout-title" className="space-y-3">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 id="workout-title" className="text-lg font-semibold">{`Block ${state.block}`}</h2>
+          <div className="flex items-baseline gap-2">
+            <h2 id="workout-title" className="text-lg font-semibold">{`Block ${state.block}`}</h2>
+            {/* Ilja, 2026-11-24: the total time of the workout reads beside the block, and it runs. */}
+            <span
+              className="font-mono text-base tabular-nums text-foreground"
+              aria-label="Total workout time"
+            >
+              {formatClock(elapsedSeconds(state, now))}
+            </span>
+          </div>
           <p className="text-xs text-muted-foreground">
             {`${formatNumber(totalSets(state))} sets · ${formatNumber(totalReps(state))} reps`}
           </p>
@@ -527,13 +585,20 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               <span className="arc-readout__label">Reps</span>
               <span className="arc-readout__value">{exercise?.counter ?? 0}</span>
             </div>
-            <div className="flex justify-center gap-3">
-              <Button className="h-16 flex-1" onClick={() => setState(countReps(state, 1))}>
-                <span className="arc-h1">+1</span>
-              </Button>
-              <Button className="h-16 flex-1" onClick={() => setState(countReps(state, 3))}>
-                <span className="arc-h1">+3</span>
-              </Button>
+            <div className="grid grid-cols-6 gap-1.5">
+              {/* Ilja, 2026-11-24: the count goes both ways — three steps down on the left, three up
+                  on the right, and the smallest change sits nearest the other side. */}
+              {[-3, -2, -1, 1, 2, 3].map((step) => (
+                <Button
+                  key={step}
+                  variant={step < 0 ? 'secondary' : 'default'}
+                  className="h-14 px-0"
+                  aria-label={step < 0 ? `Minus ${-step} reps` : `Plus ${step} reps`}
+                  onClick={() => setState(countReps(state, step))}
+                >
+                  <span className="arc-h1">{step > 0 ? `+${step}` : `${step}`}</span>
+                </Button>
+              ))}
             </div>
             <Button
               variant="secondary"
@@ -548,9 +613,31 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
       )}
 
       <div className="space-y-2">
-        <Button className="w-full" onClick={finish} disabled={!hasWork(state) || saving || resting}>
-          {saving ? 'Saving…' : 'Finish workout'}
-        </Button>
+        {/* Ilja, 2026-11-24: a wrong tap on Finish must not end the workout — the question takes the
+            place of the button, and two more taps are needed. */}
+        {confirming ? (
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="danger" className="w-full" onClick={() => void finish()} disabled={saving}>
+              {saving ? 'Saving…' : 'Yes, finish'}
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => setConfirming(false)}
+              disabled={saving}
+            >
+              Keep going
+            </Button>
+          </div>
+        ) : (
+          <Button
+            className="w-full"
+            onClick={() => setConfirming(true)}
+            disabled={!hasWork(state) || saving || resting}
+          >
+            Finish workout
+          </Button>
+        )}
         {resting ? (
           <p className="text-xs text-muted-foreground">
             A rest cannot be skipped by finishing: start the next block first.

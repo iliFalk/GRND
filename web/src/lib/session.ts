@@ -112,3 +112,30 @@ export async function saveWorkoutSession(payload: SessionPayload): Promise<Saved
   }
   return session;
 }
+
+/**
+ * Removes a session the app wrote a moment ago.
+ *
+ * Ilja, 2026-11-24: from the effort screen he steps back into the workout it came from. The saved
+ * session leaves the journal first, so the second finish does not store the same work twice.
+ */
+export async function discardSession(sessionId: string): Promise<void> {
+  const response = await apiFetch(`/api/workout-session/${encodeURIComponent(sessionId)}`, {
+    method: 'DELETE'
+  });
+
+  if (!response.ok) {
+    let reason = response.statusText || `status ${response.status}`;
+    try {
+      const body: unknown = await response.json();
+      if (body && typeof body === 'object') {
+        const record = body as { error?: unknown; details?: unknown };
+        const message = typeof record.details === 'string' ? record.details : record.error;
+        if (typeof message === 'string' && message.trim() !== '') reason = message.trim();
+      }
+    } catch {
+      // The body was not JSON; the status line names the reason then.
+    }
+    throw new Error(`DELETE /api/workout-session returned ${response.status}: ${reason}`);
+  }
+}

@@ -73,14 +73,16 @@ export function selectExercise(state: WorkoutState, index: number): WorkoutState
   return { ...state, active: index };
 }
 
-/** +1 and +3 go to the exercise the panel is on. A count below zero is not a repetition. */
+/** +minus and +plus go to the exercise the panel is on; a negative amount takes repetitions back. */
 export function countReps(state: WorkoutState, amount: number): WorkoutState {
-  if (!Number.isFinite(amount) || amount <= 0) return state;
+  if (!Number.isFinite(amount) || amount === 0) return state;
   const exercise = state.exercises[state.active];
   if (!exercise || state.restingSince !== null) return state;
 
   const exercises = [...state.exercises];
-  exercises[state.active] = { ...exercise, counter: exercise.counter + Math.floor(amount) };
+  // A tap can be taken back: a negative amount subtracts, and the counter never falls below zero.
+  const counter = Math.max(0, exercise.counter + Math.trunc(amount));
+  exercises[state.active] = { ...exercise, counter };
   return { ...state, exercises };
 }
 

@@ -56,11 +56,11 @@
         "core",
         "back"
       ],
-      "bodyweight_factor": 0.5,
+      "bodyweight_factor": 0.6,
       "movement": "hinge",
       "role": "support",
       "order": 2,
-      "note": "Ilja, 2026-11-24: Roman chair, in Legs at place two. Bodyweight, and the weight field takes a load added to the body. The factor 0.5 is the upper body that moves; change it here."
+      "note": "Ilja, 2026-11-24: Roman chair, in Legs at place two. Bodyweight, and the weight field takes a load added to the body. The factor 0.6 is the upper body that moves (Ilja raised it from 0.5 the same day); change it here."
     },
     {
       "id": "air-squats",

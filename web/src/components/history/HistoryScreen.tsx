@@ -107,17 +107,6 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
           History
         </p>
 
-        <button
-          type="button"
-          className="arc-btn arc-btn--ghost"
-          onClick={() => {
-            setOpenId(null);
-            setConfirmId(null);
-          }}
-        >
-          All sessions
-        </button>
-
         <div className="arc-panel">
           <div className="arc-panel__head">
             <h2 className="arc-h3">{formatSessionDate(open.date)}</h2>
@@ -169,26 +158,40 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
           </div>
         ) : null}
 
-        <button
-          type="button"
-          className="arc-btn arc-btn--danger"
-          onClick={async () => {
-            if (confirmId !== open.id) {
-              setConfirmId(open.id);
-              return;
-            }
-            try {
-              await history.remove(open.id);
+        {/* Ilja, 2026-11-25: the way back belongs beside Delete, and both keep the panel's inner
+            padding instead of touching the edge of the screen. */}
+        <div className="flex flex-wrap gap-2 px-[var(--arc-space-4)]">
+          <button
+            type="button"
+            className="arc-btn arc-btn--ghost"
+            onClick={() => {
               setOpenId(null);
               setConfirmId(null);
-              setError(null);
-            } catch (cause: unknown) {
-              setError(cause instanceof Error ? cause.message : String(cause));
-            }
-          }}
-        >
-          {confirmId === open.id ? 'Tap again to delete this session' : 'Delete session'}
-        </button>
+            }}
+          >
+            All sessions
+          </button>
+          <button
+            type="button"
+            className="arc-btn arc-btn--danger"
+            onClick={async () => {
+              if (confirmId !== open.id) {
+                setConfirmId(open.id);
+                return;
+              }
+              try {
+                await history.remove(open.id);
+                setOpenId(null);
+                setConfirmId(null);
+                setError(null);
+              } catch (cause: unknown) {
+                setError(cause instanceof Error ? cause.message : String(cause));
+              }
+            }}
+          >
+            {confirmId === open.id ? 'Tap again to delete this session' : 'Delete session'}
+          </button>
+        </div>
       </section>
     );
   }

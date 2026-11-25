@@ -158,22 +158,12 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
           </div>
         ) : null}
 
-        {/* Ilja, 2026-11-25: the way back belongs beside Delete, and both keep the panel's inner
-            padding instead of touching the edge of the screen. */}
-        <div className="flex flex-wrap gap-2 px-[var(--arc-space-4)]">
+        {/* Ilja, 2026-11-25: the pair spans the panel above them, edge to edge, Delete first, and the
+            way back carries an outline so it reads as a button and not as a caption. */}
+        <div className="grid w-full grid-cols-2 gap-2">
           <button
             type="button"
-            className="arc-btn arc-btn--ghost"
-            onClick={() => {
-              setOpenId(null);
-              setConfirmId(null);
-            }}
-          >
-            All sessions
-          </button>
-          <button
-            type="button"
-            className="arc-btn arc-btn--danger"
+            className="arc-btn arc-btn--danger w-full"
             onClick={async () => {
               if (confirmId !== open.id) {
                 setConfirmId(open.id);
@@ -189,7 +179,17 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
               }
             }}
           >
-            {confirmId === open.id ? 'Tap again to delete this session' : 'Delete session'}
+            {confirmId === open.id ? 'Tap again to delete' : 'Delete session'}
+          </button>
+          <button
+            type="button"
+            className="arc-btn arc-btn--ghost w-full border border-[var(--arc-line-strong)]"
+            onClick={() => {
+              setOpenId(null);
+              setConfirmId(null);
+            }}
+          >
+            All sessions
           </button>
         </div>
       </section>

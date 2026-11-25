@@ -170,7 +170,9 @@ it('test_a_closed_app_resumes_the_workout_where_it_stopped', () => {
 
 it('test_the_workout_screen_opens_on_its_setup_step', () => {
   // No exercise chosen yet, so the screen asks for several instead of showing a counter.
-  const html = renderToString(<WorkoutScreen userId="931142831" onSaved={() => {}} />);
+  const html = renderToString(
+    <WorkoutScreen userId="931142831" onSaved={() => {}} onFinished={() => {}} />
+  );
   expect(html).toContain('Start a workout');
   expect(html).toContain('Choose the exercises');
 });

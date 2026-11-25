@@ -34,6 +34,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 interface WorkoutScreenProps {
   userId: string;
+  /** Leaves the session screen for the week it changed. Every effort is already stored by its tap. */
+  onFinished: () => void;
   /** Called once the server stored the session, so the week is read again. */
   onSaved: () => void;
 }
@@ -78,7 +80,7 @@ function formatClock(seconds: number): string {
   return `${minutes}:${String(rest).padStart(2, '0')}`;
 }
 
-export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
+export function WorkoutScreen({ userId, onSaved, onFinished }: WorkoutScreenProps) {
   const catalogue = useExerciseCatalogue();
   // The plan is not the next workout: it is the three pillars and what the week is short of.
   const plan = usePillars(userId);
@@ -314,6 +316,9 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               ))}
             </>
           ) : null}
+          {list.length > 0 ? (
+            <p className="arc-small arc-muted">{`${Object.keys(efforts).length} of ${list.length} answered`}</p>
+          ) : null}
           {/* Ilja, 2026-11-24: a finish tapped too early is undone here — the workout continues. */}
           <div className="flex flex-wrap gap-2">
             {lastState.current ? (
@@ -322,6 +327,7 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               </Button>
             ) : null}
             <Button
+              variant="secondary"
               onClick={() => {
                 lastState.current = null;
                 setSaved(null);
@@ -330,6 +336,19 @@ export function WorkoutScreen({ userId, onSaved }: WorkoutScreenProps) {
               }}
             >
               New workout
+            </Button>
+            {/* Ilja, 2026-11-24: the effort of each tap is already stored; this closes the session and
+                shows the week it changed. Without it the only ways out were undo and a fresh workout. */}
+            <Button
+              onClick={() => {
+                lastState.current = null;
+                setSaved(null);
+                setChosen([]);
+                setEfforts({});
+                onFinished();
+              }}
+            >
+              Finish
             </Button>
           </div>
           {error ? <p className="text-xs text-destructive">{error}</p> : null}

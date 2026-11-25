@@ -49,7 +49,7 @@ function MiniApp({ userId }: { userId: string }) {
         ) : page === 'plan' ? (
           <PlanScreen />
         ) : page === 'workout' ? (
-          <WorkoutScreen userId={userId} onSaved={saved} />
+          <WorkoutScreen userId={userId} onSaved={saved} onFinished={() => setPage('dashboard')} />
         ) : (
           <HistoryScreen userId={userId} />
         )}

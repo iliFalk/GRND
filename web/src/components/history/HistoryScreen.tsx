@@ -160,7 +160,7 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
 
         {/* Ilja, 2026-11-25: the pair spans the panel above them, edge to edge, Delete first, and the
             way back carries an outline so it reads as a button and not as a caption. */}
-        <div className="grid w-full grid-cols-2 gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 px-[var(--arc-space-4)]">
           <button
             type="button"
             className="arc-btn arc-btn--danger w-full"
@@ -183,7 +183,7 @@ export function HistoryScreen({ userId }: HistoryScreenProps) {
           </button>
           <button
             type="button"
-            className="arc-btn arc-btn--ghost w-full border border-[var(--arc-line-strong)]"
+            className="arc-btn arc-btn--secondary w-full"
             onClick={() => {
               setOpenId(null);
               setConfirmId(null);
